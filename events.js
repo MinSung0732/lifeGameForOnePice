@@ -361,11 +361,12 @@
     ["old-resolve","resilience",4,"legacy",50,101,"쉽게 무너지지 않는 사람","세월이 흐르자 사람들은 당신이 겪어 온 실패를 묻곤 한다. 떠나지 않고 버텼던 날들이 누군가에게 용기를 준다.","실패한 이야기도 나눈다","지나온 기록을 정리한다","함께 실천할 작은 일을 찾는다"],
     ["new-navigator","explorer",3,"island",20,85,"다시 만난 미지의 섬","예전에 스치듯 보았던 낯선 지형을 다른 해도에서 발견했다. 그곳은 아직 아무도 자세히 기록하지 않았다.","두 지도의 차이를 연구한다","함께할 탐험자를 찾는다","작은 배를 준비해 다시 간다"],
     ["new-students","legacy",3,"legacy",65,102,"늦은 밤 찾아온 제자","한때 당신이 도왔던 젊은이가 이제 훌륭한 항해사가 되어 돌아왔다. 그리고 자신의 제자를 함께 데려왔다.","시간을 내어 이야기를 나눈다","보관해 둔 항해일지를 건넨다","세 사람이 함께 바다를 바라본다"],
-    ["forgone-ransom","justice",4,"bounty",20,80,"가격보다 중요한 진실","수배 금액은 높지만 죄목이 명확하지 않은 사람을 만났다. 돈을 얻는 선택이 반드시 옳은 것은 아니다.","증거가 사실인지 조사한다","피해자와 목격자의 말을 듣는다","당장 위험한 상황부터 막는다","현상금 사냥꾼"]
+    ["forgone-ransom","justice",4,"hunter",20,80,"가격보다 중요한 진실","수배 금액은 높지만 죄목이 명확하지 않은 사람을 만났다. 돈을 얻는 선택이 반드시 옳은 것은 아니다.","증거가 사실인지 조사한다","피해자와 목격자의 말을 듣는다","당장 위험한 상황부터 막는다","현상금 사냥꾼"]
   ];
   for (const row of echoes) {
     const [id, flag, threshold, category, minAge, maxAge, title, story, a, b, c, role, onlyGrand] = row;
     const group = groups[category];
+    if (!group) throw new Error("Unknown story category: " + category);
     events.push({
       id: "echo-" + id, category, art: group.art, title, story,
       ages: [minAge, maxAge], roles: role ? [role] : null,
