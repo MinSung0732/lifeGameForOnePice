@@ -26,6 +26,10 @@ jobs:
           test -s events.js
           test -f assets/scenes/birth-1.svg
           test -f assets/scenes/storm-3.svg
-          grep -Fq 'src="./events.js"' index.html
-          grep -Fq 'src="./app.js"' index.html
-          grep -Fq 'href="./style.css"' index.html
+          test -s index.template.html
+          test -s scripts/build-standalone.js
+          grep -Fq 'id="one-sea-inline-styles"' index.html
+          grep -Fq 'id="one-sea-scene-catalog"' index.html
+          grep -Fq 'OneSeaOfflineScenes' index.html
+      - name: Check reproducible offline build
+        run: node scripts/build-standalone.js --check
