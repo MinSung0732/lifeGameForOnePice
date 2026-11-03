@@ -266,7 +266,12 @@
   }
   function createDecision(type, title, body) {
     s.pending = { type, choices: options(type) };
-    announce(title, body, "결정을 기다리고 있습니다. 다음 해로 넘어가기 전에 선택하세요.", "", "갈림길");
+    const art = ({
+      school:"school", mentor:"dojo", career:"harbor", voyage:"grandline",
+      purpose:"map", legacy:"legacy", retirement:"legacy",
+      battle:"battle", storm:"storm", fruit:"fruit"
+    })[type] || "map";
+    announce(title, body, "결정을 기다리고 있습니다. 이번 갈림길은 직접 선택해야 합니다.", "", "갈림길", art);
     stopAuto();
   }
   function seasonChange(action) {
