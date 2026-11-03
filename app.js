@@ -588,6 +588,30 @@
       if (p === "storm") { chooseDecision(/피항|항구|돌아/.test(t) ? "harbor" : /동료|함께/.test(t) ? "crewhelp" : "brave", t); return; }
       toast("지금은 선택지 중 하나를 골라야 합니다. 숫자 1~4로도 선택할 수 있어요."); return;
     }
+    if (s.age >= 16 && /리버스|위대한 항로|그랜드 라인/.test(t)) {
+      s.pending = { type:"voyage", choices: options("voyage") };
+      chooseDecision("grand", t);
+      return;
+    }
+    if (s.age >= 16 && /해군.*입대|해군이 되|해군으로 전향|해적.*되|해적단.*결성|혁명군.*가입|혁명군이 되|현상금 사냥꾼.*되|상인.*되|모험가.*되/.test(t)) {
+      const role = /해군/.test(t) ? "해군" : /해적/.test(t) ? "해적" : /혁명군/.test(t) ? "혁명군"
+        : /현상금/.test(t) ? "현상금 사냥꾼" : /상인/.test(t) ? "상인" : "모험가";
+      s.role = role;
+      s.rank = role === "해군" ? "해군 이등병" : "-";
+      s.reputation += 1;
+      announce("새로운 깃발을 택하다", "이전까지 걸어온 길을 뒤로하고 " + role + "의 신분으로 새로운 장을 연다.\n\n이 선택이 쉬웠던 것은 아니다. 하지만 바다는 오늘도 당신에게 새로운 가능성을 보여 준다.", "신분 변경: " + role, "good", "진로");
+      store(); render(); return;
+    }
+    if (s.age >= 16 && /동료.*모집|선원.*구|동료.*찾|선원.*모집/.test(t)) {
+      const r = roll("bonds", 12, Math.min(3, s.reputation / 20 | 0));
+      if (r.success) { s.crew++; statDelta("bonds", 3); announce("새로운 동료와의 약속", "당신의 이야기를 들은 항해자가 두 눈을 빛낸다.\n\n“좋아, 네 배에 나도 타겠어!”\n\n함께할 사람이 한 명 늘었다.", rollText(r) + " · 동료 +1", "good", "인연"); }
+      else { changeMoney(-300); announce("쉽지 않은 동료 모집", "모집을 위해 사람들을 만났지만 아직 마음이 맞는 이가 없었다. 당신은 다음 기회를 기다리기로 했다.", rollText(r) + " · 모집 실패", "bad", "인연"); }
+      store(); render(); return;
+    }
+    if (s.age >= 16 && /수배범.*추적|현상범.*추적|적.*공격|전투.*시작|해적.*습격/.test(t)) {
+      createDecision("battle", "위험한 인물과 마주하다", "당신은 직접 위험을 찾아 나섰다. 창고 뒤편에서 무장한 무법자가 길을 막아섰다.\n\n“넌 누구지? 내 앞을 막겠다는 거냐?”");
+      store(); render(); return;
+    }
     if (s.heldFruit && /열매.*먹|먹.*열매/.test(t)) {
       s.pending = { type:"fruit", choices: options("fruit") }; chooseDecision("eat", t); return;
     }
