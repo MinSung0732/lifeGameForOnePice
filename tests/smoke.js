@@ -55,7 +55,8 @@ function run(savedData) {
   };
   vm.createContext(context);
   vm.runInContext(eventSource, context, {filename:"events.js",timeout:2000});
-  assert.equal(context.OneSeaLifeEvents.events.length, 105);
+  assert.equal(context.OneSeaLifeEvents.events.length, 121);
+  assert.equal(context.OneSeaLifeEvents.events.filter(e => e.requiredFlag).length, 16);
   vm.runInContext(gameSource, context, {filename:"app.js",timeout:3000});
   listeners.get("DOMContentLoaded")();
   return {
@@ -160,4 +161,4 @@ assert.equal(returned.state().alive, false);
 assert.ok(returned.state().age <= 102);
 assert.ok(returned.state().totalMoments > 120 || returned.state().age < 45);
 assert.equal(returned.past()[0].name, "테스트모험가");
-console.log("PASS: 105 event hooks, 75 original SVG scenes, multi-beat years, milestones, career, custom action, restart, death and archive.");
+console.log("PASS: 121 story hooks (16 conditional), 75 original SVG scenes, multi-beat years, milestones, career, custom action, restart, death and archive.");
