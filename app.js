@@ -955,6 +955,7 @@
       input.addEventListener("change", () => {
         const choose = document.querySelector('input[name="originMode"]:checked')?.value === "choose";
         $("choose-sea-field").classList.toggle("hidden", !choose);
+        $("choose-sea-field").hidden = !choose;
       });
     });
     $("resume-life").addEventListener("click", () => s && showGame());
