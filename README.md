@@ -7,7 +7,8 @@
 
 ## 실행
 
-- **IDE 불필요:** Code → Download ZIP으로 내려받은 뒤 압축을 풀고 index.html을 더블클릭합니다.
+- **휴대폰에서 index.html 하나로 실행 가능:** 이제 `index.html` 안에 화면 디자인, 스토리 엔진, 75개 SVG 그림이 모두 포함됩니다. Chrome(Android) 등의 브라우저에서 HTML 파일만 직접 열어도 외부 파일을 추가로 읽지 않도록 구성했습니다. 처음 받았던 구버전 파일은 삭제하거나 새 버전으로 교체해야 합니다.
+- **IDE 불필요:** Code → Download ZIP으로 최신 저장소를 내려받거나 `index.html` 파일 하나만 다운로드하여 휴대폰/PC 브라우저로 엽니다.
 - **로컬 서버 (선택):** Python이 설치되어 있다면 저장소 루트에서 아래 명령을 실행합니다.
 
 ~~~bash
@@ -99,7 +100,8 @@ GitHub Actions는 매 커밋마다 다음 항목을 검증합니다.
 
 ~~~text
 lifeGameForOnePice/
-├── index.html
+├── index.html  # 단일 파일 오프라인 빌드
+├── index.template.html
 ├── style.css
 ├── mobile.css
 ├── app.js
@@ -110,9 +112,22 @@ lifeGameForOnePice/
 │       └── ... (총 75개 SVG)
 ├── tests/smoke.js
 ├── tests/responsive.js
+├── tests/offline.js
+└── scripts/build-standalone.js
 ├── .github/workflows/verify.yml
 └── README.md
 ~~~
+
+## HTML 단일 파일 만들기
+
+디자인·이벤트·게임 코드의 원본은 `index.template.html`, `style.css`, `mobile.css`, `events.js`, `app.js`에 각각 보관합니다. 원본을 수정하면 아래 명령으로 **오프라인 단일 파일 `index.html`**을 생성할 수 있습니다.
+
+~~~bash
+node scripts/build-standalone.js
+node scripts/build-standalone.js --check
+~~~
+
+GitHub Actions의 **Build standalone mobile HTML** 워크플로도 원본이 수정되면 `index.html`을 자동 재생성하도록 구성했습니다.
 
 ## 저작권·설정 안내
 
