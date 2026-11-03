@@ -9,7 +9,7 @@ function has(pattern, source, reason) {
   assert.match(source, pattern, reason);
 }
 
-has(/<meta name="viewport" content="width=device-width, initial-scale=1">/, html, "mobile viewport meta");
+has(/<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">/, html, "mobile viewport meta");
 has(/<link rel="stylesheet" href="\.\/mobile\.css">/, html, "responsive styles loaded");
 has(/id="mobile-dock"/, html, "mobile navigation");
 has(/id="mobile-brief"/, html, "mobile state summary");
