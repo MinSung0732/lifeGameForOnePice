@@ -377,6 +377,12 @@
     if (/열매.*먹|먹.*열매/.test(t) && (state.heldFruit || state.fruitPending)) { act("eatfruit"); return; }
     if (/열매.*팔|팔.*열매/.test(t) && (state.heldFruit || state.fruitPending)) { act("sellfruit"); return; }
     if (state.fruitPending && /보관|간직/.test(t)) { act("keepfruit"); return; }
+    if (state.enemy) {
+      act(/피하|눈|모래|방어|속도|발|유인|뒤/.test(t) ? "quick" : "attack");
+      state.scene.text = "당신의 즉흥 전투 행동: “" + t + "”\n\n" + state.scene.text;
+      save(); render(); return;
+    }
+    if (state.fruitPending) { toast("발견한 열매를 먼저 먹거나, 팔거나, 보관해 주세요."); return; }
     if (/해군.*입대|해군.*지원|해군이 되|해군으로 전향/.test(t)) { step(); changeRole("해군"); save(); render(); return; }
     if (/해적.*되|해적.*전향|해적단.*결성/.test(t)) { step(); changeRole("해적"); save(); render(); return; }
     if (/혁명군.*가입|혁명군.*되/.test(t)) { step(); changeRole("혁명군"); save(); render(); return; }
