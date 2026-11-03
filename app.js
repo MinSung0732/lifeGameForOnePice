@@ -791,7 +791,12 @@
     $("mobile-brief-money").textContent = fmt(s.money) + " 베리";
     const kind = /^[a-z]+$/.test(s.scene.art || "") ? s.scene.art : "island";
     const variant = [1,2,3].includes(Number(s.scene.variant)) ? Number(s.scene.variant) : 1;
-    $("scene-image").src = "./assets/scenes/" + kind + "-" + variant + ".svg";
+    // Prefer embedded art in the standalone Android/iOS file build.
+    // Without this fallback, content:// documents cannot load adjacent SVG files.
+    const embedded = globalThis.OneSeaOfflineScenes?.[kind + "-" + variant];
+    $("scene-image").src = embedded
+      ? "data:image/svg+xml;charset=utf-8," + encodeURIComponent(embedded)
+      : "./assets/scenes/" + kind + "-" + variant + ".svg";
     $("scene-image").alt = "사건 장면: " + s.scene.title + " (" + kind + " 삽화 " + variant + ")";
     const note = $("scene-outcome");
     note.className = "outcome" + (s.scene.tone ? " " + s.scene.tone : "") + (!s.scene.note ? " hidden" : "");
