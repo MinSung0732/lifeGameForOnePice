@@ -1,169 +1,185 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#071826">
-  <meta name="description" content="위대한 항로에서 당신만의 이야기를 만드는 비공식 원피스 세계관 텍스트 RPG. 자유로운 선택, 주사위 판정, 항해와 전투.">
-  <title>GRAND LINE — 당신만의 항해 | 텍스트 RPG</title>
-  <link rel="stylesheet" href="./style.css">
-  <script src="./app.js" defer></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#081c27">
+<meta name="description" content="대해적시대의 바다에서 무작위로 태어나, 선택과 우연으로 단 한 번의 인생을 살아가는 비공식 원피스 팬 인생 시뮬레이터.">
+<title>ONE SEA, ONE LIFE — 대해적시대 인생 시뮬레이션</title>
+<link rel="stylesheet" href="./style.css">
+<script defer src="./app.js"></script>
 </head>
 <body>
-  <header class="topbar">
-    <div class="shell">
-      <div class="brand" aria-label="Grand Line 텍스트 RPG">
-        <div class="brand-mark" aria-hidden="true">✧</div>
-        <div>
-          <div class="brand-title">GRAND LINE <span style="color:var(--gold)">.</span></div>
-          <div class="brand-sub">A STORY OF YOUR OWN</div>
-        </div>
-      </div>
-      <div class="top-meta">
-        <span class="online-state"><span class="online-dot"></span>YOUR ADVENTURE AWAITS</span>
-        <button id="header-new" class="top-action hidden" type="button">새로운 모험</button>
-      </div>
-    </div>
-  </header>
+<header class="top">
+  <div class="wrap top-inner">
+    <a href="#" class="logo" id="brand" aria-label="처음 화면으로">
+      <span class="logo-icon" aria-hidden="true">✧</span>
+      <span><span class="logo-title serif">ONE SEA, ONE LIFE</span><span class="logo-sub">A GREAT AGE OF PIRATES STORY</span></span>
+    </a>
+    <nav class="nav-actions">
+      <span class="nav-label">THE GREAT AGE OF PIRATES</span>
+      <button id="history-link" class="small-btn" type="button">지난 인생</button>
+      <button id="new-life-link" class="small-btn hidden" type="button">새 인생</button>
+    </nav>
+  </div>
+</header>
 
-  <main>
-    <section id="intro" class="shell intro" aria-label="캐릭터 생성">
-      <div class="intro-copy">
-        <div class="stars"></div>
-        <div class="chapter-tag">THE AGE OF THE GREAT PIRATES</div>
-        <div class="eyebrow">WELCOME TO THE GRAND LINE</div>
-        <h1>이 바다의<br><span class="gold">다음 전설</span>은<br>바로 당신.</h1>
-        <p class="intro-lead">해적이 되어 자유를 좇을 것인가, 해군으로서 정의를 지킬 것인가. 어떤 깃발 아래에서 시작하든, 당신의 선택이 이야기를 바꿉니다.</p>
-        <div class="features" aria-label="게임 특징">
-          <span>⚄ 확률 기반 주사위 판정</span>
-          <span>⚓ 자유로운 항해</span>
-          <span>✦ 나만의 서사</span>
-          <span>▤ 자동 저장</span>
+<main>
+  <div id="landing" class="landing">
+    <section class="wrap hero" aria-label="게임 시작">
+      <div>
+        <div class="chapter">FATE IS WRITTEN BY THE SEA</div>
+        <div class="eyebrow">A LIFE SIMULATOR IN THE AGE OF PIRATES</div>
+        <h1>모든 항해는<br><em>단 한 번의</em><br>탄생에서 시작된다.</h1>
+        <p class="lead">어느 바다에서, 어떤 가정에 태어날지는 운명이 정합니다. 하지만 해적으로 살지, 해군으로 싸울지, 그저 소중한 사람들과 살아갈지는 당신의 선택입니다. 이 바다에서 한 사람의 인생을 처음부터 끝까지 살아 보세요.</p>
+        <div class="hero-facts">
+          <span class="fact">✦ 무작위 출생과 가정환경</span>
+          <span class="fact">⚓ 해마다 변화하는 삶</span>
+          <span class="fact">⚄ 확률과 인생의 갈림길</span>
+          <span class="fact">▤ 생애 기록과 다시 태어나기</span>
         </div>
-        <div class="sea-art" aria-hidden="true">
-          <svg viewBox="0 0 640 180" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="510" cy="49" r="34" fill="#f5cc83" opacity=".88"/>
-            <path d="M0 133 Q100 125 170 132 T330 130 T640 133 L640 180H0Z" fill="#215267" opacity=".7"/>
-            <path d="M0 154 Q85 145 185 152 T360 148 T640 152" fill="none" stroke="#79b3c0" stroke-width="1.5" opacity=".5"/>
-            <path d="M0 173 Q125 167 215 174 T430 170 T640 173" fill="none" stroke="#79b3c0" stroke-width="1" opacity=".45"/>
-            <path d="M68 125 Q115 61 158 124" fill="#1b424e"/>
-            <path d="M121 125 Q156 39 208 124" fill="#1b424e"/>
-            <path d="M310 123L409 123 393 145 332 145Z" fill="#d6ae75"/>
-            <path d="M361 121V33" stroke="#edd5a5" stroke-width="3"/>
-            <path d="M358 41L358 112 310 112Z" fill="#f3e3be"/>
-            <path d="M365 51L365 111 413 111Z" fill="#cfdfd5"/>
-            <path d="M350 29L375 29 365 48Z" fill="#df805f"/>
-            <path d="M274 144q8-4 20 0M425 148q15-5 30 0" stroke="#9dc6cb" stroke-width="2" fill="none" opacity=".6"/>
-            <path d="M40 43l8-8m-8 0l8 8M247 30l6-6m-6 0l6 6" stroke="#f0d9a4" opacity=".8"/>
+        <div class="horizon" aria-hidden="true">
+          <svg viewBox="0 0 650 175" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="535" cy="37" r="30" fill="#edc88e" opacity=".85"/>
+            <path d="M0 117 Q86 108 180 117 T360 114 T650 117 L650 175H0Z" fill="#265568" opacity=".75"/>
+            <path d="M0 145 Q85 136 187 146 T394 142 T650 145" fill="none" stroke="#70a3b3" opacity=".55" stroke-width="1.5"/>
+            <path d="M38 118 Q105 62 160 118M102 118Q159 44 217 118" fill="#244950"/>
+            <path d="M308 125H426L412 146H329Z" fill="#c4a072"/>
+            <path d="M372 124V14" stroke="#e9d0a6" stroke-width="3"/>
+            <path d="M367 25V119H294Z" fill="#e8e2cf"/>
+            <path d="M377 35V116H431Z" fill="#afc9ca"/>
+            <path d="M356 14H385L374 28Z" fill="#d68b68"/>
+            <path d="M270 153q15-5 31 0M438 151q13-4 28 0" fill="none" stroke="#9ac4c7" stroke-width="2" opacity=".7"/>
+            <path d="M259 35l7-7m-7 0l7 7M65 30l6-6m-6 0l6 6" stroke="#f0d6ae" opacity=".7"/>
           </svg>
         </div>
       </div>
 
-      <form id="create-form" class="form-panel" autocomplete="off">
-        <div class="eyebrow">01 / BEGIN YOUR STORY</div>
-        <h2 class="form-heading">모험가 등록서</h2>
-        <p class="form-description">바다에 첫발을 내딛기 전에, 당신을 알려주세요.</p>
+      <form id="birth-form" class="birth-panel">
+        <div class="eyebrow">01 — THE FIRST BREATH</div>
+        <h2 class="panel-heading">대해적시대에 태어나기</h2>
+        <p class="panel-desc">당신이 선택할 수 있는 것은 모든 것이 아닙니다.</p>
 
-        <div class="form-field">
-          <label class="form-label" for="char-name">01. 당신의 이름</label>
-          <input id="char-name" name="name" class="text-input" maxlength="20" required placeholder="이름을 입력하세요" />
+        <div class="field">
+          <label for="player-name">이름 <span>비우면 무작위 이름</span></label>
+          <input id="player-name" name="name" class="input" maxlength="22" placeholder="태어날 아이의 이름" autocomplete="off">
         </div>
-        <div class="form-field">
-          <div class="form-label">02. 출신 바다</div>
-          <div class="choices-grid">
-            <label class="choice-radio"><input type="radio" name="sea" value="이스트 블루" checked><span>🌅 이스트 블루</span></label>
-            <label class="choice-radio"><input type="radio" name="sea" value="웨스트 블루"><span>🌊 웨스트 블루</span></label>
-            <label class="choice-radio"><input type="radio" name="sea" value="사우스 블루"><span>☀️ 사우스 블루</span></label>
-            <label class="choice-radio"><input type="radio" name="sea" value="노스 블루"><span>❄️ 노스 블루</span></label>
+        <div class="field">
+          <div class="field-legend">태어날 바다</div>
+          <div class="choice-mode">
+            <label class="mode-radio"><input type="radio" name="originMode" value="fate" checked><span>⚄ 운명에 맡기기</span></label>
+            <label class="mode-radio"><input type="radio" name="originMode" value="choose"><span>✧ 직접 고르기</span></label>
           </div>
+          <p class="field-hint">운명 모드에서는 바다·가정·환경을 가상 확률로 추첨합니다.</p>
         </div>
-        <div class="form-field">
-          <label class="form-label" for="char-role">03. 시작 신분</label>
-          <select id="char-role" class="select-input" name="role">
-            <option value="해적">🏴‍☠️ 해적 — 자유와 보물을 향해</option>
-            <option value="해군">⚖️ 해군 — 정의의 이름으로</option>
-            <option value="혁명군">🔥 혁명군 — 세계를 바꾸기 위해</option>
-            <option value="현상금 사냥꾼">🎯 현상금 사냥꾼 — 실력으로 살아남기</option>
-            <option value="상인">💰 상인 — 바다 위의 거래와 모험</option>
-            <option value="모험가">🧭 모험가 — 미지의 바다를 향해</option>
+        <div id="choose-sea-field" class="field hidden">
+          <label for="selected-sea">출신 바다 선택</label>
+          <select id="selected-sea" class="select">
+            <option>이스트 블루</option><option>웨스트 블루</option><option>사우스 블루</option><option>노스 블루</option>
           </select>
         </div>
-        <div class="form-field">
-          <label class="form-label" for="char-look">04. 외형 및 특징 <span class="optional">선택 사항</span></label>
-          <input id="char-look" name="look" class="text-input" maxlength="100" placeholder="예: 붉은 머리, 왼쪽 눈의 흉터" />
+        <div class="field">
+          <label for="player-look">캐릭터 특징 <span>선택 사항</span></label>
+          <input id="player-look" class="input" maxlength="100" placeholder="예: 짙은 눈썹, 붉은 스카프" autocomplete="off">
         </div>
-        <div class="form-field">
-          <label class="form-label" for="char-weapon">05. 가지고 싶은 무기 <span class="optional">선택 사항</span></label>
-          <input id="char-weapon" name="weapon" class="text-input" maxlength="50" placeholder="예: 낡은 카타나, 쌍권총, 맨주먹" />
+        <div class="field">
+          <label for="player-weapon">훗날 다루고 싶은 무기 <span>선택 사항</span></label>
+          <input id="player-weapon" class="input" maxlength="60" placeholder="예: 나무 검, 쌍권총, 맨주먹" autocomplete="off">
         </div>
-        <button type="submit" class="button-primary button-wide">⚓ 나의 항해 시작하기</button>
-        <p class="form-tip">모험 기록은 현재 브라우저에 자동으로 저장됩니다.</p>
+        <button type="submit" class="gold-btn">⚓ 이 바다에 태어나기</button>
+        <button type="button" id="resume-life" class="outline-btn hidden" style="width:100%;margin-top:10px">↻ 지난 인생 이어서 살기</button>
+        <p class="soft-label">가입 없이 플레이 · 브라우저 자동 저장</p>
       </form>
     </section>
 
-    <section id="game" class="shell game-wrap hidden" aria-label="게임 화면">
-      <div class="game-heading">
-        <div>
-          <div class="eyebrow">YOUR STORY, YOUR OCEAN</div>
-          <h1>항해 일지 <span style="color:var(--gold)">✦</span></h1>
-        </div>
-        <div class="small"><span class="online-dot"></span>모험 진행 중<br>당신의 선택이 운명을 만듭니다</div>
-      </div>
-      <div class="game-grid">
-        <div class="main-column">
-          <article class="scene-card" aria-live="polite" aria-atomic="false">
-            <div class="scene-top">
-              <span id="scene-kicker" class="scene-kicker">EAST BLUE · ADVENTURE</span>
-              <span id="turn-pill" class="turn-pill">TURN 01</span>
-            </div>
-            <div class="scene-art" role="img" aria-label="햇빛 아래 섬과 항해하는 작은 범선의 삽화">
-              <div class="sun"></div><div class="mountain"></div><div class="island"></div>
-              <svg class="boat" viewBox="0 0 150 100" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9 68H141L123 91H31Z" fill="#b88455" stroke="#6d5d4b" stroke-width="2"/>
-                <path d="M75 69V3" stroke="#ebce94" stroke-width="3"/>
-                <path d="M72 11V61H28Z" fill="#f5e6c9"/>
-                <path d="M79 16V61H120Z" fill="#d3ded4"/>
-                <path d="M63 3L83 3 79 18Z" fill="#db745d"/>
-                <path d="M37 73h77" stroke="#6d5d4b" stroke-width="2"/>
-              </svg>
-              <div class="wave">～～～～～～～～～～～～～～～～～～～～～～～～</div>
-              <div id="art-label" class="art-label">A NEW HORIZON</div>
-            </div>
-            <h2 id="scene-title" class="scene-title"></h2>
-            <div id="story-text" class="story-text"></div>
-            <div id="narrative-note" class="narrative-note hidden"></div>
-            <div class="divider"></div>
-            <div class="action-heading"><h3>다음 행동을 선택하세요</h3><span>번호로 선택하거나 직접 입력</span></div>
-            <div id="action-list" class="actions"></div>
-            <form id="free-form" class="free-form">
-              <input id="free-input" class="free-input" autocomplete="off" maxlength="150" placeholder="당신만의 행동을 입력하세요… (예: 술집에서 정보를 모은다)" aria-label="자유 행동 입력" required>
-              <button class="free-send" type="submit">행동하기 ↗</button>
-            </form>
-            <p class="free-hint">선택지 외의 행동도 가능합니다. 입력한 행동에 맞춰 판정과 이야기가 이어집니다.</p>
-            <section id="inline-status" class="mini-status" aria-label="현재 캐릭터 상태"></section>
-          </article>
-        </div>
-
-        <aside class="sidebar" aria-label="캐릭터 및 플레이 기록">
-          <section class="sidebar-card">
-            <div class="side-title"><span>⚑ 캐릭터 상태</span><span>STATUS</span></div>
-            <div id="side-character"></div>
-          </section>
-          <section class="sidebar-card">
-            <div class="side-title"><span>◈ 항해 기록</span><span>JOURNAL</span></div>
-            <div id="side-log"></div>
-            <div class="side-controls">
-              <button id="export-save" type="button">기록 내보내기</button>
-              <button id="import-save" type="button">기록 불러오기</button>
-              <input id="import-file" type="file" accept=".json,application/json" class="hidden" aria-label="저장 파일 선택">
-            </div>
-          </section>
-        </aside>
-      </div>
+    <section class="wrap how" aria-label="게임 진행 방식">
+      <div class="how-card"><span class="how-no">01.</span><b>운명으로 태어나다</b><p>출신 바다, 가족, 경제적 환경이 삶의 출발점을 만듭니다.</p></div>
+      <div class="how-card"><span class="how-no">02.</span><b>해마다 성장하다</b><p>건강, 행복, 지식, 관계가 매해 달라집니다.</p></div>
+      <div class="how-card"><span class="how-no">03.</span><b>자신의 길을 택하다</b><p>해적, 해군, 혁명군, 상인 등 다양한 길로 뻗어갑니다.</p></div>
+      <div class="how-card"><span class="how-no">04.</span><b>하나의 삶을 남기다</b><p>위대한 항로에 닿든 평범히 늙든 나만의 생애가 기록됩니다.</p></div>
     </section>
-  </main>
 
-  <footer class="site-footer"><div class="shell">GRAND LINE — A FAN-MADE TEXT ADVENTURE · 비공식 팬 프로젝트이며 원작과 무관합니다.</div></footer>
-  <div id="toast" role="status" aria-live="polite" class="toast"></div>
+    <section id="history-section" class="wrap history-section">
+      <div class="section-heading"><div><div class="eyebrow">PAST LIVES</div><h2>지나온 인생들</h2></div><button id="clear-history" type="button" class="clear-btn">기록 비우기</button></div>
+      <div id="history-list" class="history-list"><p class="empty">아직 완주한 인생이 없습니다.</p></div>
+    </section>
+  </div>
+
+  <section id="game" class="wrap game hidden" aria-label="인생 시뮬레이션">
+    <div class="game-top">
+      <div><div class="eyebrow">ONE SEA · ONE LIFE</div><h1>당신의 항해 일지 <span class="gold">✣</span></h1></div>
+      <div class="game-meta">한 해의 선택이 다음 해의 가능성을 바꿉니다.<br>모든 사건과 확률은 허구의 게임 규칙입니다.</div>
+    </div>
+
+    <div class="control-strip" id="control-strip">
+      <button id="next-year" class="next-btn" type="button">⏭ 한 해 보내기</button>
+      <label class="inline-tag" for="focus-select">올해의 초점</label>
+      <select id="focus-select" aria-label="올해의 초점">
+        <option value="study">배움</option><option value="training">수련</option>
+        <option value="bond">인연</option><option value="work">일과 재산</option>
+        <option value="explore">모험</option><option value="rest">휴식</option>
+      </select>
+      <label class="inline-tag" for="speed-select">속도</label>
+      <select id="speed-select" aria-label="자동 진행 속도">
+        <option value="1800">느리게</option><option value="900" selected>보통</option><option value="350">빠르게</option>
+      </select>
+      <button id="auto-button" class="auto-btn" type="button" aria-pressed="false">▷ 자동 진행</button>
+    </div>
+
+    <div class="track-card">
+      <div class="track-head"><span>한 사람의 삶</span><span id="life-stage-text">0세 · 탄생</span></div>
+      <div class="life-rail"><span id="life-progress" style="width:0%"></span></div>
+      <div class="track-labels"><span>탄생</span><span>유년</span><span>청년</span><span>중년</span><span>노년</span><span>100세</span></div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <article class="scene" aria-live="polite">
+          <div class="story-head"><span id="scene-chapter" class="stage">PROLOGUE — BIRTH</span><span id="age-pill" class="age-pill">0세 · 탄생</span></div>
+          <div class="ocean-window" role="img" aria-label="해안과 수평선 위의 항해선 일러스트">
+            <span id="place-tag" class="place-tag">THE SEA</span>
+            <svg viewBox="0 0 720 155" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="567" cy="37" r="29" fill="#f2d5a5" opacity=".88"/>
+              <path d="M0 94 Q85 89 170 98T350 98T530 94T720 98V155H0Z" fill="#245069"/>
+              <path d="M0 123Q110 115 211 124T415 122T720 123" fill="none" stroke="#a9cad0" opacity=".4"/>
+              <path d="M0 150Q125 143 263 151T523 150T720 148" fill="none" stroke="#a9cad0" opacity=".4"/>
+              <path d="M0 96Q70 47 141 97M93 95Q149 23 198 94" fill="#264950"/>
+              <g transform="translate(360 6)">
+                <path d="M0 96H142L125 123H24Z" fill="#b78a61" stroke="#685941" stroke-width="2"/>
+                <path d="M77 99V0" stroke="#efe1c0" stroke-width="4"/>
+                <path d="M73 6V90H13Z" fill="#f0e4ce"/><path d="M82 14V90H130Z" fill="#bed1cb"/>
+                <path d="M68 0H89L81 16Z" fill="#c17b5f"/>
+              </g>
+            </svg>
+          </div>
+          <h2 id="scene-title">어느 바다의 새로운 숨결</h2>
+          <div id="scene-story" class="story"></div>
+          <div id="scene-outcome" class="outcome hidden"></div>
+          <div id="ending-panel" class="ending hidden"></div>
+          <div id="choices-wrap">
+            <div class="choice-header"><b id="choices-label">올해는 어떻게 살아갈까요?</b><span>2~4개 선택지 · 직접 행동도 가능</span></div>
+            <div id="actions" class="actions"></div>
+            <form id="free-action-form" class="free-form">
+              <input id="free-action" class="input" maxlength="160" autocomplete="off" placeholder="직접 행동하기 — 예: 검술을 수련한다" aria-label="직접 행동하기" required>
+              <button type="submit">행동하기 ↗</button>
+            </form>
+            <p class="free-hint">자유 입력은 키워드 및 주사위 판정으로 처리됩니다. 생성형 AI 연결 버전은 아닙니다.</p>
+          </div>
+          <div id="birth-record" class="summary hidden"></div>
+        </article>
+      </div>
+      <aside class="sidebar">
+        <section class="side-card"><div class="side-head"><span>✣ 인물 기록</span><span>PROFILE</span></div><div id="profile"></div></section>
+        <section class="side-card"><div class="side-head"><span>◈ 인생 연표</span><span>JOURNAL</span></div><div id="journal" class="journal"></div></section>
+        <section class="side-card"><div class="side-head"><span>↧ 기록 보관</span><span>ARCHIVE</span></div>
+          <button id="export-life" type="button" class="small-btn" style="width:100%">현재 인생 JSON 저장</button>
+          <p class="side-note" style="margin:9px 0 0">현재 기기에서만 자동 저장됩니다. 브라우저 데이터를 삭제하면 기록도 사라질 수 있어요.</p>
+        </section>
+      </aside>
+    </div>
+  </section>
+</main>
+<footer class="footer"><div class="wrap">ONE SEA, ONE LIFE · 비공식 팬메이드 창작 게임 · ONE PIECE와 그 등장 세계관의 권리는 원권리자에게 있습니다. · 1in8b.life와 무관한 독립 구현</div></footer>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
