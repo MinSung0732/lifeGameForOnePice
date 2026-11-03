@@ -33,3 +33,5 @@ jobs:
           grep -Fq 'OneSeaOfflineScenes' index.html
       - name: Check reproducible offline build
         run: node scripts/build-standalone.js --check
+      - name: Validate single-file Android and iPhone playback package
+        run: node tests/offline.js
