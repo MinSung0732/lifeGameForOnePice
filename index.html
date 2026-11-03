@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071826">
+  <meta name="description" content="위대한 항로에서 당신만의 이야기를 만드는 비공식 원피스 세계관 텍스트 RPG. 자유로운 선택, 주사위 판정, 항해와 전투.">
+  <title>GRAND LINE — 당신만의 항해 | 텍스트 RPG</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell">
+      <div class="brand" aria-label="Grand Line 텍스트 RPG">
+        <div class="brand-mark" aria-hidden="true">✧</div>
+        <div>
+          <div class="brand-title">GRAND LINE <span style="color:var(--gold)">.</span></div>
+          <div class="brand-sub">A STORY OF YOUR OWN</div>
+        </div>
+      </div>
+      <div class="top-meta">
+        <span class="online-state"><span class="online-dot"></span>YOUR ADVENTURE AWAITS</span>
+        <button id="header-new" class="top-action hidden" type="button">새로운 모험</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="intro" class="shell intro" aria-label="캐릭터 생성">
+      <div class="intro-copy">
+        <div class="stars"></div>
+        <div class="chapter-tag">THE AGE OF THE GREAT PIRATES</div>
+        <div class="eyebrow">WELCOME TO THE GRAND LINE</div>
+        <h1>이 바다의<br><span class="gold">다음 전설</span>은<br>바로 당신.</h1>
+        <p class="intro-lead">해적이 되어 자유를 좇을 것인가, 해군으로서 정의를 지킬 것인가. 어떤 깃발 아래에서 시작하든, 당신의 선택이 이야기를 바꿉니다.</p>
+        <div class="features" aria-label="게임 특징">
+          <span>⚄ 확률 기반 주사위 판정</span>
+          <span>⚓ 자유로운 항해</span>
+          <span>✦ 나만의 서사</span>
+          <span>▤ 자동 저장</span>
+        </div>
+        <div class="sea-art" aria-hidden="true">
+          <svg viewBox="0 0 640 180" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="510" cy="49" r="34" fill="#f5cc83" opacity=".88"/>
+            <path d="M0 133 Q100 125 170 132 T330 130 T640 133 L640 180H0Z" fill="#215267" opacity=".7"/>
+            <path d="M0 154 Q85 145 185 152 T360 148 T640 152" fill="none" stroke="#79b3c0" stroke-width="1.5" opacity=".5"/>
+            <path d="M0 173 Q125 167 215 174 T430 170 T640 173" fill="none" stroke="#79b3c0" stroke-width="1" opacity=".45"/>
+            <path d="M68 125 Q115 61 158 124" fill="#1b424e"/>
+            <path d="M121 125 Q156 39 208 124" fill="#1b424e"/>
+            <path d="M310 123L409 123 393 145 332 145Z" fill="#d6ae75"/>
+            <path d="M361 121V33" stroke="#edd5a5" stroke-width="3"/>
+            <path d="M358 41L358 112 310 112Z" fill="#f3e3be"/>
+            <path d="M365 51L365 111 413 111Z" fill="#cfdfd5"/>
+            <path d="M350 29L375 29 365 48Z" fill="#df805f"/>
+            <path d="M274 144q8-4 20 0M425 148q15-5 30 0" stroke="#9dc6cb" stroke-width="2" fill="none" opacity=".6"/>
+            <path d="M40 43l8-8m-8 0l8 8M247 30l6-6m-6 0l6 6" stroke="#f0d9a4" opacity=".8"/>
+          </svg>
+        </div>
+      </div>
+
+      <form id="create-form" class="form-panel" autocomplete="off">
+        <div class="eyebrow">01 / BEGIN YOUR STORY</div>
+        <h2 class="form-heading">모험가 등록서</h2>
+        <p class="form-description">바다에 첫발을 내딛기 전에, 당신을 알려주세요.</p>
+
+        <div class="form-field">
+          <label class="form-label" for="char-name">01. 당신의 이름</label>
+          <input id="char-name" name="name" class="text-input" maxlength="20" required placeholder="이름을 입력하세요" />
+        </div>
+        <div class="form-field">
+          <div class="form-label">02. 출신 바다</div>
+          <div class="choices-grid">
+            <label class="choice-radio"><input type="radio" name="sea" value="이스트 블루" checked><span>🌅 이스트 블루</span></label>
+            <label class="choice-radio"><input type="radio" name="sea" value="웨스트 블루"><span>🌊 웨스트 블루</span></label>
+            <label class="choice-radio"><input type="radio" name="sea" value="사우스 블루"><span>☀️ 사우스 블루</span></label>
+            <label class="choice-radio"><input type="radio" name="sea" value="노스 블루"><span>❄️ 노스 블루</span></label>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="char-role">03. 시작 신분</label>
+          <select id="char-role" class="select-input" name="role">
+            <option value="해적">🏴‍☠️ 해적 — 자유와 보물을 향해</option>
+            <option value="해군">⚖️ 해군 — 정의의 이름으로</option>
+            <option value="혁명군">🔥 혁명군 — 세계를 바꾸기 위해</option>
+            <option value="현상금 사냥꾼">🎯 현상금 사냥꾼 — 실력으로 살아남기</option>
+            <option value="상인">💰 상인 — 바다 위의 거래와 모험</option>
+            <option value="모험가">🧭 모험가 — 미지의 바다를 향해</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="char-look">04. 외형 및 특징 <span class="optional">선택 사항</span></label>
+          <input id="char-look" name="look" class="text-input" maxlength="100" placeholder="예: 붉은 머리, 왼쪽 눈의 흉터" />
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="char-weapon">05. 가지고 싶은 무기 <span class="optional">선택 사항</span></label>
+          <input id="char-weapon" name="weapon" class="text-input" maxlength="50" placeholder="예: 낡은 카타나, 쌍권총, 맨주먹" />
+        </div>
+        <button type="submit" class="button-primary button-wide">⚓ 나의 항해 시작하기</button>
+        <p class="form-tip">모험 기록은 현재 브라우저에 자동으로 저장됩니다.</p>
+      </form>
+    </section>
+
+    <section id="game" class="shell game-wrap hidden" aria-label="게임 화면">
+      <div class="game-heading">
+        <div>
+          <div class="eyebrow">YOUR STORY, YOUR OCEAN</div>
+          <h1>항해 일지 <span style="color:var(--gold)">✦</span></h1>
+        </div>
+        <div class="small"><span class="online-dot"></span>모험 진행 중<br>당신의 선택이 운명을 만듭니다</div>
+      </div>
+      <div class="game-grid">
+        <div class="main-column">
+          <article class="scene-card" aria-live="polite" aria-atomic="false">
+            <div class="scene-top">
+              <span id="scene-kicker" class="scene-kicker">EAST BLUE · ADVENTURE</span>
+              <span id="turn-pill" class="turn-pill">TURN 01</span>
+            </div>
+            <div class="scene-art" role="img" aria-label="햇빛 아래 섬과 항해하는 작은 범선의 삽화">
+              <div class="sun"></div><div class="mountain"></div><div class="island"></div>
+              <svg class="boat" viewBox="0 0 150 100" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 68H141L123 91H31Z" fill="#b88455" stroke="#6d5d4b" stroke-width="2"/>
+                <path d="M75 69V3" stroke="#ebce94" stroke-width="3"/>
+                <path d="M72 11V61H28Z" fill="#f5e6c9"/>
+                <path d="M79 16V61H120Z" fill="#d3ded4"/>
+                <path d="M63 3L83 3 79 18Z" fill="#db745d"/>
+                <path d="M37 73h77" stroke="#6d5d4b" stroke-width="2"/>
+              </svg>
+              <div class="wave">～～～～～～～～～～～～～～～～～～～～～～～～</div>
+              <div id="art-label" class="art-label">A NEW HORIZON</div>
+            </div>
+            <h2 id="scene-title" class="scene-title"></h2>
+            <div id="story-text" class="story-text"></div>
+            <div id="narrative-note" class="narrative-note hidden"></div>
+            <div class="divider"></div>
+            <div class="action-heading"><h3>다음 행동을 선택하세요</h3><span>번호로 선택하거나 직접 입력</span></div>
+            <div id="action-list" class="actions"></div>
+            <form id="free-form" class="free-form">
+              <input id="free-input" class="free-input" autocomplete="off" maxlength="150" placeholder="당신만의 행동을 입력하세요… (예: 술집에서 정보를 모은다)" aria-label="자유 행동 입력" required>
+              <button class="free-send" type="submit">행동하기 ↗</button>
+            </form>
+            <p class="free-hint">선택지 외의 행동도 가능합니다. 입력한 행동에 맞춰 판정과 이야기가 이어집니다.</p>
+            <section id="inline-status" class="mini-status" aria-label="현재 캐릭터 상태"></section>
+          </article>
+        </div>
+
+        <aside class="sidebar" aria-label="캐릭터 및 플레이 기록">
+          <section class="sidebar-card">
+            <div class="side-title"><span>⚑ 캐릭터 상태</span><span>STATUS</span></div>
+            <div id="side-character"></div>
+          </section>
+          <section class="sidebar-card">
+            <div class="side-title"><span>◈ 항해 기록</span><span>JOURNAL</span></div>
+            <div id="side-log"></div>
+            <div class="side-controls">
+              <button id="export-save" type="button">기록 내보내기</button>
+              <button id="import-save" type="button">기록 불러오기</button>
+              <input id="import-file" type="file" accept=".json,application/json" class="hidden" aria-label="저장 파일 선택">
+            </div>
+          </section>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"><div class="shell">GRAND LINE — A FAN-MADE TEXT ADVENTURE · 비공식 팬 프로젝트이며 원작과 무관합니다.</div></footer>
+  <div id="toast" role="status" aria-live="polite" class="toast"></div>
+</body>
+</html>
