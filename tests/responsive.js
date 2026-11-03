@@ -1,7 +1,8 @@
 /* Mobile UI contract checks — no browser dependencies. */
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const html = fs.readFileSync("index.html", "utf8");
+const html = fs.readFileSync("index.template.html", "utf8");
+const standalone = fs.readFileSync("index.html", "utf8");
 const css = fs.readFileSync("mobile.css", "utf8");
 const app = fs.readFileSync("app.js", "utf8");
 
@@ -35,4 +36,13 @@ has(/\$\("mobile-dock"\)\.addEventListener\("click"/, app, "dock navigation is w
 for (const id of ["mobile-brief-name", "mobile-brief-health", "mobile-brief-money"]) {
   has(new RegExp('\\$\\("' + id + '"\\)\\.textContent'), app, "compact status updates: " + id);
 }
-console.log("PASS: mobile UI anchors, tap targets, 320px breakpoint, safe areas and touch navigation.");
+// Verify source stays editable separately from the generated standalone build.
+assert.ok(fs.existsSync("scripts/build-standalone.js"));
+if (standalone.includes("Standalone build:")) {
+  has(/id="one-sea-inline-styles"/, standalone, "all CSS is embedded");
+  has(/id="one-sea-scene-catalog"/, standalone, "scene artwork is embedded");
+  has(/globalThis\.OneSeaOfflineScenes/, standalone, "embedded scene runtime is present");
+  assert.ok(!standalone.includes('<script defer src="./app.js">'));
+  assert.ok(!standalone.includes('<link rel="stylesheet" href="./mobile.css">'));
+}
+console.log("PASS: mobile UI anchors, tap targets, 320px breakpoint, safe areas, touch navigation and standalone support.");
