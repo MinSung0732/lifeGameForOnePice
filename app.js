@@ -786,6 +786,9 @@
     $("place-tag").textContent = (s.grandLine ? "GRAND LINE" : s.sea.toUpperCase()) + " · " + s.hometown;
     $("scene-title").textContent = s.scene.title;
     $("scene-story").textContent = s.scene.body;
+    $("mobile-brief-name").textContent = s.name + " · " + s.age + "세";
+    $("mobile-brief-health").textContent = "♥ " + s.stats.health + "/100";
+    $("mobile-brief-money").textContent = fmt(s.money) + " 베리";
     const kind = /^[a-z]+$/.test(s.scene.art || "") ? s.scene.art : "island";
     const variant = [1,2,3].includes(Number(s.scene.variant)) ? Number(s.scene.variant) : 1;
     $("scene-image").src = "./assets/scenes/" + kind + "-" + variant + ".svg";
@@ -868,6 +871,13 @@
       '<span class="small">' + esc(x.cause) + ' · ' + fmt(x.money) + ' 베리</span></button>').join("")
       : '<p class="empty">아직 완주한 인생이 없습니다. 첫 삶을 시작해 보세요.</p>';
   }
+  function scrollToNewStory() {
+    // On narrow screens the player is typically scrolled down to the choice buttons.
+    // Bring the next scene into view, without moving the desktop page unnecessarily.
+    if (window.matchMedia && window.matchMedia("(max-width: 720px)").matches) {
+      $("scene-title").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
   function showGame() {
     render();
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -946,19 +956,39 @@
     $("history-link").addEventListener("click", () => { showLanding(); $("history-section").scrollIntoView({ behavior:"smooth" }); });
     $("brand").addEventListener("click", ev => { ev.preventDefault(); showLanding(); });
     $("new-life-link").addEventListener("click", newLife);
-    $("next-year").addEventListener("click", () => advanceYear());
+    $("next-year").addEventListener("click", () => {
+      advanceYear();
+      scrollToNewStory();
+    });
     $("auto-button").addEventListener("click", toggleAuto);
     $("speed-select").addEventListener("change", () => { if (interval != null) { stopAuto(); toggleAuto(); } });
     $("focus-select").addEventListener("change", () => { if (s) { s.focus = $("focus-select").value; store(); } });
     $("actions").addEventListener("click", ev => {
       const btn = ev.target.closest("button[data-id]");
-      if (btn) { stopAuto(); handleChoice(btn.getAttribute("data-id")); }
+      if (btn) {
+        stopAuto();
+        handleChoice(btn.getAttribute("data-id"));
+        scrollToNewStory();
+      }
+    });
+    $("mobile-dock").addEventListener("click", ev => {
+      const button = ev.target.closest("button[data-jump]");
+      if (!button) return;
+      const targetId = button.getAttribute("data-jump");
+      if (!["scene-title", "choices-wrap", "profile-card", "journal-card"].includes(targetId)) return;
+      $(targetId).scrollIntoView({ behavior: "smooth", block: "start" });
     });
     $("free-action-form").addEventListener("submit", ev => {
       ev.preventDefault();
-      const t = $("free-action").value.trim();
-      $("free-action").value = "";
-      if (t) { stopAuto(); customAction(t); }
+      const input = $("free-action");
+      const t = input.value.trim();
+      input.value = "";
+      if (t) {
+        stopAuto();
+        input.blur?.();
+        customAction(t);
+        scrollToNewStory();
+      }
     });
     $("clear-history").addEventListener("click", () => {
       if (window.confirm("완료한 모든 인생 기록을 삭제하시겠습니까? 되돌릴 수 없습니다.")) {
