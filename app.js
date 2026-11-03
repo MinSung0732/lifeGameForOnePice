@@ -411,7 +411,7 @@
       scene("뜻대로 흘러가지 않은 일", "당신은 스스로 정한 행동을 시도했다.\n\n“" + t + "”\n\n하지만 예상과 달리 일이 꼬여 버렸고 작은 부상을 입었다. 실패한 경험도 당신의 다음 선택에 영향을 줄 것이다.", baseChoices(), result(r) + " · 즉흥 행동 실패 · 체력 -3", "fail");
       addLog("자유 행동 실패", t.slice(0, 45));
     }
-    if (!defeat()) { save(); render(); }
+    defeat(); save(); render();
   }
   function act(kind) {
     if (!state) return;
