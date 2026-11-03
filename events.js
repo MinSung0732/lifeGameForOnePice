@@ -343,6 +343,45 @@
     }))
   );
 
+  // Memories from past decisions unlock follow-up episodes much later in life.
+  // Columns: id, requiredFlag, threshold, category, minAge, maxAge, title, story, a, b, c, optionalRole, onlyGrand.
+  const echoes = [
+    ["return-letter","family",3,"family",16,75,"고향에서 온 오래된 편지","멀리 떠난 뒤에도 가족의 목소리를 잊지 않았다. 오늘은 고향에서 어린 시절의 일을 기억하는 편지가 도착했다.","답장을 정성껏 쓴다","옛 편지와 날짜를 비교한다","일정을 바꾸어 고향에 다녀온다"],
+    ["old-map","learning",2,"map",16,90,"수업 시간에 그린 해도","어릴 적 교실에서 그렸던 지도를 우연히 다시 발견했다. 그때는 틀렸다고 생각한 선 하나가 실제 항로와 묘하게 겹친다.","지도의 차이를 분석한다","옛 친구의 기억을 묻는다","실제 항로를 따라 움직여 본다"],
+    ["unknown-sailor","kindness",4,"harbor",19,80,"은혜를 잊지 않은 낯선 선원","낯선 선원이 다가와 한참 전 당신이 누군가를 도왔다는 이야기를 꺼낸다. 그는 작은 빚을 갚고 싶다고 한다.","사연을 자세히 듣는다","다른 이에게 도움을 돌린다","함께 중요한 짐을 운반한다"],
+    ["friend-reunion","friendship",3,"bond",25,90,"언덕 위에서 다시 만난 친구","어릴 적 당신과 같은 언덕에 앉아 바다를 꿈꾸던 친구가 긴 항해 끝에 돌아왔다. 그때의 웃음은 조금도 변하지 않았다.","서로의 삶을 나눈다","지나온 시간의 의미를 묻는다","함께 그때의 길을 다시 걷는다"],
+    ["trusted-crew","crew",3,"ship",20,85,"동료에게 맡긴 밤의 조타","거센 파도 속에서 조타를 맡길 사람이 필요하다. 수년간 함께한 동료가 조용히 손을 내민다.","항해 기록을 같이 검토한다","동료를 믿고 조타를 맡긴다","둘이서 교대로 위험을 넘는다"],
+    ["hears-the-tide","navigation",4,"grandline",22,95,"로그 포스가 가리키지 않는 암초","로그 포스는 다음 섬을 향하고 있지만, 오랜 항해의 감각은 바로 앞에 위험한 암초가 있음을 알려 준다.","로그 포스와 해류를 비교한다","오랜 동료에게 확인을 구한다","직접 조타해 위험을 피해 나간다",null,true],
+    ["justice-first","justice",3,"marine",20,80,"명령서와 구조 신호","해군 본부의 명령은 즉시 출항하라는 것이지만, 가까운 섬에서 민간인의 구조 신호가 들어왔다. 무엇이 올바른 정의일까?","일단 구조 작전을 지휘한다","상부에 변경 승인을 요청한다","동료와 함께 우회 항로를 연다","해군"],
+    ["flag-and-price","freedom",3,"pirate",20,85,"자유의 깃발에 붙은 가격","이제 당신의 수배서를 알아보는 항구가 늘었다. 낯선 어린아이가 그림 속 사람과 눈앞의 당신을 번갈아 쳐다본다.","당당하게 신분을 드러낸다","수배서에 담긴 이야기를 설명한다","아이와 마을의 안전을 먼저 챙긴다","해적"],
+    ["revolution-bonds","solidarity",3,"revolutionary",20,80,"모여드는 작은 목소리","예전에 도움을 받았던 섬 사람들이 다시 연락을 보내 왔다. 이번에는 그들이 다른 사람을 돕고 싶어 한다.","상황을 정리해 계획한다","사람들의 뜻을 모은다","위험을 감수하고 직접 움직인다","혁명군"],
+    ["trade-routes","trade",3,"trade",22,95,"상단에 남은 오래된 약속","몇 년 전 작은 거래를 했던 상인이 다시 찾아와 중요한 항로의 독점 거래를 제안한다. 이득이 크지만 신뢰가 먼저다.","거래 조건을 꼼꼼하게 살핀다","오래된 신뢰를 소중히 여긴다","직접 물량을 실어 나른다","상인"],
+    ["trained-step","discipline",4,"dojo",19,80,"스승이 가르친 마지막 자세","어릴 때는 이해하지 못했던 스승의 말이 싸움을 앞두자 문득 떠오른다. 몸은 기억을 따라 움직이기 시작한다.","같은 동작을 끝까지 반복한다","몸의 중심을 바꿔 본다","마음부터 가라앉히고 관찰한다"],
+    ["healed-others","health",3,"health",30,100,"다른 사람의 손을 잡아 주는 날","아플 때 받았던 도움을 기억하고 있다. 지금 당신 앞에도 회복이 더딘 사람이 앉아 있다.","알아 둔 치료 지식을 나눈다","곁을 지키며 이야기를 듣는다","필요한 약초를 찾아 움직인다"],
+    ["old-resolve","resilience",4,"legacy",50,101,"쉽게 무너지지 않는 사람","세월이 흐르자 사람들은 당신이 겪어 온 실패를 묻곤 한다. 떠나지 않고 버텼던 날들이 누군가에게 용기를 준다.","실패한 이야기도 나눈다","지나온 기록을 정리한다","함께 실천할 작은 일을 찾는다"],
+    ["new-navigator","explorer",3,"island",20,85,"다시 만난 미지의 섬","예전에 스치듯 보았던 낯선 지형을 다른 해도에서 발견했다. 그곳은 아직 아무도 자세히 기록하지 않았다.","두 지도의 차이를 연구한다","함께할 탐험자를 찾는다","작은 배를 준비해 다시 간다"],
+    ["new-students","legacy",3,"legacy",65,102,"늦은 밤 찾아온 제자","한때 당신이 도왔던 젊은이가 이제 훌륭한 항해사가 되어 돌아왔다. 그리고 자신의 제자를 함께 데려왔다.","시간을 내어 이야기를 나눈다","보관해 둔 항해일지를 건넨다","세 사람이 함께 바다를 바라본다"],
+    ["forgone-ransom","justice",4,"bounty",20,80,"가격보다 중요한 진실","수배 금액은 높지만 죄목이 명확하지 않은 사람을 만났다. 돈을 얻는 선택이 반드시 옳은 것은 아니다.","증거가 사실인지 조사한다","피해자와 목격자의 말을 듣는다","당장 위험한 상황부터 막는다","현상금 사냥꾼"]
+  ];
+  for (const row of echoes) {
+    const [id, flag, threshold, category, minAge, maxAge, title, story, a, b, c, role, onlyGrand] = row;
+    const group = groups[category];
+    events.push({
+      id: "echo-" + id, category, art: group.art, title, story,
+      ages: [minAge, maxAge], roles: role ? [role] : null,
+      onlyGrand: !!onlyGrand, requiredFlag: flag, flagThreshold: threshold,
+      focus: group.focus || [],
+      choices: [a,b,c].map((label, idx) => ({
+        id: "echo-" + id + "-" + idx, title: label,
+        help: idx === 0 ? "기억을 바탕으로 판단" : idx === 1 ? "사람과 경험을 활용" : "행동으로 증명하기",
+        stat: group.rules[idx][0], dc: group.rules[idx][1],
+        success: group.rules[idx][2], failure: group.rules[idx][3],
+        successText: group.rules[idx][4], failureText: group.rules[idx][5],
+        flag: group.rules[idx][6]
+      }))
+    });
+  }
+
   global.OneSeaLifeEvents = {
     events,
     categories: Object.keys(groups),
@@ -350,13 +389,15 @@
       const recent = new Set((state.recentEvents || []).slice(-28));
       const eligible = events.filter(e => state.age >= e.ages[0] && state.age <= e.ages[1]
         && (!e.roles || e.roles.includes(state.role))
-        && (!e.onlyGrand || state.grandLine));
+        && (!e.onlyGrand || state.grandLine)
+        && (!e.requiredFlag || (state.lifeFlags?.[e.requiredFlag] || 0) >= e.flagThreshold));
       const pool = eligible.filter(e => !recent.has(e.id));
       const available = pool.length ? pool : eligible;
       const weighed = available.map(e => {
         let score = 1;
         if (e.focus.includes(action)) score *= 3.3;
         if (e.category === "grandline") score *= 2;
+        if (e.requiredFlag) score *= 2.4;
         if (e.roles && e.roles.includes(state.role)) score *= 2;
         if (e.category === "family" && state.age > 10) score *= .75;
         if (e.category === "legacy" && state.age > 75) score *= 1.5;
