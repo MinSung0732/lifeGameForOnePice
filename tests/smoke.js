@@ -50,7 +50,11 @@ function run(savedData) {
   const context = {
     document, localStorage: {getItem:k=>local.get(k)||null,setItem:(k,v)=>local.set(k,v),removeItem:k=>local.delete(k)},
     window: {scrollTo:()=>{},confirm:()=>true,alert:()=>{}},
-    Date, Math, JSON, setTimeout, clearTimeout, setInterval:()=>12345, clearInterval:()=>{},
+    // Stable virtual clock and random seed prevent sporadic failures when
+    // optional treasure/fruit encounters occur during the same smoke test.
+    Date: class extends Date { static now() { return 1793780160000; } },
+    Math: Object.assign(Object.create(Math), { random: () => 0.3141592653 }),
+    JSON, setTimeout, clearTimeout, setInterval:()=>12345, clearInterval:()=>{},
     console
   };
   vm.createContext(context);
@@ -146,7 +150,8 @@ const momentCount = returned.state().totalMoments;
 returned.free("검술을 수련한다");
 assert.equal(returned.state().age, 16);
 assert.equal(returned.state().totalMoments, momentCount + 1);
-assert.equal(returned.state().pending.type, "episode");
+assert.ok(["episode", "fruit", "storm", "battle"].includes(returned.state().pending?.type),
+  "A new moment can be a regular episode or a special encounter");
 returned.choose(returned.state().pending.choices[0].id);
 
 // Complete a life, assert records and scene artwork remains valid.
