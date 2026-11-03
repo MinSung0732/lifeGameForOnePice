@@ -7,6 +7,7 @@
 <meta name="description" content="대해적시대의 바다에서 무작위로 태어나, 선택과 우연으로 단 한 번의 인생을 살아가는 비공식 원피스 팬 인생 시뮬레이터.">
 <title>ONE SEA, ONE LIFE — 대해적시대 인생 시뮬레이션</title>
 <link rel="stylesheet" href="./style.css">
+<link rel="stylesheet" href="./mobile.css">
 <script defer src="./events.js"></script>
 <script defer src="./app.js"></script>
 </head>
@@ -112,18 +113,20 @@
       <div class="game-meta">매년 여러 사건을 겪으며 선택이 누적됩니다.<br>모든 사건과 확률은 허구의 게임 규칙입니다.</div>
     </div>
 
-    <div class="control-strip" id="control-strip">
+    <div class="control-strip" id="control-strip" aria-label="게임 진행 설정">
       <button id="next-year" class="next-btn" type="button">⏭ 다음 사건 만나기</button>
-      <label class="inline-tag" for="focus-select">올해의 초점</label>
-      <select id="focus-select" aria-label="올해의 초점">
-        <option value="study">배움</option><option value="training">수련</option>
-        <option value="bond">인연</option><option value="work">일과 재산</option>
-        <option value="explore">모험</option><option value="rest">휴식</option>
-      </select>
-      <label class="inline-tag" for="speed-select">속도</label>
-      <select id="speed-select" aria-label="자동 진행 속도">
-        <option value="12000">느리게 (12초)</option><option value="9000" selected>보통 (9초)</option><option value="5000">빠르게 (5초)</option>
-      </select>
+      <div class="control-field"><label class="inline-tag" for="focus-select">올해의 초점</label>
+        <select id="focus-select" aria-label="올해의 초점">
+          <option value="study">배움</option><option value="training">수련</option>
+          <option value="bond">인연</option><option value="work">일과 재산</option>
+          <option value="explore">모험</option><option value="rest">휴식</option>
+        </select>
+      </div>
+      <div class="control-field"><label class="inline-tag" for="speed-select">자동 진행 속도</label>
+        <select id="speed-select" aria-label="자동 진행 속도">
+          <option value="12000">느리게 (12초)</option><option value="9000" selected>보통 (9초)</option><option value="5000">빠르게 (5초)</option>
+        </select>
+      </div>
       <button id="auto-button" class="auto-btn" type="button" aria-pressed="false">▷ 자동 진행</button>
     </div>
 
@@ -131,6 +134,11 @@
       <div class="track-head"><span>한 사람의 삶</span><span id="life-stage-text">0세 · 1/1 장면</span></div>
       <div class="life-rail"><span id="life-progress" style="width:0%"></span></div>
       <div class="track-labels"><span>탄생</span><span>유년</span><span>청년</span><span>중년</span><span>노년</span><span>100세</span></div>
+    </div>
+    <div class="mobile-brief" aria-label="캐릭터의 현재 상태 요약">
+      <span id="mobile-brief-name">모험가 · 0세</span>
+      <span id="mobile-brief-health">♥ 100</span>
+      <span id="mobile-brief-money">0 베리</span>
     </div>
 
     <div class="grid">
@@ -158,14 +166,20 @@
         </article>
       </div>
       <aside class="sidebar">
-        <section class="side-card"><div class="side-head"><span>✣ 인물 기록</span><span>PROFILE</span></div><div id="profile"></div></section>
-        <section class="side-card"><div class="side-head"><span>◈ 인생 연표</span><span>JOURNAL</span></div><div id="journal" class="journal"></div></section>
+        <section class="side-card" id="profile-card"><div class="side-head"><span>✣ 인물 기록</span><span>PROFILE</span></div><div id="profile"></div></section>
+        <section class="side-card" id="journal-card"><div class="side-head"><span>◈ 인생 연표</span><span>JOURNAL</span></div><div id="journal" class="journal"></div></section>
         <section class="side-card"><div class="side-head"><span>↧ 기록 보관</span><span>ARCHIVE</span></div>
           <button id="export-life" type="button" class="small-btn" style="width:100%">현재 인생 JSON 저장</button>
           <p class="side-note" style="margin:9px 0 0">현재 기기에서만 자동 저장됩니다. 브라우저 데이터를 삭제하면 기록도 사라질 수 있어요.</p>
         </section>
       </aside>
     </div>
+    <nav id="mobile-dock" class="mobile-dock" aria-label="모바일 게임 바로가기">
+      <button type="button" data-jump="scene-title" aria-label="현재 이야기로 이동"><span aria-hidden="true">◈</span>이야기</button>
+      <button type="button" data-jump="choices-wrap" aria-label="행동 선택지로 이동"><span aria-hidden="true">⚄</span>선택지</button>
+      <button type="button" data-jump="profile-card" aria-label="캐릭터 상태로 이동"><span aria-hidden="true">♥</span>상태</button>
+      <button type="button" data-jump="journal-card" aria-label="인생 연표로 이동"><span aria-hidden="true">▤</span>기록</button>
+    </nav>
   </section>
 </main>
 <footer class="footer"><div class="wrap">ONE SEA, ONE LIFE · 비공식 팬메이드 창작 게임 · ONE PIECE와 그 등장 세계관의 권리는 원권리자에게 있습니다. · 1in8b.life와 무관한 독립 구현</div></footer>
