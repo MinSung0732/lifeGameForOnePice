@@ -2,8 +2,12 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
 
+const artFiles = fs.readdirSync("assets/scenes").filter(file => file.endsWith(".svg"));
+assert.equal(artFiles.length, 75, "25 categories x 3 original scenes are present");
+const eventSource = fs.readFileSync("events.js", "utf8");
+const gameSource = fs.readFileSync("app.js", "utf8");
+
 function run(savedData) {
-  const map = new Map();
   const nodes = new Map();
   const listeners = new Map();
   const local = savedData || new Map();
@@ -14,7 +18,7 @@ function run(savedData) {
       const attrs = {};
       nodes.set(id, {
         id, handlers, classes, attrs,
-        textContent:"", innerHTML:"", value:"", style:{}, disabled:false,
+        textContent:"", innerHTML:"", value:"", src:"", alt:"", style:{}, disabled:false,
         addEventListener: (name, handler) => handlers.set(name, handler),
         classList: {
           add: value => classes.add(value),
@@ -49,7 +53,10 @@ function run(savedData) {
     Date, Math, JSON, setTimeout, clearTimeout, setInterval:()=>12345, clearInterval:()=>{},
     console
   };
-  vm.runInNewContext(fs.readFileSync("app.js", "utf8"), context, {filename:"app.js",timeout:2000});
+  vm.createContext(context);
+  vm.runInContext(eventSource, context, {filename:"events.js",timeout:2000});
+  assert.equal(context.OneSeaLifeEvents.events.length, 105);
+  vm.runInContext(gameSource, context, {filename:"app.js",timeout:3000});
   listeners.get("DOMContentLoaded")();
   return {
     node: makeNode,
@@ -59,7 +66,14 @@ function run(savedData) {
     submit: () => makeNode("birth-form").handlers.get("submit")({ preventDefault:()=>{} }),
     next: () => makeNode("next-year").handlers.get("click")(),
     choose: id => makeNode("actions").handlers.get("click")({target:{closest:()=>({getAttribute:()=>id})}}),
-    free: text => {makeNode("free-action").value=text;makeNode("free-action-form").handlers.get("submit")({preventDefault:()=>{}});}
+    free: text => {makeNode("free-action").value=text;makeNode("free-action-form").handlers.get("submit")({preventDefault:()=>{}});},
+    step: () => {
+      const st = JSON.parse(local.get("one-sea-one-life-v2") || "null");
+      if (!st.alive) return;
+      const chosen = st.pending ? st.pending.choices[0].id : null;
+      if (chosen) makeNode("actions").handlers.get("click")({target:{closest:()=>({getAttribute:()=>chosen})}});
+      else makeNode("next-year").handlers.get("click")();
+    }
   };
 }
 
@@ -71,48 +85,79 @@ game.node("player-look").value = "붉은 스카프";
 game.node("player-weapon").value = "검";
 game.submit();
 assert.equal(game.state().age, 0);
+assert.equal(game.state().yearBeat, 0);
 assert.equal(game.state().name, "테스트모험가");
 assert.equal(game.state().journal.length, 1);
 assert.equal(game.node("game").classList.contains("hidden"), false);
+assert.equal(game.node("scene-image").src, "./assets/scenes/birth-1.svg");
+
+// One choice advances the timeline; the encounter then offers
+// contextual responses which resolve WITHOUT advancing an extra year.
 game.choose("study");
 assert.equal(game.state().age, 1);
+assert.equal(game.state().pending.type, "episode");
+assert.equal(game.state().pending.choices.length, 3);
+const firstImage = game.node("scene-image").src;
+assert.ok(/^\.\/assets\/scenes\/[a-z]+-[123]\.svg$/.test(firstImage));
+assert.equal(fs.existsSync(firstImage.slice(2)), true);
+game.choose(game.state().pending.choices[0].id);
+assert.equal(game.state().age, 1);
 assert.equal(game.state().pending, null);
-for (let i = 0; i < 5; i++) game.next();
+assert.ok(game.state().lifeFlags && typeof game.state().lifeFlags === "object");
+
+// Reach age 6 and resolve the first major milestone.
+let limit = 0;
+while (game.state().age < 6 && game.state().alive && limit++ < 150) game.step();
 assert.equal(game.state().age, 6);
 assert.equal(game.state().pending.type, "school");
 const beforeKnowledge = game.state().stats.knowledge;
 game.choose("learn");
 assert.equal(game.state().pending, null);
 assert.ok(game.state().stats.knowledge > beforeKnowledge);
-while (game.state().age < 12 && game.state().alive) {
-  if (game.state().pending) game.choose(game.state().pending.choices[0].id);
-  else game.next();
-}
+
+// Age 6 requires TWO moment advancements, not a single choice.
+// The first advancement must NOT automatically age the player.
+game.next();
+assert.equal(game.state().age, 6);
+assert.equal(game.state().yearBeat, 1);
+assert.equal(game.state().pending.type, "episode");
+game.choose(game.state().pending.choices[1].id);
+assert.equal(game.state().age, 6);
+
+// Continue to mentor and career milestones.
+limit = 0;
+while (game.state().age < 12 && game.state().alive && limit++ < 300) game.step();
 assert.equal(game.state().age, 12);
 if (game.state().pending?.type === "mentor") game.choose("navigation");
-while (game.state().age < 16 && game.state().alive) {
-  if (game.state().pending) game.choose(game.state().pending.choices[0].id);
-  else game.next();
-}
+limit = 0;
+while (game.state().age < 16 && game.state().alive && limit++ < 300) game.step();
 assert.equal(game.state().age, 16);
 assert.equal(game.state().pending.type, "career");
 game.choose("pirate");
 assert.equal(game.state().role, "해적");
 assert.equal(game.state().weapon, "검");
-const afterCareer = run(game.local);
-assert.equal(afterCareer.state().name, "테스트모험가");
-assert.equal(afterCareer.state().role, "해적");
-assert.equal(afterCareer.node("landing").classList.contains("hidden"), false);
-afterCareer.free("검술을 수련한다");
-assert.equal(afterCareer.state().age, 17);
-let count = 0;
-while (afterCareer.state().alive && count++ < 450) {
-  const st = afterCareer.state();
-  if (st.pending) afterCareer.choose(st.pending.choices[0].id);
-  else afterCareer.next();
+
+const returned = run(game.local);
+assert.equal(returned.state().name, "테스트모험가");
+assert.equal(returned.state().role, "해적");
+assert.equal(returned.node("landing").classList.contains("hidden"), false);
+const momentCount = returned.state().totalMoments;
+returned.free("검술을 수련한다");
+assert.equal(returned.state().age, 16);
+assert.equal(returned.state().totalMoments, momentCount + 1);
+assert.equal(returned.state().pending.type, "episode");
+returned.choose(returned.state().pending.choices[0].id);
+
+// Complete a life, assert records and scene artwork remains valid.
+let turns = 0;
+while (returned.state().alive && turns++ < 1300) {
+  returned.step();
+  const scene = returned.node("scene-image").src;
+  assert.equal(fs.existsSync(scene.slice(2)), true, "scene image exists: " + scene);
 }
-assert.ok(count < 450, "The game must eventually end.");
-assert.equal(afterCareer.state().alive, false);
-assert.ok(afterCareer.state().age <= 102);
-assert.equal(afterCareer.past()[0].name, "테스트모험가");
-console.log("PASS: birth, yearly aging, milestones, career, free action, persistence, death and past lives.");
+assert.ok(turns < 1300, "Life must eventually end.");
+assert.equal(returned.state().alive, false);
+assert.ok(returned.state().age <= 102);
+assert.ok(returned.state().totalMoments > 120 || returned.state().age < 45);
+assert.equal(returned.past()[0].name, "테스트모험가");
+console.log("PASS: 105 event hooks, 75 original SVG scenes, multi-beat years, milestones, career, custom action, restart, death and archive.");
