@@ -148,12 +148,36 @@
     } catch (_) { return []; }
   }
   function record(title, body, tag = "일상") {
-    s.journal.unshift({ age: s.age, title, body, tag });
-    if (s.journal.length > 120) s.journal.pop();
+    s.journal.unshift({ age: s.age, title, body, tag, beat: s.yearBeat || 0 });
+    if (s.journal.length > 550) s.journal.pop();
   }
-  function announce(title, body, note = "", tone = "", tag = "일상") {
-    s.scene = { title, body, note, tone };
-    record(title, body.slice(0, 125), tag);
+  function inferArt(tag, title) {
+    if (/탄생/.test(tag)) return "birth";
+    if (/죽음|마지막|끝/.test(tag + title)) return "farewell";
+    if (/열매|능력/.test(tag + title)) return "fruit";
+    if (/폭풍|난파/.test(tag + title)) return "storm";
+    if (/전투|격돌|싸움/.test(tag + title)) return "battle";
+    if (/해군/.test(title)) return "marine";
+    if (/해적|깃발/.test(title)) return "pirate";
+    if (/혁명군/.test(title)) return "revolution";
+    if (/위대한 항로|리버스|항해|수평선/.test(title)) return "grandline";
+    if (/학교|배움|글/.test(title)) return "school";
+    if (/스승|도장|검술/.test(title)) return "dojo";
+    if (/동료|친구|인연/.test(title)) return "friends";
+    if (/늙|노년|유산|반세기|서른 살/.test(title)) return "legacy";
+    if (/갈림길|지도|결정/.test(tag + title)) return "map";
+    if (/유년|가족/.test(tag)) return "home";
+    if (/경제|시장/.test(tag + title)) return "market";
+    if (/건강/.test(tag)) return "clinic";
+    return "island";
+  }
+  function announce(title, body, note = "", tone = "", tag = "일상", art = null) {
+    s.visualUse = s.visualUse || {};
+    const category = art || inferArt(tag, title);
+    const variant = ((s.visualUse[category] || 0) % 3) + 1;
+    s.visualUse[category] = (s.visualUse[category] || 0) + 1;
+    s.scene = { title, body, note, tone, art: category, variant, tag };
+    record(title, body.slice(0, 180), tag);
   }
   function statsNote(changes) {
     return changes.filter(Boolean).join(" · ");
@@ -191,7 +215,7 @@
       stats: { health: 0, happy: 0, knowledge: 0, bonds: 0, strength: 6, agility: 6, toughness: 6 },
       money: 0, bounty: 0, reputation: 0, focus: "study", decisions: [], journal: [], scene: null,
       pending: null, alive: true, deathCause: "", autoChoices: 0, relationName: "", retirement: false,
-      kindMode: false };
+      kindMode: false, yearBeat: 0, totalMoments: 0, visualUse: {}, recentEvents: [], experience: {}, lifeFlags: {} };
     const origin = sea ? SEAS.find(x => x.name === sea) || SEAS[0] : weighted(SEAS);
     const family = weighted(FAMILIES);
     s.name = s.name || pick(NAMES);
@@ -218,6 +242,16 @@
       if (saved && saved.version === 2 && saved.stats && saved.scene && Array.isArray(saved.journal)
           && typeof saved.age === "number" && typeof saved.seed === "number") {
         s = saved;
+        s.yearBeat = Number.isInteger(s.yearBeat) && s.yearBeat >= 0 ? s.yearBeat : 0;
+        s.totalMoments = Number.isInteger(s.totalMoments) ? s.totalMoments : 0;
+        s.visualUse = s.visualUse && typeof s.visualUse === "object" ? s.visualUse : {};
+        s.recentEvents = Array.isArray(s.recentEvents) ? s.recentEvents : [];
+        s.experience = s.experience && typeof s.experience === "object" ? s.experience : {};
+        s.lifeFlags = s.lifeFlags && typeof s.lifeFlags === "object" ? s.lifeFlags : {};
+        if (!s.scene.art) {
+          s.scene.art = inferArt(s.scene.tag || "일상", s.scene.title);
+          s.scene.variant = 1;
+        }
         return true;
       }
     } catch (_) {}
@@ -345,18 +379,116 @@
   function focusLabel(id) {
     return ({ study:"배움",training:"수련",bond:"인연",work:"일과 재산",explore:"모험",rest:"휴식" })[id] || "일상";
   }
+  // 1 episode/year in early childhood or late old age;
+  // up to 3 distinct incidents/year for working-age characters.
+  // A complete life usually presents 150-220 multi-step incidents.
+  function beatsForAge(age) {
+    if (age < 6) return 1;
+    if (age < 16) return 2;
+    if (age < 50) return 3;
+    if (age < 80) return 2;
+    return 1;
+  }
+  function memoryFlavor() {
+    const echoes = [
+      "잠시 스쳐 간 바람에서 고향 " + s.hometown + "의 냄새가 난다.",
+      "어릴 적 들었던 항해 이야기가 문득 떠오른다.",
+      "한때는 별일 아니었던 선택들이 지금의 당신을 여기까지 데려왔다.",
+      "해 질 무렵, 바다가 또 다른 가능성을 속삭이는 듯하다."
+    ];
+    if ((s.lifeFlags.family || 0) >= 3) echoes.push("가족에게 들었던 오래된 충고가 아직 마음 한편에 남아 있다.");
+    if ((s.lifeFlags.friendship || 0) >= 3) echoes.push("오랜 친구의 얼굴이 떠오른다. 누군가는 당신을 기다리고 있다.");
+    if ((s.lifeFlags.navigation || 0) >= 4 && s.age >= 16) echoes.push("누적된 항해 경험 덕분에 파도와 바람의 작은 변화까지 눈에 들어온다.");
+    if (s.role === "해군") echoes.push("정의라는 말의 무게는 임무를 거듭할수록 달라지는 것 같다.");
+    if (s.role === "해적") echoes.push("당신의 깃발 아래 모인 이들은 당신의 다음 결정을 기다리고 있다.");
+    if (s.grandLine) echoes.push("로그 포스의 바늘이 다음 섬의 자기장을 향해 조금씩 움직인다.");
+    return pick(echoes);
+  }
+  function eventForMoment(action, custom = "") {
+    const deck = globalThis.OneSeaLifeEvents;
+    if (!deck || !deck.events || !deck.select) {
+      eventForYear(action, custom);
+      return;
+    }
+    // Dangerous encounters keep the original GM's special choice logic.
+    if (s.age >= 16 && s.ability === "비능력자" && !s.heldFruit && prob(action === "explore" ? .026 : .006)) {
+      createDecision("fruit", "금지된 소용돌이 문양", "오래된 상자 속에 이상한 과일이 놓여 있다. 악마의 열매일지도 모른다.\n\n능력과 수영할 수 없는 몸 사이에서 당신은 무엇을 선택할 것인가?");
+      return;
+    }
+    if (s.age >= 16 && !s.retirement && prob(action === "explore" ? .063 : .027)) {
+      createDecision("battle", "항구 뒤편의 불길한 검 그림자", "무장한 " + pick(["무법자", "현상범", "수상한 경비병", "해적단 잔당"]) + "이(가) 사람들의 길을 막아섰다.\n\n지금 여기서 싸울 것인가, 말로 해결할 것인가, 뒤로 물러설 것인가?");
+      return;
+    }
+    if (s.age >= 16 && !s.retirement && prob(action === "explore" ? .052 : .018)) {
+      createDecision("storm", "순식간에 돌변한 바다", "하늘이 어두워지더니 수평선에서 검은 벽처럼 파도가 솟는다. 선체가 크게 흔들리고 모두가 당신을 바라본다.\n\n배를 전진시킬 것인가, 피항할 것인가, 동료와 힘을 합칠 것인가?");
+      return;
+    }
+    const event = deck.select(s, action, float);
+    if (!event) { eventForYear(action, custom); return; }
+    s.recentEvents.push(event.id);
+    if (s.recentEvents.length > 80) s.recentEvents.shift();
+    s.experience[event.category] = (s.experience[event.category] || 0) + 1;
+    s.pending = { type: "episode", eventId: event.id, choices: event.choices.map(opt => choice(opt.id, opt.title, opt.help)) };
+    const prefix = s.age + "세 · " + (s.grandLine ? "위대한 항로" : s.birthSea) + " · " + s.role;
+    announce(event.title,
+      prefix + "\n\n" + event.story + "\n\n" + (s.totalMoments % 3 === 0 ? memoryFlavor() + "\n\n" : "") +
+      "이 순간의 선택은 이후의 삶에도 흔적을 남길 수 있다.",
+      (custom ? "직접 행동: " + custom + " · " : "") + "올해의 장면 " + (s.yearBeat || beatsForAge(s.age)) +
+      "/" + beatsForAge(s.age) + " · " + focusLabel(action), "", "사건", event.art);
+  }
+  function applyEpisodeEffects(effects) {
+    const changed = [];
+    for (const [key, amount] of Object.entries(effects || {})) {
+      if (Object.prototype.hasOwnProperty.call(s.stats, key)) statDelta(key, amount);
+      else if (key === "money") changeMoney(amount);
+      else if (["crew","voyages","wins","reputation","bounty","hakiExp"].includes(key)) {
+        s[key] = Math.max(0, (s[key] || 0) + amount);
+      }
+      changed.push((key === "money" ? "베리" : ({
+        bonds:"관계",happy:"행복",knowledge:"지식",health:"건강",strength:"힘",agility:"민첩",toughness:"맷집",
+        crew:"동료",voyages:"항해",reputation:"명성",bounty:"현상금",hakiExp:"패기 경험"
+      })[key] || key) + " " + (amount > 0 ? "+" : "") + amount);
+    }
+    return changed;
+  }
+  function resolveEpisode(id, custom = "") {
+    const deck = globalThis.OneSeaLifeEvents;
+    const pending = s.pending;
+    const event = deck && deck.events.find(e => e.id === pending.eventId);
+    if (!event) { s.pending = null; announce("지나온 장면", "이 사건을 계속할 수 없어 다음 이야기로 넘어갔다."); store(); render(); return; }
+    const selected = event.choices.find(o => o.id === id) || event.choices[0];
+    const stored = (s.lifeFlags[selected.flag] || 0);
+    const r = roll(selected.stat, selected.dc, Math.min(3, Math.floor(stored / 3)));
+    const changes = applyEpisodeEffects(r.success ? selected.success : selected.failure);
+    if (r.success) s.lifeFlags[selected.flag] = stored + 1;
+    s.pending = null;
+    announce(event.title + (r.success ? " — 작은 결실" : " — 남겨진 흔적"),
+      event.story + "\n\n" + "당신은 “" + selected.title + "”을(를) 선택했다. " +
+      (r.success ? selected.successText : selected.failureText) + "\n\n" +
+      ((s.lifeFlags[selected.flag] || 0) >= 3 ? "비슷한 순간에 쌓아 온 경험이 이번 선택의 밑바탕이 되었다." : "이 사건 또한 당신이 걸어온 길의 일부가 되었다."),
+      rollText(r) + " · " + changes.join(" / "), r.success ? "good" : "bad", "선택", event.art);
+    if (s.stats.health <= 0) { die("사건 중 입은 치명상"); return; }
+    store(); render();
+  }
   function advanceYear(action = null, custom = "") {
     if (!s || !s.alive) return;
     if (s.pending) { toast("먼저 인생의 갈림길에서 결정해야 합니다."); stopAuto(); return; }
     action = action || s.focus;
     if (!["study","training","bond","work","explore","rest"].includes(action)) action = "study";
     s.focus = action;
-    s.age += 1;
-    seasonChange(action);
-    if (s.stats.health <= 0) { die("건강 악화"); return; }
-    if (s.age >= 102 || prob(deathChance(action))) {
-      die(s.age >= 85 ? "평온한 노년의 끝" : s.stats.health < 28 ? "오랜 건강 악화" : "예기치 못한 생의 끝");
-      return;
+    s.totalMoments = (s.totalMoments || 0) + 1;
+    s.yearBeat = (s.yearBeat || 0) + 1;
+    // Each action advances a scene, not automatically a year.
+    const birthday = s.yearBeat >= beatsForAge(s.age);
+    if (birthday) {
+      s.age += 1;
+      s.yearBeat = 0;
+      seasonChange(action);
+      if (s.stats.health <= 0) { die("건강 악화"); return; }
+      if (s.age >= 102 || prob(deathChance(action))) {
+        die(s.age >= 85 ? "평온한 노년의 끝" : s.stats.health < 28 ? "오랜 건강 악화" : "예기치 못한 생의 끝");
+        return;
+      }
     }
     const milestone = {
       6: ["school", "첫 배움을 선택하는 날", "여섯 살. " + s.hometown + "의 길가에 서 있는 당신에게 세 갈래 길이 보인다.\n\n마을 학교에서 글과 지도를 배울 수도, 가족의 일을 도울 수도, 궁금한 세상을 직접 탐험할 수도 있다."],
@@ -367,11 +499,11 @@
       50: ["legacy", "반세기 동안 이어진 파도", "쉰 살. 젊은 시절의 친구 중 누군가는 떠났고, 누군가는 여전히 함께한다.\n\n이제 자신의 이야기를 다른 사람에게 전할지, 끝까지 바다를 달릴지, 조용한 곳에서 삶을 이어갈지 결정할 때다."],
       65: ["retirement", "오래된 항해도를 접으며", "예순다섯 살. 낡은 항해도를 펼치면 지나온 섬들의 이름이 눈에 들어온다.\n\n이제는 세상을 직접 바꿀 수도, 다음 세대에 자리를 내어줄 수도 있다."]
     };
-    if (milestone[s.age]) {
+    if (birthday && milestone[s.age]) {
       const m = milestone[s.age];
       createDecision(m[0], m[1], m[2]); store(); render(); return;
     }
-    eventForYear(action, custom);
+    eventForMoment(action, custom);
     store(); render();
   }
   function roll(stat, difficulty, extra = 0) {
@@ -394,6 +526,7 @@
   function chooseDecision(id, custom = "") {
     if (!s || !s.alive || !s.pending) return;
     const type = s.pending.type;
+    if (type === "episode") { resolveEpisode(id, custom); return; }
     let r;
     if (type === "career") {
       const roles = { pirate:"해적", marine:"해군", revolution:"혁명군", hunter:"현상금 사냥꾼",
@@ -571,6 +704,13 @@
     }
     if (s.pending) {
       const p = s.pending.type;
+      if (p === "episode") {
+        const all = s.pending.choices;
+        const best = all.find(c => t.includes(c.title)) ||
+          (/함께|돕|나누|듣|이야기/.test(t) ? all[1] : /직접|달리|올라|쫓|싸우|조타/.test(t) ? all[2] : all[0]);
+        chooseDecision(best.id, t);
+        return;
+      }
       if (p === "career") {
         if (/상인|무역|장사/.test(t)) { chooseDecision("merchant", t); return; }
         if (/모험가|탐험가|여행/.test(t)) { chooseDecision("wanderer", t); return; }
@@ -635,23 +775,32 @@
     $("birth-form").setAttribute("data-saved", s && s.alive ? "yes" : "no");
     renderHistory();
     if (!active) return;
-    $("scene-chapter").textContent = getStage();
-    $("age-pill").textContent = s.age + "세 · " + stageName();
+    $("scene-chapter").textContent = getStage() + " · EPISODE " + String((s.totalMoments || 0)+1).padStart(3,"0");
+    $("age-pill").textContent = s.age + "세 · " + stageName() + " · " +
+      Math.max(1, s.yearBeat || 1) + "/" + beatsForAge(s.age);
     $("place-tag").textContent = (s.grandLine ? "GRAND LINE" : s.sea.toUpperCase()) + " · " + s.hometown;
     $("scene-title").textContent = s.scene.title;
     $("scene-story").textContent = s.scene.body;
+    const kind = /^[a-z]+$/.test(s.scene.art || "") ? s.scene.art : "island";
+    const variant = [1,2,3].includes(Number(s.scene.variant)) ? Number(s.scene.variant) : 1;
+    $("scene-image").src = "./assets/scenes/" + kind + "-" + variant + ".svg";
+    $("scene-image").alt = "사건 장면: " + s.scene.title + " (" + kind + " 삽화 " + variant + ")";
     const note = $("scene-outcome");
     note.className = "outcome" + (s.scene.tone ? " " + s.scene.tone : "") + (!s.scene.note ? " hidden" : "");
     note.textContent = s.scene.note;
-    $("life-stage-text").textContent = s.age + "세 · " + stageName();
-    $("life-progress").style.width = Math.min(100, s.age) + "%";
+    $("life-stage-text").textContent = s.age + "세 · " + stageName() + " · 올해 " + (s.yearBeat || 0) +
+      "/" + beatsForAge(s.age) + " 장면 진행";
+    $("life-progress").style.width = Math.min(100, s.age + (s.yearBeat || 0) / beatsForAge(s.age)) + "%";
     $("focus-select").value = s.focus;
     $("next-year").disabled = !s.alive || !!s.pending;
-    $("auto-button").disabled = !s.alive || !!s.pending;
+    $("auto-button").disabled = !s.alive || !!(s.pending && s.pending.type !== "episode");
+    $("next-year").textContent = s.pending ? "먼저 사건을 선택하세요" : "⏭ 다음 사건 만나기";
     $("choices-wrap").classList.toggle("hidden", !s.alive);
     $("ending-panel").classList.toggle("hidden", s.alive);
     $("birth-record").classList.toggle("hidden", s.alive);
-    $("choices-label").textContent = s.pending ? "운명의 갈림길 — 당신의 결정은?" : "올해는 어떻게 살아갈까요?";
+    $("choices-label").textContent = s.pending
+      ? s.pending.type === "episode" ? "이 사건에서 당신은 어떻게 행동할까요?" : "운명의 갈림길 — 당신의 결정은?"
+      : "다음 장면에 어떤 시간을 쓸까요?";
     const arr = s.pending ? s.pending.choices : baseActions();
     $("actions").innerHTML = arr.slice(0, 4).map((a, i) =>
       '<button class="action" type="button" data-id="' + esc(a.id) + '"><span class="action-num">' + (i+1) +
@@ -733,15 +882,24 @@
   }
   function toggleAuto() {
     if (interval != null) { stopAuto(); return; }
-    if (!s || !s.alive || s.pending) { toast("중요한 결정을 먼저 선택하세요."); return; }
-    const ms = Number($("speed-select").value) || 900;
+    if (!s || !s.alive || (s.pending && s.pending.type !== "episode")) {
+      toast("중요한 갈림길은 직접 결정해야 합니다."); return;
+    }
+    const ms = Number($("speed-select").value) || 9000;
     $("auto-button").textContent = "❚❚ 일시정지";
     $("auto-button").classList.add("active");
     $("auto-button").setAttribute("aria-pressed", "true");
     interval = setInterval(() => {
-      if (!s || !s.alive || s.pending || $("game").classList.contains("hidden")) { stopAuto(); return; }
-      advanceYear(s.focus);
-      if (!s.alive || s.pending) stopAuto();
+      if (!s || !s.alive || $("game").classList.contains("hidden")) { stopAuto(); return; }
+      if (s.pending) {
+        if (s.pending.type !== "episode") { stopAuto(); return; }
+        const list = s.pending.choices;
+        const index = s.focus === "bond" ? 1 : s.focus === "training" || s.focus === "explore" ? 2 : 0;
+        chooseDecision((list[index] || list[0]).id);
+      } else {
+        advanceYear(s.focus);
+      }
+      if (!s.alive || (s.pending && s.pending.type !== "episode")) stopAuto();
     }, ms);
   }
   function newLife() {
