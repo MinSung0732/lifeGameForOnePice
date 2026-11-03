@@ -33,8 +33,8 @@
         <h1>모든 항해는<br><em>단 한 번의</em><br>탄생에서 시작된다.</h1>
         <p class="lead">어느 바다에서, 어떤 가정에 태어날지는 운명이 정합니다. 하지만 해적으로 살지, 해군으로 싸울지, 그저 소중한 사람들과 살아갈지는 당신의 선택입니다. 이 바다에서 한 사람의 인생을 처음부터 끝까지 살아 보세요.</p>
         <div class="hero-facts">
-          <span class="fact">✦ 무작위 출생과 가정환경</span>
-          <span class="fact">⚓ 해마다 변화하는 삶</span>
+          <span class="fact">✦ 105가지 사건 × 75가지 일러스트</span>
+          <span class="fact">⚓ 한 해에 여러 번 펼쳐지는 사건</span>
           <span class="fact">⚄ 확률과 인생의 갈림길</span>
           <span class="fact">▤ 생애 기록과 다시 태어나기</span>
         </div>
@@ -94,7 +94,7 @@
 
     <section class="wrap how" aria-label="게임 진행 방식">
       <div class="how-card"><span class="how-no">01.</span><b>운명으로 태어나다</b><p>출신 바다, 가족, 경제적 환경이 삶의 출발점을 만듭니다.</p></div>
-      <div class="how-card"><span class="how-no">02.</span><b>해마다 성장하다</b><p>건강, 행복, 지식, 관계가 매해 달라집니다.</p></div>
+      <div class="how-card"><span class="how-no">02.</span><b>한 해에 여러 장면을 살다</b><p>생애 단계에 따라 한 해 1~3번 사건을 겪습니다.</p></div>
       <div class="how-card"><span class="how-no">03.</span><b>자신의 길을 택하다</b><p>해적, 해군, 혁명군, 상인 등 다양한 길로 뻗어갑니다.</p></div>
       <div class="how-card"><span class="how-no">04.</span><b>하나의 삶을 남기다</b><p>위대한 항로에 닿든 평범히 늙든 나만의 생애가 기록됩니다.</p></div>
     </section>
@@ -108,11 +108,11 @@
   <section id="game" class="wrap game hidden" aria-label="인생 시뮬레이션">
     <div class="game-top">
       <div><div class="eyebrow">ONE SEA · ONE LIFE</div><h1>당신의 항해 일지 <span class="gold">✣</span></h1></div>
-      <div class="game-meta">한 해의 선택이 다음 해의 가능성을 바꿉니다.<br>모든 사건과 확률은 허구의 게임 규칙입니다.</div>
+      <div class="game-meta">매년 여러 사건을 겪으며 선택이 누적됩니다.<br>모든 사건과 확률은 허구의 게임 규칙입니다.</div>
     </div>
 
     <div class="control-strip" id="control-strip">
-      <button id="next-year" class="next-btn" type="button">⏭ 한 해 보내기</button>
+      <button id="next-year" class="next-btn" type="button">⏭ 다음 사건 만나기</button>
       <label class="inline-tag" for="focus-select">올해의 초점</label>
       <select id="focus-select" aria-label="올해의 초점">
         <option value="study">배움</option><option value="training">수련</option>
@@ -121,13 +121,13 @@
       </select>
       <label class="inline-tag" for="speed-select">속도</label>
       <select id="speed-select" aria-label="자동 진행 속도">
-        <option value="1800">느리게</option><option value="900" selected>보통</option><option value="350">빠르게</option>
+        <option value="12000">느리게 (12초)</option><option value="9000" selected>보통 (9초)</option><option value="5000">빠르게 (5초)</option>
       </select>
       <button id="auto-button" class="auto-btn" type="button" aria-pressed="false">▷ 자동 진행</button>
     </div>
 
     <div class="track-card">
-      <div class="track-head"><span>한 사람의 삶</span><span id="life-stage-text">0세 · 탄생</span></div>
+      <div class="track-head"><span>한 사람의 삶</span><span id="life-stage-text">0세 · 1/1 장면</span></div>
       <div class="life-rail"><span id="life-progress" style="width:0%"></span></div>
       <div class="track-labels"><span>탄생</span><span>유년</span><span>청년</span><span>중년</span><span>노년</span><span>100세</span></div>
     </div>
@@ -138,26 +138,14 @@
           <div class="story-head"><span id="scene-chapter" class="stage">PROLOGUE — BIRTH</span><span id="age-pill" class="age-pill">0세 · 탄생</span></div>
           <div class="ocean-window" role="img" aria-label="해안과 수평선 위의 항해선 일러스트">
             <span id="place-tag" class="place-tag">THE SEA</span>
-            <svg viewBox="0 0 720 155" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <circle cx="567" cy="37" r="29" fill="#f2d5a5" opacity=".88"/>
-              <path d="M0 94 Q85 89 170 98T350 98T530 94T720 98V155H0Z" fill="#245069"/>
-              <path d="M0 123Q110 115 211 124T415 122T720 123" fill="none" stroke="#a9cad0" opacity=".4"/>
-              <path d="M0 150Q125 143 263 151T523 150T720 148" fill="none" stroke="#a9cad0" opacity=".4"/>
-              <path d="M0 96Q70 47 141 97M93 95Q149 23 198 94" fill="#264950"/>
-              <g transform="translate(360 6)">
-                <path d="M0 96H142L125 123H24Z" fill="#b78a61" stroke="#685941" stroke-width="2"/>
-                <path d="M77 99V0" stroke="#efe1c0" stroke-width="4"/>
-                <path d="M73 6V90H13Z" fill="#f0e4ce"/><path d="M82 14V90H130Z" fill="#bed1cb"/>
-                <path d="M68 0H89L81 16Z" fill="#c17b5f"/>
-              </g>
-            </svg>
+            <img id="scene-image" class="scene-image" src="./assets/scenes/birth-1.svg" alt="탄생 장면 삽화" loading="eager" decoding="async">
           </div>
           <h2 id="scene-title">어느 바다의 새로운 숨결</h2>
           <div id="scene-story" class="story"></div>
           <div id="scene-outcome" class="outcome hidden"></div>
           <div id="ending-panel" class="ending hidden"></div>
           <div id="choices-wrap">
-            <div class="choice-header"><b id="choices-label">올해는 어떻게 살아갈까요?</b><span>2~4개 선택지 · 직접 행동도 가능</span></div>
+            <div class="choice-header"><b id="choices-label">다음 사건에 어떻게 대응할까요?</b><span>2~4개 선택지 · 직접 행동도 가능</span></div>
             <div id="actions" class="actions"></div>
             <form id="free-action-form" class="free-form">
               <input id="free-action" class="input" maxlength="160" autocomplete="off" placeholder="직접 행동하기 — 예: 검술을 수련한다" aria-label="직접 행동하기" required>
