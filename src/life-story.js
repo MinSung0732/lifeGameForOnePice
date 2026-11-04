@@ -365,6 +365,36 @@ const scenes = [
   ] },
   { id: "life_last_student", age: at(78, 284), art: "workbench", title: "다음 사람의 손", body: (life) => life.successor ? "후배가 이제 혼자 결정을 내렸다. 같은 일을 해도 다른 방법을 고르는 모습을 보며 세월이 흘렀음을 알았다." : "일을 잇겠다는 사람이 늦게 찾아왔다. 다 전해 주기에는 시간이 부족했지만 기록을 함께 읽을 수는 있었다." },
   { id: "life_memory", age: at(80, 286), art: "deck", title: "기억에 남은 항구", body: (life) => `${life.birth.name}은 여러 기항지의 이름보다 그곳에서 함께 버틴 사람을 먼저 떠올렸다. 잃은 일과 얻은 일이 한쪽으로만 정리되지는 않았다.` },
+  { id: "life_den_den_mushi", age: at(31, 178), when: (life) => life.creationVersion >= 5,
+    art: "workbench", title: "전보벌레의 긴급 회의", body: (life) => `전보벌레가 ${life.birth.name}의 얼굴을 빤히 보더니 느닷없이 옆 배 선장의 목소리로 저녁을 사겠다고 외쳤다. 옆 배의 선원들은 벌써 그 말을 들었다. 소문이 굳기 전에 무슨 통화였는지 알아낼 수 있을까?`, choices: [
+      { id: "feast", label: "그냥 함께 먹으며 사정을 묻는다", cost: 10, risk: "물자 10 필요 · 친구와의 유대 +10", personality: { empathy: 5, freedom: 4 },
+        apply: (life) => { life.supplies -= 10; life.friendBond += 10; return "식탁에 오른 음식보다 전보벌레가 누구 목소리를 흉내 냈는지가 더 오래 화제가 됐다."; } },
+      { id: "trace", label: "전보벌레의 발신지를 확인한다", needs: { skill: 45 }, risk: "기술 45가 단서의 기준 · 실패하면 물자 손실", failRisk: "물자 -10", personality: { caution: 5 },
+        fail: (life) => { life.supplies -= 10; return "발신지를 찾으려다 잘못된 통화료만 냈다. 저녁 약속은 여전히 남았다."; },
+        apply: (life) => { life.trust += 10; return "다른 배의 선원이 잘못 건 번호였다. 소동의 주인을 찾아내자 두 배가 웃으며 헤어졌다."; } },
+      { id: "ignore", label: "벨을 끄고 맡은 일부터 끝낸다", risk: "물자 +5 · 소문은 저절로 가라앉음", personality: { caution: 5 },
+        apply: (life) => { life.supplies += 5; return "한참 뒤 전보벌레가 스스로 잠잠해졌다. 옆 배에서는 아직 저녁 메뉴를 정하고 있었다."; } }
+    ] },
+  { id: "life_sea_king", age: at(49, 250), when: (life) => life.creationVersion >= 5 && life.leftHome && !life.homebound && !life.retired,
+    art: "lifeStorm", title: "배보다 큰 그림자", body: "기록지침의 바늘을 읽던 사이 배 아래로 해왕류의 그림자가 지나갔다. 선원 하나가 '돛을 접자'고 외쳤고, 다른 하나는 이미 식량 꾸러미를 들고 있었다. 배가 흔들리기 전에 결정을 내려야 했다.", choices: [
+      { id: "retreat", label: "돛을 접고 먼 물길로 빠진다", cost: 10, risk: "물자 10 필요 · 건강 -5", personality: { caution: 7, loyalty: 3 },
+        apply: (life) => { life.supplies -= 10; life.health -= 5; return "한참 돌아갔지만 배와 사람은 함께 다음 섬에 닿았다."; } },
+      { id: "drift", label: "배의 짐을 버리고 선원들과 파도에 몸을 맡긴다", risk: "건강 -15 · 남은 물자 손실", personality: { caution: 5, loyalty: 5 },
+        apply: (life) => { life.health = Math.max(1, life.health - 15); life.supplies = 0; return "배는 크게 망가졌지만 선원들은 서로를 붙잡고 다음 해안에 닿았다."; } },
+      { id: "stand", label: "갑판을 지키며 정면에서 길을 튼다", needs: { skill: 70, health: 40 },
+        risk: "기술 70 · 건강 40이 버팀의 기준 · 큰 부상 위험", failRisk: "건강 -45 · 항해 중단 위험",
+        personality: { ambition: 7, loyalty: 6, caution: -7 },
+        fail: (life) => { life.health -= 45; life.supplies -= 20;
+          if (life.health <= 0) { life.ending = "death"; life.deathCause = "해왕류와의 충돌"; return "배는 빠져나왔지만 갑판에 남았던 이름 하나는 돌아오지 못했다."; }
+          return "해왕류를 지나쳤지만 갑판이 부서졌다. 다음 기항지에서는 치료와 수리가 먼저였다."; },
+        apply: (life) => { life.health -= 15; life.skill += 5; life.trust += 10; return "밧줄이 손에서 뜨거워질 때까지 버틴 끝에 배가 그림자 밖으로 벗어났다."; } },
+      { id: "haki", label: "패기로 움직임을 읽고 틈을 찾는다", when: (life) => life.haki.observation > 0 || life.haki.armament > 0,
+        risk: "견문색 또는 무장색 사용 · 건강 -10", personality: { caution: 5, freedom: 4 },
+        apply: (life) => { life.health -= 10; life.skill += 5; return "파도가 뒤집히는 한순간을 읽었다. 동료들이 그 틈에 배를 밀어냈다."; } },
+      { id: "fruit", label: "열매의 힘으로 빠져나갈 틈을 만든다", when: (life) => Boolean(life.devilFruit),
+        risk: "열매 사용 · 물에 빠지면 도움을 받아야 함", personality: { ambition: 5, freedom: 5 },
+        apply: (life) => { life.health -= 10; life.friendBond += 5; return "낯선 힘에 해왕류의 시선이 잠시 옮겨갔다. 동료들이 배를 빼내고 손을 내밀었다."; } }
+    ] },
 ];
 
 export const lifeScenes = [...origin, ...scenes.map((card) => ({ act: card.age === 0 ? 1 : 2, species: "all", ...card }))]
@@ -376,13 +406,19 @@ export const lifeScenes = [...origin, ...scenes.map((card) => ({ act: card.age =
 // Independent personal incidents can arrive in different years in rule 4.
 export const FLEX_IDS = new Set(["life_first_pay", "life_friendly_port", "life_route", "life_rival",
   "life_command", "life_charter", "life_era_pressure", "life_old_friend", "life_late_work"]);
+export const FLEX_IDS_V5 = new Set([...FLEX_IDS, "life_school", "life_training", "life_setback", "life_mentor",
+  "life_fruit_practice", "life_new_routine", "life_haki_training", "life_haki_practice", "life_power_trial",
+  "life_rival_return", "life_conqueror_sign", "life_alliance_council", "life_homecoming",
+  "life_last_student", "life_memory", "life_den_den_mushi", "life_sea_king"]);
 
 function flexibleIncident(life, age) {
   if (life.creationVersion < 4 || !life.path) return null;
+  const eligible = life.creationVersion >= 5 ? FLEX_IDS_V5 : FLEX_IDS;
   const options = scenes.filter((card) => {
-    if (!FLEX_IDS.has(card.id) || life.seen.includes(card.id) || card.when && !card.when(life)) return false;
+    if (!eligible.has(card.id) || life.seen.includes(card.id) || card.when && !card.when(life)) return false;
+    if (life.creationVersion >= 5 && card.id === "life_haki_practice" && !life.haki.observation && !life.haki.armament) return false;
     const center = typeof card.age === "function" ? card.age(life) : card.age;
-    const window = giant(life) ? 24 : 7;
+    const window = life.creationVersion >= 5 && center < (giant(life) ? 112 : 19) ? giant(life) ? 12 : 3 : giant(life) ? 24 : 7;
     return age >= center - window && age <= center + window;
   });
   if (!options.length || yearRoll(life.seed ^ 0x4ecb7f1a, age) % 3 !== 0) return null;
@@ -639,6 +675,28 @@ function lastYear(life, age) {
   return yearRoll(life.seed, age) % 1000 < Math.min(1000, risk);
 }
 
+function lastDay(life) {
+  if (life.retired) return { title: "조용히 놓은 노", cause: "노년의 쇠약",
+    body: `${life.birth.name}은 오래전에 맡은 일을 다음 사람에게 넘겼다. 마지막 아침에는 익숙한 목소리와 항구의 소리를 들으며 눈을 감았다.` };
+  if (life.health < 35) return { title: "몸에 남은 바다", cause: "누적된 부상과 병",
+    body: `${life.birth.name}의 몸에는 지난 위험들이 남아 있었다. 치료를 받으며 버텼지만 이번에는 곁의 사람들에게 마지막 인사를 남겨야 했다.` };
+  if (life.leftHome && !life.homebound) return { title: "마지막 기항", cause: "항해 중 급병",
+    body: `${life.birth.name}의 배가 다음 섬을 앞두고 멈췄다. 동료들이 물과 약을 구해 왔지만, 마지막으로 들은 것은 갑판을 스치는 파도 소리였다.` };
+  return { title: "고향의 마지막 밤", cause: "오래된 지병",
+    body: `${life.birth.name}이 살던 곳에서는 평소처럼 하루가 저물었다. 오랫동안 곁을 지킨 사람들이 모여 함께 보낸 시간을 이야기했다.` };
+}
+
+export function marinefordNews(life) {
+  const age = life.birth.yearsBeforeCurrent - 2;
+  return { id: "life_marineford_news", age, act: age < (giant(life) ? 112 : 19) ? 1 : 2,
+    species: "all", yearly: true, urgent: true, art: "workbench",
+    title: life.creationVersion >= 4 && life.people?.fruitOwner ? "원작 연표 · 마린포드" : "마린포드 전쟁의 신문",
+    canon: "https://one-piece.com/story/marineford/index.html",
+    body: life.creationVersion >= 4 && life.people?.fruitOwner
+      ? "원작에서는 마린포드에서 에이스와 흰 수염이 죽고 샹크스가 전쟁을 멈췄다. 그러나 열매의 주인이 달라진 이 세계선에서 같은 전쟁이 벌어졌다고 단정할 수 없다."
+      : "마린포드 전쟁에서 에이스와 흰 수염이 목숨을 잃고, 샹크스가 싸움을 멈추게 했다는 신문이 닿았다. 전장에 없던 사람은 그곳을 봤다고 말할 수 없었다." };
+}
+
 function sceneForAge(life) {
   const age = life.age + 1;
   const base = { id: `life_year_${age}`, age, act: age < (giant(life) ? 112 : 19) ? 1 : 2, species: "all", yearly: true };
@@ -693,9 +751,16 @@ function sceneForAge(life) {
           personality: { loyalty: 6, caution: 4 }, apply: (state) => { state.trust += 10; return "더 큰 이름을 얻는 대신 곁의 사람들과 남았다."; } }
       ] };
   }
-  if (lastYear(life, age)) return { ...base, id: "life_last_year", urgent: true, art: "legacy", title: "마지막 날",
-    body: (state) => `${state.birth.name}의 몸에 오래된 병과 피로가 겹쳤다. 가까운 사람들이 곁을 지켰고, 창밖에서는 평소처럼 바다가 움직였다.`,
-    after: (state) => { state.ending = "death"; state.deathCause = "오래된 병과 쇠약"; return "숨이 잦아든 뒤, 남은 사람들은 삶의 기록을 모았다."; } };
+  if (lastYear(life, age)) {
+    if (life.creationVersion >= 5) {
+      const day = lastDay(life);
+      return { ...base, id: "life_last_year", urgent: true, art: "legacy", title: day.title, body: day.body,
+        after: (state) => { state.ending = "death"; state.deathCause = day.cause; return "남은 사람들이 생애 일지를 모아 한 사람의 항로를 기록했다."; } };
+    }
+    return { ...base, id: "life_last_year", urgent: true, art: "legacy", title: "마지막 날",
+      body: (state) => `${state.birth.name}의 몸에 오래된 병과 피로가 겹쳤다. 가까운 사람들이 곁을 지켰고, 창밖에서는 평소처럼 바다가 움직였다.`,
+      after: (state) => { state.ending = "death"; state.deathCause = "오래된 병과 쇠약"; return "숨이 잦아든 뒤, 남은 사람들은 삶의 기록을 모았다."; } };
+  }
   if (age === life.birth.yearsBeforeCurrent - 24) return { ...base, id: "life_roger_news", urgent: true, art: "deck", title: "로저의 처형 소식", canon: "https://one-piece.com/character/Gold_Roger/index.html", body: "로저가 처형됐다는 소식이 먼 항구에서 전해졌다. 그 자리에 있지 않았던 사람들은 신문과 선원의 말로 들었다. 바다로 나서는 배가 늘었다." };
   if (age === life.birth.yearsBeforeCurrent - 22) return { ...base, id: "life_revolution_choice", urgent: true, art: "workbench", title: "혁명군의 이름", canon: "https://one-piece.com/anime/65681/index.html", body: "오하라 사건 이후, 먼 항구에서 혁명군이라는 이름이 들려왔다. 누가 조직을 세웠는지까지는 알려지지 않았다. 독립적으로 사람을 돕던 이들에게 새로운 연락망이 생길 수 있었다.", choices: [
     { id: "join", label: "혁명군의 지역 임무에 합류한다", when: (state) => state.creationVersion === 1 || state.path === "liberator" || state.injustice,
@@ -715,12 +780,7 @@ function sceneForAge(life) {
   if (age === life.birth.yearsBeforeCurrent - 10) return { ...base, id: "life_tom_news", urgent: true, art: "workbench", title: "워터 세븐에서 온 부고", canon: "https://one-piece.com/vivre/revision/index.html",
     body: "워터 세븐에서 온 배가 조선공 톰의 처형 소식을 전했다. 그가 만든 배와 해상열차는 남았지만, 작업장의 사람들은 이제 다른 길을 찾아야 했다." };
   if (age === life.birth.yearsBeforeCurrent - 6 && (life.mode === "original" || life.role !== "사황")) return { ...base, id: "life_shanks_news", urgent: true, art: "deck", title: "붉은 머리의 새 호칭", canon: "https://one-piece.com/vivre/revision/index.html", body: (state) => `바다의 신문은 샹크스를 사황이라고 불렀다. ${state.birth.name}이 만난 적 없는 사람의 이름도 항로의 분위기를 바꾸었다.` };
-  if (age === life.birth.yearsBeforeCurrent - 2) return { ...base, id: "life_marineford_news", urgent: true, art: "workbench",
-    title: life.creationVersion >= 4 && life.people?.fruitOwner ? "원작 연표 · 마린포드" : "마린포드 전쟁의 신문",
-    canon: "https://one-piece.com/story/marineford/index.html",
-    body: life.creationVersion >= 4 && life.people?.fruitOwner
-      ? "원작에서는 마린포드에서 에이스와 흰 수염이 죽고 샹크스가 전쟁을 멈췄다. 그러나 열매의 주인이 달라진 이 세계선에서 같은 전쟁이 벌어졌다고 단정할 수 없다."
-      : "마린포드 전쟁에서 에이스와 흰 수염이 목숨을 잃고, 샹크스가 싸움을 멈추게 했다는 신문이 닿았다. 전장에 없던 사람은 그곳을 봤다고 말할 수 없었다." };
+  if (age === life.birth.yearsBeforeCurrent - 2) return marinefordNews(life);
   // Rule 3 fills the two years from the war to the original present (the Elbaf arc), which older rules left empty.
   if (life.creationVersion === 3 && age === life.birth.yearsBeforeCurrent - 1) return { ...base, id: "life_timeskip_news", urgent: true, art: "deck", title: "전쟁 뒤의 신문",
     body: "마린포드 전쟁 뒤 해군 원수가 바뀌고, 검은 수염이 새로운 사황으로 불리기 시작했다. 밀짚모자 일당의 이름은 한동안 신문에서 사라졌다." };

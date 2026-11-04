@@ -192,8 +192,15 @@ function branchingTravelScene(life, age) {
     return `${state.birth.name}의 배는 ${place}에 닿았다. 낡은 해도에는 없던 부두의 소란이 먼저 들렸다.`;
   }
   const title = `${life.location}에서 바늘이 갈라질 때`;
+  let displayTitle = title;
+  if (life.creationVersion >= 5) {
+    const departures = life.journal.filter((entry) => entry.title === title || entry.title.startsWith(`${title} · `)).length;
+    if (departures) displayTitle = `${title} · ${departures + 1}번째 출항`;
+  } else if (life.journal.slice(-10).some((entry) => entry.title === title)) {
+    displayTitle = `${title} · ${age}세의 재출항`;
+  }
   return { id: `life_voyage_${age}`, age, act: 2, species: "all", yearly: true, urgent: true, art: "deck",
-    title: life.journal.slice(-10).some((entry) => entry.title === title) ? `${title} · ${age}세의 재출항` : title,
+    title: displayTitle,
     body: `기록지침이 서로 다른 섬을 가리켰다. 선원들은 식량을 세고 한쪽을 고르자고 했다. 영구 지침이 있으면 익숙한 목적지로 길을 틀 수도 있었다.`,
     choices: [
       { id: "near", label: `기록지침을 따라 ${ro(log[0])} 간다`, available: (state) => state.supplies >= passageCost(log[0], 10),

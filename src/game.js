@@ -1,7 +1,9 @@
 import { CANON_CHAPTER, scenes } from "./story.js";
-import { FLEX_IDS, branchScene, yearlyScene } from "./life-story.js";
+import { FLEX_IDS, FLEX_IDS_V5, branchScene, marinefordNews, yearlyScene } from "./life-story.js";
 import { encounterScene, yearRoll } from "./world.js";
 import { CANON_IF_AFTER, canonScene } from "./canon-events.js";
+import { PRE_CANON_BEAT_COUNT, preCanonScene } from "./canon-before.js";
+import { canonGapFor, canonInterludeScene } from "./canon-interludes.js";
 
 export const SAVE_VERSION = 1;
 export const MODES = ["original", "free"];
@@ -91,7 +93,7 @@ function nextRandom(seed) {
   };
 }
 
-function personalize(text, name) {
+function personalize(text, name, creationVersion) {
   const last = name.codePointAt(name.length - 1);
   const batchim = last >= 0xac00 && last <= 0xd7a3 && (last - 0xac00) % 28 !== 0;
   const words = {
@@ -99,13 +101,19 @@ function personalize(text, name) {
     "너는": `${name}${batchim ? "은" : "는"}`, "너를": `${name}${batchim ? "을" : "를"}`,
     "너와": `${name}${batchim ? "과" : "와"}`, "너의": `${name}의`, "너도": `${name}도`, "네": `${name}의`
   };
-  return text.replace(/(?<![가-힣])(?:너에게|네게|네가|너는|너를|너와|너의|너도|네(?=\s))/gu, (word) => words[word]);
+  let result = text.replace(/(?<![가-힣])(?:너에게|네게|네가|너는|너를|너와|너의|너도|네(?=\s))/gu, (word) => words[word]);
+  if (creationVersion >= 5 && !batchim) {
+    for (const [old, corrected] of [["이", "가"], ["은", "는"], ["을", "를"], ["과", "와"]]) {
+      result = result.replaceAll(`${name}${old} `, `${name}${corrected} `);
+    }
+  }
+  return result;
 }
 
 function nextEligibleIndex(life, from) {
   for (let index = from; index < scenes.length; index += 1) {
     const card = scenes[index];
-    if (life.creationVersion >= 4 && FLEX_IDS.has(card.id)) continue;
+    if (life.creationVersion >= 5 && FLEX_IDS_V5.has(card.id) || life.creationVersion === 4 && FLEX_IDS.has(card.id)) continue;
     if (life.creationVersion >= 4 && (typeof card.age === "function" ? card.age(life) : card.age) < life.age) continue;
     if ((card.species === "all" || (card.species || "인간") === life.birth.species) && (!card.rules || card.rules.includes(life.rules)) && (!card.when || card.when(life))) return index;
   }
@@ -144,11 +152,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 4) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 5) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3, 4].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4, 5].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -199,6 +207,7 @@ export function createGame(mode, seed, profile = {}, rules = 3, creationVersion 
     routeIndex: -1, travelHistory: [birth.home], pendingEncounter: null, pendingBranch: false,
     people: {}, trustBy: {}, worldBranch: null, alliance: false, coalition: false, rival: false,
     canonStep: 0, bounty: 0, eternalPose: null, lastHuntAge: -100, lastPublicActAge: -100,
+    preCanonStep: 0, canonGapRemaining: 0, canonDailyIndex: 0,
     ending: null, deathCause: "", finished: false, lastOutcome: "", lastChanges: [], actions: [], journal: [], seen: []
   };
   life.index = nextEligibleIndex(life, 0);
@@ -211,6 +220,15 @@ function sceneCard(life) {
   if (life.rules !== 3) return authored;
   if (life.pendingEncounter) return encounterScene(life);
   if (life.pendingBranch) return branchScene(life);
+  if (life.creationVersion >= 5) {
+    if (age === life.age) return authored;
+    const interlude = canonInterludeScene(life);
+    if (interlude) return interlude;
+    const beforeWar = preCanonScene(life);
+    if (beforeWar) return beforeWar;
+    if (life.preCanonStep === PRE_CANON_BEAT_COUNT && !life.seen.includes("life_marineford_news")
+      && life.age >= life.birth.yearsBeforeCurrent - 2) return marinefordNews(life);
+  }
   if (life.creationVersion >= 4) {
     if (life.canonStep === CANON_IF_AFTER && !life.seen.includes("life_free_rank")) {
       const rank = yearlyScene({ ...life, age: life.birth.yearsBeforeCurrent - 1 });
@@ -221,7 +239,10 @@ function sceneCard(life) {
     if (milestone) return milestone;
   }
   if (age === life.age) return authored;
-  const yearly = yearlyScene(life, authored ? age - 1 : Infinity);
+  const quietLimit = life.creationVersion >= 5 && life.preCanonStep < PRE_CANON_BEAT_COUNT
+    ? Math.min(authored ? age - 1 : Infinity, life.birth.yearsBeforeCurrent - 4)
+    : authored ? age - 1 : Infinity;
+  const yearly = yearlyScene(life, quietLimit);
   if (yearly.urgent || !authored || age > life.age + 1) return yearly;
   return authored;
 }
@@ -256,7 +277,7 @@ export function getScene(life) {
   return {
     id: card.id, act: card.act, age, title: card.title,
     manual: Boolean(card.manual || life.creationVersion >= 4 && card.canon && !card.choices), timeLabel: card.timeLabel || null,
-    body: personalize(typeof card.body === "function" ? card.body(life) : card.body, life.birth.name),
+    body: personalize(typeof card.body === "function" ? card.body(life) : card.body, life.birth.name, life.creationVersion),
     art: ART[artKey], canon: card.canon || null,
     choices: (card.choices || []).filter((choice) => !choice.when || choice.when(life))
       .map((choice) => {
@@ -297,7 +318,21 @@ export function advance(life, action = null) {
 
   const next = structuredClone(life);
   if (card.encounter) next.pendingEncounter = null;
-  if (card.canonBeat) next.canonStep += 1;
+  if (card.preCanonBeat) {
+    next.preCanonStep += 1;
+    next.canonGapRemaining = canonGapFor(life, "before", next.preCanonStep);
+  }
+  if (next.creationVersion >= 5 && card.id === "life_marineford_news") {
+    next.canonGapRemaining = canonGapFor(life, "after", 0);
+  }
+  if (card.canonBeat) {
+    next.canonStep += 1;
+    if (next.creationVersion >= 5) next.canonGapRemaining = canonGapFor(life, "after", next.canonStep);
+  }
+  if (card.canonDaily) {
+    next.canonGapRemaining -= 1;
+    next.canonDailyIndex += 1;
+  }
   const target = chosen ? diceTarget(chosen, life) : 0;
   let outcome;
   if (target) {
@@ -308,7 +343,7 @@ export function advance(life, action = null) {
   if (next.creationVersion >= 4 && chosen?.bounty) {
     next.bounty += typeof chosen.bounty === "function" ? chosen.bounty(life) : chosen.bounty;
   }
-  const result = personalize(outcome || "", life.birth.name);
+  const result = personalize(outcome || "", life.birth.name, life.creationVersion);
   if (next.rules >= 2) {
     for (const stat of STATS) next[stat.key] = Math.max(0, Math.min(next.rules === 3 ? stat.max : stat.key === "health" ? 3 : 5, next[stat.key]));
   }

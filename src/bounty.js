@@ -38,7 +38,9 @@ export function bountyScene(life, age, base) {
   const adult = life.birth.species === "거인족" ? 80 : 16;
   if (age < adult || age - (life.lastPublicActAge ?? -100) < 5 || yearRoll(life.seed ^ 0x53c71a42, age) % 5 !== 0) return null;
   if (life.journal.slice(-10).some((entry) => entry.title === "검문선 앞의 작은 배")) return null;
-  const increase = life.bounty >= 100_000_000 ? 250_000_000 : life.bounty >= 10_000_000 ? 25_000_000 : 5_000_000;
+  const increase = life.creationVersion >= 5
+    ? life.bounty >= 100_000_000 ? 350_000_000 : life.bounty >= 10_000_000 ? 60_000_000 : 8_000_000
+    : life.bounty >= 100_000_000 ? 250_000_000 : life.bounty >= 10_000_000 ? 25_000_000 : 5_000_000;
   return { ...base, id: `life_bounty_act_${age}`, urgent: true, art: "deck", title: "검문선 앞의 작은 배",
     body: "군함이 작은 배의 명단을 요구했다. 그 배에는 쫓기는 사람이 타고 있었다. 배의 주인은 도움을 청했지만 무엇 때문에 쫓기는지는 말하지 않았다.",
     choices: [

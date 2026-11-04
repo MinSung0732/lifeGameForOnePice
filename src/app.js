@@ -3,6 +3,7 @@ import { crewNews } from "./world.js";
 import { peopleSummary } from "./people.js";
 import { CANON_BEAT_COUNT, canonStatus } from "./canon-events.js";
 import { formatBounty } from "./bounty.js";
+import { preCanonStatus } from "./canon-before.js";
 import { createObservation, tickObservation } from "./observation.js";
 import { scenes } from "./story.js";
 
@@ -222,8 +223,12 @@ function renderGame(focusTitle = false) {
   byId("route-trail").textContent = (life.travelHistory || [life.birth.home]).join(" → ");
   byId("crew-line").hidden = life.rules !== 3;
   byId("crew-news").textContent = byId("crew-news").title = life.rules === 3
-    ? life.creationVersion >= 4 && life.seen.includes("life_marineford_news") && life.canonStep < CANON_BEAT_COUNT
-      ? canonStatus(life) : crewNews(life, scene.age) : "";
+    ? life.creationVersion >= 4 && life.seen.includes("life_marineford_news")
+      && (life.creationVersion >= 5 || life.canonStep < CANON_BEAT_COUNT)
+      ? canonStatus(life)
+      : life.creationVersion >= 5 && !life.seen.includes("life_marineford_news")
+        && scene.age >= life.birth.yearsBeforeCurrent - 2
+        ? preCanonStatus(life) : crewNews(life, scene.age) : "";
   const changeText = describeChanges(life.lastChanges);
   byId("scene-result").textContent = [life.lastOutcome, changeText].filter(Boolean).join(" · ");
   byId("scene-result").hidden = !life.lastOutcome && !changeText;
