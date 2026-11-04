@@ -6,8 +6,8 @@ import { createObservation, tickObservation } from "../src/observation.js";
 import { scenes } from "../src/story.js";
 import { encounterAt } from "../src/world.js";
 
-function play(mode, seed, picks = {}, profile = { species: "인간" }, rules = 3) {
-  let life = createGame(mode, seed, profile, rules);
+function play(mode, seed, picks = {}, profile = { species: "인간" }, rules = 3, version = 3) {
+  let life = createGame(mode, seed, profile, rules, version);
   let steps = 0;
   while (!life.finished) {
     const scene = getScene(life);
@@ -24,8 +24,8 @@ function play(mode, seed, picks = {}, profile = { species: "인간" }, rules = 3
   return life;
 }
 
-function reach(seed, target, picks = {}, profile = { species: "인간" }) {
-  let life = createGame("original", seed, profile);
+function reach(seed, target, picks = {}, profile = { species: "인간" }, version = 3) {
+  let life = createGame("original", seed, profile, 3, version);
   const matches = (scene) => typeof target === "function" ? target(scene) : scene.id === target;
   while (!life.finished && !matches(getScene(life))) {
     const scene = getScene(life);
@@ -72,8 +72,10 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(human.skill, human.birthStats.species.skill + human.birthStats.individual.skill);
   assert.equal(human.health, human.birthStats.species.health + human.birthStats.individual.health);
   assert.equal(giant.health - human.health, 14);
-  assert.ok(human.birth.yearsBeforeCurrent >= 35 && human.birth.yearsBeforeCurrent <= 85);
-  assert.ok(giant.birth.yearsBeforeCurrent >= 160 && giant.birth.yearsBeforeCurrent <= 260);
+  assert.ok(human.birth.yearsBeforeCurrent >= 26 && human.birth.yearsBeforeCurrent <= 44, "로저 처형 20년 전 이내에 태어난다");
+  assert.ok(giant.birth.yearsBeforeCurrent >= 126 && giant.birth.yearsBeforeCurrent <= 150);
+  const previous = createGame("original", 42, { species: "인간" }, 3, 2);
+  assert.ok(previous.birth.yearsBeforeCurrent >= 35 && previous.birth.yearsBeforeCurrent <= 85, "이전 규칙 기록은 예전 출생 범위를 유지한다");
   assert.notDeepEqual(human.birthStats.individual, createGame("original", 43, { species: "인간" }).birthStats.individual);
   assert.ok(PROFILE_OPTIONS.species.every((species) => {
     const life = createGame("original", 42, { species });
@@ -89,7 +91,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 3 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 4 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -101,7 +103,7 @@ test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않
   const fight = getScene(enemy).choices.find((choice) => choice.id === "fight");
   assert.match(fight.risk, /기술 30 · 건강 30 필요/);
   assert.doesNotMatch(fight.risk, /승산|유리|밀리면|충족/);
-  const rival = reach(0, "life_rival_return", { life_enemy: "withdraw" });
+  const rival = reach(0, "life_rival_return", { life_enemy: "withdraw" }, { species: "인간" }, 2);
   const rivalRisks = getScene(rival).choices.map((choice) => choice.risk).join(" ");
   assert.doesNotMatch(rivalRisks, /승산|유리|적대관계 해소|적대관계 지속/);
 });
@@ -244,27 +246,27 @@ test("종족과 소속은 독립적이며 새 생애는 이른 죽음부터 긴 
 });
 
 test("직업은 사건과 조건으로 일찍 또는 늦게 바꾸고 승급을 거절할 수 있다", () => {
-  const young = reach(0, "life_early_departure");
+  const young = reach(0, "life_early_departure", {}, { species: "인간" }, 2);
   assert.equal(advance(young, "board").path, "pirate");
   assert.equal(advance(young, "marine").path, "marine");
   assert.equal(advance(young, "liberator").path, "liberator");
-  const firstCareer = reach(0, "life_career");
+  const firstCareer = reach(0, "life_career", {}, { species: "인간" }, 2);
   const captain = advance(firstCareer, "captain");
   assert.equal(captain.role, "선장");
   assert.equal(captain.independent, true);
-  const home = play("original", 0, { life_career: "home", life_orders: "obey", life_retire_choice: "continue" });
+  const home = play("original", 0, { life_career: "home", life_orders: "obey", life_retire_choice: "continue" }, { species: "인간" }, 3, 2);
   assert.equal(home.homebound, true);
   assert.deepEqual(home.travelHistory, [home.birth.home]);
   assert.equal(home.ending, "death");
 
   const quietPicks = { life_career: "home", life_orders: "obey", life_revolution_choice: "independent" };
-  const marine = reach(0, (scene) => scene.id.startsWith("life_marine_invitation_"), quietPicks);
+  const marine = reach(0, (scene) => scene.id.startsWith("life_marine_invitation_"), quietPicks, { species: "인간" }, 2);
   assert.ok(getScene(marine).age < 35, "입대 제안은 고정된 중년 나이를 기다리지 않아야 한다");
   const enlisted = advance(marine, "enlist");
   assert.equal(enlisted.path, "marine");
   assert.equal(enlisted.role, "수병");
   assert.equal(enlisted.leftHome, true);
-  const pirate = reach(0, (scene) => scene.id.startsWith("life_pirate_invitation_"), quietPicks);
+  const pirate = reach(0, (scene) => scene.id.startsWith("life_pirate_invitation_"), quietPicks, { species: "인간" }, 2);
   const recruited = advance(pirate, "join");
   assert.equal(recruited.path, "pirate");
   assert.equal(recruited.role, "견습 선원");
@@ -275,7 +277,7 @@ test("직업은 사건과 조건으로 일찍 또는 늦게 바꾸고 승급을 
   assert.equal(transfer.affiliation, "기항지에서 만난 해적단");
   assert.equal(transfer.role, "견습 선원");
   assert.equal(transfer.skill, otherCrew.skill, "이직 자체가 숙련도를 올리지는 않아야 한다");
-  let late = createGame("original", 0, { species: "인간" });
+  let late = createGame("original", 0, { species: "인간" }, 3, 2);
   while (!late.finished) {
     const scene = getScene(late);
     if (scene.id.startsWith("life_marine_invitation_") && scene.age >= 40) break;
@@ -286,43 +288,43 @@ test("직업은 사건과 조건으로 일찍 또는 늦게 바꾸고 승급을 
   assert.ok(!late.finished && getScene(late).age >= 40, "중년에 들어도 입대 제안이 다시 열려야 한다");
   assert.equal(advance(late, "enlist").path, "marine");
   const injuryPicks = { life_career: "home", life_orders: "help", life_revolution_choice: "independent" };
-  const revolution = reach(0, (scene) => scene.id.startsWith("life_revolution_invitation_"), injuryPicks);
+  const revolution = reach(0, (scene) => scene.id.startsWith("life_revolution_invitation_"), injuryPicks, { species: "인간" }, 2);
   assert.equal(revolution.injustice, true);
   const joined = advance(revolution, "join");
   assert.equal(joined.affiliation, "혁명군");
   assert.equal(joined.leftHome, true);
-  const apprentice = play("original", 0, { life_career: "pirate", life_orders: "obey", life_revolution_choice: "independent", life_retire_choice: "continue" });
+  const apprentice = play("original", 0, { life_career: "pirate", life_orders: "obey", life_revolution_choice: "independent", life_retire_choice: "continue" }, { species: "인간" }, 3, 2);
   assert.equal(apprentice.role, "견습 선원");
   assert.ok(apprentice.seen.some((id) => id.startsWith("life_rank_1_")));
 });
 
 test("열매의 획득 경위와 수영 제약, 패기와 비능력자 경로가 선택에 반영된다", () => {
-  const unknown = reach(0, "life_fruit_find");
+  const unknown = reach(0, "life_fruit_find", {}, { species: "인간" }, 2);
   assert.match(getScene(unknown).body, /이름을 찾을 수 없었다/);
   const eater = advance(unknown, "eat");
   assert.equal(eater.devilFruit, "이름 없는 초인계");
   assert.equal(eater.fruitMastery, 1);
-  const practice = reach(0, "life_fruit_practice", { life_fruit_find: "eat" });
+  const practice = reach(0, "life_fruit_practice", { life_fruit_find: "eat" }, { species: "인간" }, 2);
   assert.equal(advance(practice, "practice").fruitMastery, 2);
 
-  const payment = reach(1, "life_fruit_payment");
+  const payment = reach(1, "life_fruit_payment", {}, { species: "인간" }, 2);
   assert.match(getScene(payment).body, /대가/);
   assert.equal(advance(payment, "eat").devilFruit, "이름 없는 초인계");
   assert.equal(advance(payment, "supplies").devilFruit, null);
 
-  const fruitRescue = reach(0, "life_mission", { life_fruit_find: "eat" });
+  const fruitRescue = reach(0, "life_mission", { life_fruit_find: "eat" }, { species: "인간" }, 2);
   fruitRescue.skill = 40; fruitRescue.health = 70; fruitRescue.supplies = 20;
   assert.match(getScene(fruitRescue).choices.find((choice) => choice.id === "lead").risk, /물자 40.*물에 빠지면 힘이 빠짐/);
   assert.equal(advance(fruitRescue, "lead").health, 60);
-  const ordinaryRescue = reach(2, "life_mission");
+  const ordinaryRescue = reach(2, "life_mission", {}, { species: "인간" }, 2);
   ordinaryRescue.skill = 40; ordinaryRescue.health = 70; ordinaryRescue.supplies = 20;
   assert.equal(advance(ordinaryRescue, "lead").rescued, ordinaryRescue.rescued + 1);
 
-  const training = reach(2, "life_haki_training");
+  const training = reach(2, "life_haki_training", {}, { species: "인간" }, 2);
   assert.equal(training.devilFruit, null);
   const learned = advance(training, "observation");
   assert.equal(learned.haki.observation, 1);
-  const trial = reach(2, "life_power_trial", { life_haki_training: "observation", life_haki_practice: "armament" });
+  const trial = reach(2, "life_power_trial", { life_haki_training: "observation", life_haki_practice: "armament" }, { species: "인간" }, 2);
   assert.equal(trial.devilFruit, null);
   assert.equal(trial.haki.armament, 1);
   assert.deepEqual(getScene(trial).choices.map((choice) => choice.id), ["observe", "armor", "team", "call"]);
@@ -331,7 +333,7 @@ test("열매의 획득 경위와 수영 제약, 패기와 비능력자 경로가
 });
 
 test("100점 능력과 성격 변화가 종합 성향에 반영되고 조건 부족 선택은 막힌다", () => {
-  const early = reach(0, "life_first_skill");
+  const early = reach(0, "life_first_skill", {}, { species: "인간" }, 2);
   assert.equal(early.skill, early.birthStats.species.skill + early.birthStats.individual.skill);
   assert.equal(early.health, early.birthStats.species.health + early.birthStats.individual.health);
   assert.ok(personalitySummary(early.personality));
@@ -339,11 +341,11 @@ test("100점 능력과 성격 변화가 종합 성향에 반영되고 조건 부
   assert.equal(helpful.supplies, early.supplies + 10);
   assert.equal(helpful.personality.empathy, early.personality.empathy + 7);
   assert.ok(helpful.lastChanges.some((change) => change.key === "personality.empathy" && change.delta === 7));
-  const repeated = advance(reach(0, "life_enemy", { life_first_skill: "carry" }), "withdraw");
+  const repeated = advance(reach(0, "life_enemy", { life_first_skill: "carry" }, { species: "인간" }, 2), "withdraw");
   assert.equal(repeated.rival, true);
   assert.ok(repeated.personality.caution > helpful.personality.caution);
 
-  const weak = reach(0, "life_enemy", { life_first_skill: "carry" });
+  const weak = reach(0, "life_enemy", { life_first_skill: "carry" }, { species: "인간" }, 2);
   weak.skill = 20;
   assert.equal(getScene(weak).choices.find((choice) => choice.id === "fight").disabled, true);
   const actionCount = weak.actions.length;
@@ -352,7 +354,7 @@ test("100점 능력과 성격 변화가 종합 성향에 반영되고 조건 부
   const strong = { ...weak, skill: 80 };
   assert.equal(getScene(strong).choices.find((choice) => choice.id === "fight").disabled, false);
 
-  const poor = reach(0, "life_training");
+  const poor = reach(0, "life_training", {}, { species: "인간" }, 2);
   poor.supplies = 0;
   const practice = getScene(poor).choices.find((choice) => choice.id === "practice");
   assert.equal(practice.disabled, true);
@@ -360,7 +362,7 @@ test("100점 능력과 성격 변화가 종합 성향에 반영되고 조건 부
   assert.throws(() => advance(poor, "practice"));
   assert.equal(poor.supplies, 0);
 
-  const ally = reach(0, "life_alliance_offer");
+  const ally = reach(0, "life_alliance_offer", {}, { species: "인간" }, 2);
   assert.equal(advance(ally, "join").alliance, true);
   const betrayed = advance(ally, "betray");
   assert.equal(betrayed.rival, true);
@@ -370,7 +372,7 @@ test("100점 능력과 성격 변화가 종합 성향에 반영되고 조건 부
 
 test("실제 섬으로 이동하고 시기와 장소가 맞을 때만 원작 인물을 만난다", () => {
   const profile = { species: "인간", home: "이스트 블루 · 로그 타운" };
-  const first = reach(0, "life_voyage_24", {}, profile);
+  const first = reach(0, "life_voyage_24", {}, profile, 2);
   assert.equal(first.location, "리버스 마운틴");
   assert.equal(getScene(first).choices.find((choice) => choice.id === "near").label, "쌍둥이 언덕으로 간다");
   const whiskey = advance(first, "far");
@@ -378,7 +380,7 @@ test("실제 섬으로 이동하고 시기와 장소가 맞을 때만 원작 인
   assert.equal(whiskey.age, 24);
   assert.ok(whiskey.travelHistory.includes("위스키 피크"));
 
-  const littleGarden = reach(0, "life_voyage_27", { life_voyage_24: "far" }, profile);
+  const littleGarden = reach(0, "life_voyage_27", { life_voyage_24: "far" }, profile, 2);
   const arrived = advance(littleGarden, "near");
   assert.equal(arrived.location, "리틀 가든");
   assert.equal(getScene(arrived).id, "life_meet_dorry_brogy");
@@ -414,8 +416,8 @@ test("실제 섬으로 이동하고 시기와 장소가 맞을 때만 원작 인
 
 test("선택의 여파는 같은 해에 보이고 자유 모드의 상위 직책만 IF로 열린다", () => {
   const picks = { life_career: "captain", life_revolution_choice: "independent", life_retire_choice: "continue", life_free_rank: "attempt" };
-  const free = play("free", 0, picks);
-  const original = play("original", 0, picks);
+  const free = play("free", 0, picks, undefined, 3, 2);
+  const original = play("original", 0, picks, undefined, 3, 2);
   assert.equal(free.role, "사황");
   assert.equal(free.worldBranch, "emperor");
   assert.notEqual(original.role, "사황");
@@ -434,7 +436,7 @@ test("선택의 여파는 같은 해에 보이고 자유 모드의 상위 직책
 
 test("해군 승급은 경력과 신뢰를 쌓은 뒤에만 대장 IF로 이어진다", () => {
   function marineLife(mode) {
-    let life = createGame(mode, 3, { species: "인간" });
+    let life = createGame(mode, 3, { species: "인간" }, 3, 2);
     while (!life.finished) {
       const scene = getScene(life);
       const wanted = scene.id === "life_early_departure" || scene.id === "life_career" ? "marine"
@@ -474,7 +476,9 @@ test("저장 기록은 같은 삶으로 복원되고, 여러 시드가 막힘 �
     }
     assert.equal(new Set(life.seen).size, life.seen.length);
     assert.ok(life.journal.every((entry, index, entries) => index === 0 || entry.age >= entries[index - 1].age));
-    assert.ok(life.journal.every((entry, index, entries) => index === 0 || entry.age - entries[index - 1].age <= 1));
+    // Folded quiet years jump ahead by the number of years they cover; every other scene moves at most one year.
+    assert.ok(life.journal.every((entry, index, entries) => index === 0 || entry.age - entries[index - 1].age
+      <= (entry.id.startsWith("life_years_") ? entry.age - Number(entry.id.split("_")[2]) + 1 : 1)));
     assert.ok(life.journal.every((entry, index, entries) => !entries.slice(Math.max(0, index - 10), index)
       .some((previous) => previous.title === entry.title)), "최근 10장면의 제목은 반복되지 않아야 한다");
     for (const entry of life.journal) {
@@ -483,6 +487,8 @@ test("저장 기록은 같은 삶으로 복원되고, 여러 시드가 막힘 �
       if (entry.id === "life_tiger_liberation_news") assert.equal(life.birth.yearsBeforeCurrent - entry.age, 15);
       if (entry.id === "life_tom_news") assert.equal(life.birth.yearsBeforeCurrent - entry.age, 10);
       if (entry.id === "life_marineford_news") assert.equal(life.birth.yearsBeforeCurrent - entry.age, 2);
+      if (entry.id === "life_timeskip_news") assert.equal(life.birth.yearsBeforeCurrent - entry.age, 1);
+      if (entry.id === "life_new_era_news") assert.equal(life.birth.yearsBeforeCurrent - entry.age, 0);
     }
     assert.deepEqual(replay(saveRecord(life)), life);
     completed.add(life.ending);
@@ -516,4 +522,68 @@ test("거인 전용 선택 사건은 위험 문구대로 수치를 바꾸고 새
     while (!old.finished) { const scene = getScene(old); old = advance(old, scene.choices.find((option) => !option.disabled)?.id ?? null); }
     assert.ok(!old.journal.some((entry) => giantTitles.has(entry.title)), "이전 출생 규칙 기록에는 거인 선택 사건이 섞이지 않아야 한다");
   }
+});
+
+test("새 규칙은 주사위 시도, 섬별 신뢰, 다시 오는 인물, 섬 사건, 원작 열매 선점을 다룬다", async () => {
+  const { fruitFor } = await import("../src/fruits.js");
+  const { moveTo, crewNews } = await import("../src/world.js");
+  const weak = reach(0, "life_enemy", { life_first_skill: "carry" });
+  weak.skill = 10;
+  const fight = getScene(weak).choices.find((choice) => choice.id === "fight");
+  assert.equal(fight.disabled, false, "능력이 모자라도 시도할 수 있어야 한다");
+  assert.match(fight.risk, /주사위 1~100에서 \d+ 이상이면 성공/);
+  assert.equal(fight.dice, Math.min(95, 20 + (30 - 10) * 2 + Math.max(0, 30 - weak.health) * 2));
+  const tried = advance(weak, "fight");
+  assert.match(tried.lastOutcome, /^주사위 \d+ \(\d+ 이상 성공\) · (성공|실패)\./);
+  const poor = reach(0, "life_training");
+  poor.supplies = 0;
+  assert.equal(getScene(poor).choices.find((choice) => choice.id === "practice").disabled, true, "물자가 없으면 여전히 막혀야 한다");
+
+  const traveler = createGame("original", 5, { species: "인간" });
+  const home = traveler.location;
+  traveler.trust = 70;
+  moveTo(traveler, "워터 세븐");
+  assert.ok([15, 30, 45].includes(traveler.trust), "처음 간 섬은 우호·중립·적대 중 하나로 시작한다");
+  traveler.trust = 90;
+  moveTo(traveler, home);
+  assert.equal(traveler.trust, 70);
+  moveTo(traveler, "워터 세븐");
+  assert.equal(traveler.trust, 90);
+
+  for (let seed = 0; seed < 40; seed += 1) {
+    const life = { seed, age: 10, mode: "original", birth: { yearsBeforeCurrent: 60 } };
+    assert.equal(fruitFor(life).owner, undefined, "원작 모드에서는 원작 사용자의 열매가 나오지 않는다");
+  }
+  const early = Array.from({ length: 40 }, (_, seed) => fruitFor({ seed, age: 10, mode: "free", birth: { yearsBeforeCurrent: 60 } }));
+  assert.ok(early.some((fruit) => fruit.owner), "자유 모드에서는 원작 사용자보다 먼저 먹을 수 있다");
+  assert.ok(Array.from({ length: 40 }, (_, seed) => fruitFor({ seed, age: 58, mode: "free", birth: { yearsBeforeCurrent: 60 } }))
+    .every((fruit) => !fruit.owner || fruit.eatenBefore < 2), "원작 사용자가 이미 먹은 열매는 나오지 않는다");
+  assert.match(crewNews({ birth: { yearsBeforeCurrent: 60 }, age: 48 }), /밀짚모자/);
+  assert.match(crewNews({ birth: { yearsBeforeCurrent: 60 }, age: 70 }), /공개되지 않았다/);
+
+  const { canonCrew } = await import("../src/world.js");
+  const named = reach(0, "life_career", {}, { species: "인간", crew: "붉은 파도" });
+  named.skill = 40; named.supplies = 50; named.friendBond = 50;
+  assert.equal(advance(named, "captain").affiliation, "붉은 파도 해적단");
+  assert.throws(() => createGame("original", 1, { crew: "가".repeat(13) }));
+  const roger = { seed: 1, birth: { yearsBeforeCurrent: 40, species: "인간" } };
+  assert.ok(["로저 해적단", "흰 수염 해적단", "빅 맘 해적단", "백수 해적단"].includes(canonCrew(roger, 14)));
+  assert.ok(!["로저 해적단", "흰 수염 해적단"].includes(canonCrew(roger, 39)), "해체·소멸한 해적단에는 들어갈 수 없다");
+  assert.notEqual(canonCrew(roger, 26), "태양 해적단", "태양 해적단은 어인만 들어갈 수 있다");
+  const deckhand = reach(0, "life_career", {}, { species: "인간" });
+  deckhand.skill = 60; deckhand.health = 80;
+  const crewChoice = getScene(deckhand).choices.find((choice) => choice.id === "canon_crew");
+  if (crewChoice) assert.equal(advance(deckhand, "canon_crew").canonCrew, canonCrew(deckhand));
+
+  let mates = 0; let isles = 0; let folded = 0;
+  for (let seed = 0; seed < 40; seed += 1) {
+    const life = play(seed % 2 ? "free" : "original", seed);
+    if (life.people.mate) mates += 1;
+    if (life.seen.some((id) => id.startsWith("life_isle_"))) isles += 1;
+    if (life.seen.some((id) => id.startsWith("life_years_"))) folded += 1;
+    assert.deepEqual(replay(saveRecord(life)), life);
+  }
+  assert.ok(mates >= 30, `다시 오는 친구가 대부분의 생애에 있어야 한다 (${mates})`);
+  assert.ok(isles >= 10, `섬 사건이 여러 생애에 나와야 한다 (${isles})`);
+  assert.ok(folded >= 30, `조용한 해가 묶여야 한다 (${folded})`);
 });

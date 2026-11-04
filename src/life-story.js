@@ -1,4 +1,7 @@
-import { encounterAt, encounterScene, routeFor, travelScene } from "./world.js";
+import { canonCrew, encounterAt, encounterScene, moveTo, routeFor, standing, travelScene, yearRoll } from "./world.js";
+import { personalBeat } from "./people.js";
+import { islandEvent } from "./islands.js";
+import { fruitFor } from "./fruits.js";
 import { giantAdultDecisions, giantGrowingDecisions, giantGrowingYears, giantHomeYears, giantLaterYears, giantWorkingYears } from "./giant-years.js";
 
 // A species describes where a life begins. Work and allegiance are chosen later.
@@ -9,6 +12,14 @@ const byPath = (life, pirate, marine, liberator, civilian) => ({ pirate, marine,
 const canLeadRescue = (life) => life.skill >= 40 && life.health >= 40 && life.supplies >= (life.devilFruit ? 40 : 20);
 
 function eatFruit(life) {
+  if (life.creationVersion >= 3) {
+    const fruit = fruitFor(life);
+    life.devilFruit = `${fruit.name}(${fruit.type})`;
+    life.fruitMastery = 1;
+    if (fruit.owner) life.people.fruitOwner = { owner: fruit.owner, fruit: fruit.name };
+    return `한 입 베어 문 뒤 ${fruit.power} 물에 몸을 담그자 힘이 빠지는 것도 곧 알게 됐다.${fruit.owner
+      ? ` 원작에서 ${fruit.owner}의 것이 될 열매였다. 이 세계선의 ${fruit.owner}는 이 힘을 얻지 못한다.` : ""}`;
+  }
   life.devilFruit = "이름 없는 초인계";
   life.fruitMastery = 1;
   return "한 입 베어 문 뒤 손끝에서 매듭이 저절로 조여졌다. 물에 몸을 담그자 힘이 빠지는 것도 곧 알게 됐다.";
@@ -33,20 +44,46 @@ function setCareer(life, path) {
   }[path];
   [life.job, life.affiliation, life.role, life.goal] = career;
   if (life.creationVersion === 1 || firstCareer) life.skill += 10;
-  if (life.creationVersion === 2) {
+  if (life.creationVersion >= 2) {
+    life.canonCrew = null;
     life.independent = false;
     life.rankTier = 0;
     life.careerStartAge = life.age + 1;
   }
 }
 
+// The player's own crew takes the name typed at character creation, or the captain's name.
+function ownCrew(life) {
+  if (life.creationVersion < 3) return "자신이 꾸린 해적단";
+  const typed = life.profile.crew;
+  return typed ? typed.endsWith("해적단") ? typed : `${typed} 해적단` : `${life.birth.name} 해적단`;
+}
+
+function joinCanonCrew(life, crew) {
+  setCareer(life, "pirate");
+  life.affiliation = crew;
+  life.canonCrew = crew;
+}
+
+const canonCrewChoice = (id, record, after, firstCareer = false) => ({ id, label: (life) => `${canonCrew(life)}의 말단 선원이 된다`,
+  when: (life) => life.creationVersion >= 3 && Boolean(canonCrew(life)), needs: { skill: 35, health: 50 },
+  risk: "기술 35 · 건강 50 필요 · 이름난 선장 아래에서 갑판 청소부터", failRisk: firstCareer ? "건강 -15 · 작은 해적단으로 감" : "건강 -15 · 지원 실패",
+  personality: { ambition: 8, freedom: 6 },
+  fail: (life) => {
+    const crew = canonCrew(life);
+    life.health -= 15; record?.(life);
+    // A first career must still start somewhere, or the rest of the life has no path.
+    if (firstCareer) { setCareer(life, "pirate"); return `${crew}의 갑판장은 고개를 저었다. 대신 항구의 작은 해적단에 견습 자리를 얻었다.`; }
+    return `${crew}의 갑판장은 한 번 훑어보고 고개를 저었다.`;
+  },
+  apply: (life) => { const crew = canonCrew(life); joinCanonCrew(life, crew); record?.(life); after?.(life); return `${crew}의 깃발 아래에서 가장 낮은 자리부터 일을 시작했다. 이름난 선장의 얼굴은 멀리서만 보였다.`; } });
+
 function depart(life) {
   if (life.leftHome && !life.homebound) return;
   life.leftHome = true;
   life.homebound = false;
   life.routeIndex = 0;
-  life.location = routeFor(life)[0];
-  life.travelHistory.push(life.location);
+  moveTo(life, routeFor(life)[0]);
 }
 
 const origin = [
@@ -92,14 +129,15 @@ const scenes = [
     : "해적선, 해군 배, 짐을 실은 상선이 서로 다른 날에 드나들었다. 어디에 타든 일과 명령, 위험이 함께 따라온다는 이야기가 들렸다." },
   { id: "life_career", age: at(19, 112), when: (life) => life.creationVersion === 1 || !life.path, art: "deck", title: "처음 고른 소속", body: (life) => `${life.birth.name}에게도 일할 자리가 생겼다. 항구에는 저마다 다른 깃발을 단 배가 들어왔다. 어느 길을 택하든 배와 동행, 배울 시간이 필요했다.`, choices: [
     { id: "pirate", label: "해적단의 선원이 된다", risk: "기술 +10 · 자유로운 항로 · 추적 위험", personality: { freedom: 10, ambition: 6 }, apply: (life) => { setCareer(life, "pirate"); return "독립 해적단에 자리를 얻었다. 선장도 동료도 아직 낯설었다."; } },
-    { id: "captain", label: "동료와 작은 해적단을 꾸린다", when: (life) => life.creationVersion === 2,
+    { id: "captain", label: "동료와 작은 해적단을 꾸린다", when: (life) => life.creationVersion >= 2,
       available: (life) => life.skill >= 30 && life.supplies >= 40 && life.friendBond >= 40,
       risk: "기술 30 · 물자 40 · 친구와의 유대 40 필요 · 출항 물자 -20", personality: { freedom: 9, ambition: 8, loyalty: 5 },
-      apply: (life) => { setCareer(life, "pirate"); life.independent = true; life.rankTier = 3; life.job = "해적단 선장"; life.affiliation = "자신이 꾸린 해적단"; life.role = "선장"; life.supplies -= 20; return "작은 배에 동료의 몫을 싣고 선장으로 첫 항해를 준비했다."; } },
+      apply: (life) => { setCareer(life, "pirate"); life.independent = true; life.rankTier = 3; life.job = "해적단 선장"; life.affiliation = ownCrew(life); life.role = "선장"; life.supplies -= 20; return "작은 배에 동료의 몫을 싣고 선장으로 첫 항해를 준비했다."; } },
+    canonCrewChoice("canon_crew", null, null, true),
     { id: "marine", label: "해군에 지원한다", risk: "기술 +10 · 수병부터 시작", personality: { loyalty: 7, caution: 5 }, apply: (life) => { setCareer(life, "marine"); return "해군의 시험과 교육을 거쳐 수병 명부에 이름을 올렸다."; } },
     { id: "liberator", label: "사람을 빼내는 연락망에 합류한다", risk: "기술 +10 · 비공식 해방 활동", personality: { empathy: 8, freedom: 6 }, apply: (life) => { setCareer(life, "liberator"); return "억압받는 이들을 돕는 작은 독립 연락망에서 일을 시작했다."; } },
     { id: "civilian", label: "민간 배와 조합에서 일한다", risk: "기술 +10 · 지역의 신뢰 +10", personality: { caution: 5, loyalty: 5 }, apply: (life) => { setCareer(life, "civilian"); life.trust += 10; return "민간 선박 조합에서 견습 일꾼으로 일하게 됐다."; } },
-    { id: "home", label: "고향의 일을 이어 간다", when: (life) => life.creationVersion === 2, risk: "기술 +10 · 마을에 남음", personality: { loyalty: 5, caution: 4 }, apply: (life) => {
+    { id: "home", label: "고향의 일을 이어 간다", when: (life) => life.creationVersion >= 2, risk: "기술 +10 · 마을에 남음", personality: { loyalty: 5, caution: 4 }, apply: (life) => {
       setCareer(life, "civilian"); life.homebound = true; life.job = "마을 일꾼"; life.affiliation = "고향 마을"; life.role = "마을 일꾼"; life.goal = "익숙한 삶터를 지키기";
       return "떠나는 배를 배웅하고 마을의 일손으로 남았다. 삶은 그곳에서도 계속됐다.";
     } }
@@ -120,7 +158,7 @@ const scenes = [
     { id: "save", label: "비상 물자로 남긴다", risk: "물자 +10", apply: (life) => { life.supplies += 10; return "예비 식량과 약품을 따로 묶어 두었다."; } }
   ] },
   { id: "life_enemy", age: at(24, 135), art: "lifeStorm", title: "부두에서 맞선 배", body: "기항지에 먼저 닿은 무장 선단이 약한 배의 물자를 가로막았다. 한 선원이 길을 터 달라며 다가왔다. 무기를 드는 순간부터 다른 배들도 싸움에 휘말릴 수 있었다.", choices: [
-    { id: "fight", label: "앞에 나서서 길을 연다", available: (life) => life.skill >= 30 && life.health >= 30,
+    { id: "fight", label: "앞에 나서서 길을 연다", available: (life) => life.skill >= 30 && life.health >= 30, needs: { skill: 30, health: 30 },
       risk: "기술 30 · 건강 30 필요 · 기술 60 또는 무장색이 전투의 변수",
       personality: { ambition: 7, caution: -6, loyalty: 5 }, apply: (life) => {
         life.rival = true;
@@ -143,7 +181,9 @@ const scenes = [
     { id: "help", label: "현장의 사람을 먼저 돕는다", cost: 10, risk: "물자 -10 · 지역의 신뢰 +10", personality: { empathy: 8, loyalty: 4 }, apply: (life) => { life.supplies -= 10; life.trust += 10; life.injustice = true; return "도움을 받은 이가 돌아왔다. 조직에서는 독단이었다고 꾸짖었다."; } }
   ] },
   { id: "life_repercussion", age: at(25, 140), art: "deck", title: "뒤따른 말", body: (life) => life.trust >= 40 ? "기항지의 사람들이 이름을 기억했다. 그 신뢰가 명령을 대신해 주지는 않았지만 다음 일을 함께 시작할 사람이 늘었다." : "기항지의 사람들은 쉽게 마음을 열지 않았다. 한 번의 결정이 오래 남을 수 있다는 사실을 배웠다." },
-  { id: "life_fruit_find", age: at(27, 149), art: "fruit", title: "물결에 밀려온 상자", when: (life) => life.seed % 3 === 0, body: "떠밀려 온 상자에 기묘한 무늬의 열매가 하나 있었다. 도감에서 이름을 찾을 수 없었다. 먹으면 힘을 얻을지 몰라도 바다에서는 몸을 가누기 어렵다는 말을 들었다.", choices: [
+  { id: "life_fruit_find", age: at(27, 149), art: "fruit", title: "물결에 밀려온 상자", when: (life) => life.seed % 3 === 0, body: (life) => life.creationVersion >= 3
+    ? `떠밀려 온 상자에 소용돌이 무늬의 열매가 하나 있었다. ${fruitFor(life).owner ? "낡은 도감 한쪽에서 비슷한 그림을 찾았지만 누가 먹었다는 기록은 없었다." : "도감에서 이름을 찾을 수 없었다. 어딘가에서 사용자가 죽고 새로 맺힌 열매일지도 몰랐다."} 먹으면 힘을 얻는 대신 바다에서는 몸을 가누기 어렵다는 말을 들었다.`
+    : "떠밀려 온 상자에 기묘한 무늬의 열매가 하나 있었다. 도감에서 이름을 찾을 수 없었다. 먹으면 힘을 얻을지 몰라도 바다에서는 몸을 가누기 어렵다는 말을 들었다.", choices: [
     { id: "eat", label: "정체를 모른 채 먹는다", risk: "새 힘을 얻을 수 있음 · 물에 잠기면 힘이 빠짐", personality: { ambition: 7, caution: -7 }, apply: eatFruit },
     { id: "sell", label: "열매를 넘기고 항해 자금을 받는다", risk: "물자 +20 · 비능력자로 남음", personality: { caution: 6 }, apply: (life) => { life.supplies += 20; return "물자를 챙겨 배로 돌아왔다. 열매가 누구의 손에 갔는지는 듣지 못했다."; } },
     { id: "leave", label: "손대지 않고 발견 사실을 알린다", risk: "지역의 신뢰 +10 · 비능력자로 남음", personality: { empathy: 5, caution: 5 }, apply: (life) => { life.trust += 10; return "항구 사람들에게 상자의 위치를 알려 주고 지나왔다."; } }
@@ -152,8 +192,10 @@ const scenes = [
     { id: "admit", label: "실수를 밝히고 다시 조사한다", cost: 10, risk: "물자 -10 · 지역의 신뢰 +10 · 기술 +10", personality: { loyalty: 7, caution: 5 }, apply: (life) => { life.supplies -= 10; life.trust += 10; life.skill += 10; return "손해를 메우는 데 오래 걸렸지만 같은 실수를 피할 기록이 남았다."; } },
     { id: "hide", label: "흔적을 덮고 떠난다", risk: "물자 유지 · 지역의 신뢰 -10", personality: { loyalty: -8, caution: -4 }, apply: (life) => { life.trust -= 10; return "다음 항구에서 소문이 먼저 도착했다. 변명은 신뢰를 되돌리지 못했다."; } }
   ] },
-  { id: "life_fruit_payment", age: at(29, 163), art: "fruit", title: "항해의 대가", when: (life) => life.seed % 3 === 1 && !life.devilFruit && (life.creationVersion === 1 || !life.homebound), body: "먼 항로의 일을 마친 대가로 상인이 열매 하나와 물자 꾸러미를 내놓았다. 동행한 수집가는 열매가 작은 매듭을 조이는 초인계라고 알려 주었지만, 정확한 이름은 찾지 못했다.", choices: [
-    { id: "eat", label: "열매를 받아 먹는다", risk: "매듭을 조이는 힘 · 물에 잠기면 힘이 빠짐", personality: { ambition: 6, caution: -4 }, apply: eatFruit },
+  { id: "life_fruit_payment", age: at(29, 163), art: "fruit", title: "항해의 대가", when: (life) => life.seed % 3 === 1 && !life.devilFruit && (life.creationVersion === 1 || !life.homebound), body: (life) => life.creationVersion >= 3
+    ? `먼 항로의 일을 마친 대가로 상인이 열매 하나와 물자 꾸러미를 내놓았다. 동행한 수집가는 도감을 뒤적이다 ${fruitFor(life).type}의 ${fruitFor(life).name}${fruitFor(life).owner ? "일 거라고 했다." : "인 것 같지만 기록에 없는 새 열매라고 했다."}`
+    : "먼 항로의 일을 마친 대가로 상인이 열매 하나와 물자 꾸러미를 내놓았다. 동행한 수집가는 열매가 작은 매듭을 조이는 초인계라고 알려 주었지만, 정확한 이름은 찾지 못했다.", choices: [
+    { id: "eat", label: "열매를 받아 먹는다", risk: (life) => `${life.creationVersion >= 3 ? fruitFor(life).type : "매듭을 조이는"} 힘 · 물에 잠기면 힘이 빠짐`, personality: { ambition: 6, caution: -4 }, apply: eatFruit },
     { id: "supplies", label: "물자 꾸러미를 받는다", risk: "물자 +20 · 비능력자로 남음", personality: { caution: 5 }, apply: (life) => { life.supplies += 20; return "운반할 물자와 식량을 챙겼다. 손에 익힌 기술로 다음 항해를 준비했다."; } }
   ] },
   { id: "life_mentor", age: at(30, 170), art: "workbench", title: "오래 일한 사람", body: "오래 일한 선배가 젖은 장부를 펴 놓고 실패한 날을 다시 짚었다. 능숙함은 한 번의 대담한 행동보다 그 뒤의 수습에 있었다." },
@@ -164,10 +206,12 @@ const scenes = [
     { id: "liberator", label: "독립 해방망으로 옮긴다", when: (life) => life.path !== "liberator", risk: "새 소속 · 연락원부터 다시 시작", apply: (life) => { setCareer(life, "liberator"); return "비공식 연락망의 가장 작은 일부터 다시 배웠다."; } },
     { id: "civilian", label: "민간 조합으로 옮긴다", when: (life) => life.path !== "civilian", risk: "새 소속 · 견습부터 다시 시작", apply: (life) => { setCareer(life, "civilian"); return "무기를 내려놓고 민간 배의 일을 다시 배웠다."; } }
   ] },
-  { id: "life_fruit_practice", age: at(33, 185), art: "workbench", title: "손끝의 새 일", when: (life) => Boolean(life.devilFruit), body: "손끝의 힘은 아직 뜻대로 움직이지 않았다. 비가 오면 물길도 피해야 했다. 같은 매듭을 여러 번 연습할지, 안전한 도구부터 더 마련할지 정해야 했다.", choices: [
+  { id: "life_fruit_practice", age: at(33, 185), art: "workbench", title: "손끝의 새 일", when: (life) => Boolean(life.devilFruit), body: (life) => life.creationVersion >= 3
+    ? `${life.devilFruit}의 힘은 아직 뜻대로 움직이지 않았다. 비가 오면 물길도 피해야 했다. 힘을 여러 번 연습할지, 안전한 도구부터 더 마련할지 정해야 했다.`
+    : "손끝의 힘은 아직 뜻대로 움직이지 않았다. 비가 오면 물길도 피해야 했다. 같은 매듭을 여러 번 연습할지, 안전한 도구부터 더 마련할지 정해야 했다.", choices: [
     { id: "practice", label: "마른 작업장에서 힘을 연습한다", risk: "기술 40이 안정된 연습의 기준 · 과로 주의", apply: (life) => {
       if (life.skill < 40) { life.health -= 10; return "힘을 억지로 쓰다가 지쳤다. 도구를 다루는 순서부터 다시 배워야 했다."; }
-      life.fruitMastery = 2; return "마른 밧줄을 끊지 않고 단단히 묶는 법을 익혔다.";
+      life.fruitMastery = 2; return life.creationVersion >= 3 ? "힘을 원하는 만큼만 꺼내고 거두는 법을 익혔다." : "마른 밧줄을 끊지 않고 단단히 묶는 법을 익혔다.";
     } },
     { id: "prepare", label: "물가에서 쓸 안전 장비를 마련한다", risk: "물자 +10 · 열매 숙련 유지", apply: (life) => { life.supplies += 10; return "동료와 구조 밧줄을 다시 점검했다. 물에 빠졌을 때 손을 잡아 줄 사람도 정했다."; } }
   ] },
@@ -195,12 +239,12 @@ const scenes = [
   ] },
   { id: "life_mission_after", age: at(36, 198), art: "workbench", title: "구조 다음 날", body: (life) => life.rescued ? "구조된 이들의 가족이 항구에 모였다. 고마움은 오래 남았고, 다친 몸에는 회복할 시간이 필요했다." : "다른 구조대의 배가 돌아왔다. 혼자 해내지 못한 일에도 맡은 몫이 있었다." },
   { id: "life_haki_training", age: at(38, 206), art: "workbench", title: "기척을 읽는 수련", body: "노련한 항해사가 사람의 기척을 듣는 법과 몸을 단단히 지키는 법을 보여 주었다. 오래 집중하고 몸을 단련해야 닿을 수 있는 힘이었다.", choices: [
-    { id: "observation", label: "견문색의 기초를 배운다", available: (life) => life.skill >= 40, risk: "기술 40 필요 · 견문색 1단계", apply: (life) => {
-      if (life.skill < 40) return "서두르는 동안 작은 기척을 놓쳤다. 먼저 맡은 일을 차분히 익혀야 했다.";
+    { id: "observation", label: "견문색의 기초를 배운다", available: (life) => life.skill >= 40, needs: { skill: 40 }, risk: "기술 40 필요 · 견문색 1단계", apply: (life) => {
+      if (life.skill < 40 && life.creationVersion < 3) return "서두르는 동안 작은 기척을 놓쳤다. 먼저 맡은 일을 차분히 익혀야 했다.";
       life.haki.observation = 1; return "눈을 감아도 동료가 어느 쪽에 있는지 느낄 수 있었다.";
     } },
-    { id: "armament", label: "무장색의 기초를 배운다", available: (life) => life.skill >= 40 && life.health >= 40, risk: "기술 40 · 건강 40 필요 · 무장색 1단계", apply: (life) => {
-      if (life.skill < 40 || life.health < 40) return "몸이 버티지 못해 수련을 멈췄다. 무리한 훈련은 다음으로 미뤘다.";
+    { id: "armament", label: "무장색의 기초를 배운다", available: (life) => life.skill >= 40 && life.health >= 40, needs: { skill: 40, health: 40 }, risk: "기술 40 · 건강 40 필요 · 무장색 1단계", apply: (life) => {
+      if ((life.skill < 40 || life.health < 40) && life.creationVersion < 3) return "몸이 버티지 못해 수련을 멈췄다. 무리한 훈련은 다음으로 미뤘다.";
       life.haki.armament = 1; return "한순간 손을 단단히 지키는 감각을 익혔다.";
     } },
     { id: "craft", label: "기존 기술을 더 다듬는다", risk: "기술 +10 · 패기는 배우지 않음", apply: (life) => { life.skill += 10; return "특별한 힘 없이도 배와 사람을 지킬 수 있도록 도구를 손에 익혔다."; } }
@@ -213,12 +257,12 @@ const scenes = [
   ] },
   { id: "life_distance", age: at(40, 216), art: "deck", title: "그날의 편지", body: (life) => life.friendBond >= 40 ? "그날 저녁 먼 항구에서 편지가 왔다. 서로 다른 일을 하면서도 안부를 물을 사람은 남아 있었다." : "그날 저녁 답장하지 못한 편지가 남았다. 다시 말을 걸고 싶어도 지난 시간을 한 번에 되돌릴 수는 없었다." },
   { id: "life_haki_practice", age: at(42, 226), art: "deck", title: "수련을 이어 가는 날", body: "배움은 한 번의 깨달음으로 끝나지 않았다. 기척을 살피는 일과 몸을 지키는 일, 오래 써 온 기술 중 무엇을 더 익힐지 골랐다.", choices: [
-    { id: "observation", label: "견문색을 수련한다", available: (life) => life.skill >= 60, risk: "기술 60 필요 · 견문색 +1", apply: (life) => {
-      if (life.skill < 60) return "집중이 오래가지 않았다. 일과 수련의 기초를 더 다져야 했다.";
+    { id: "observation", label: "견문색을 수련한다", available: (life) => life.skill >= 60, needs: { skill: 60 }, risk: "기술 60 필요 · 견문색 +1", apply: (life) => {
+      if (life.skill < 60 && life.creationVersion < 3) return "집중이 오래가지 않았다. 일과 수련의 기초를 더 다져야 했다.";
       life.haki.observation = Math.min(2, life.haki.observation + 1); return "바람소리 사이에서 동료의 발소리를 가려 냈다.";
     } },
-    { id: "armament", label: "무장색을 수련한다", available: (life) => life.skill >= 60 && life.health >= 40, risk: "기술 60 · 건강 40 필요 · 무장색 +1", apply: (life) => {
-      if (life.skill < 60 || life.health < 40) return "힘을 붙이기 전에 몸을 돌봐야 했다. 수련은 다음으로 미뤘다.";
+    { id: "armament", label: "무장색을 수련한다", available: (life) => life.skill >= 60 && life.health >= 40, needs: { skill: 60, health: 40 }, risk: "기술 60 · 건강 40 필요 · 무장색 +1", apply: (life) => {
+      if ((life.skill < 60 || life.health < 40) && life.creationVersion < 3) return "힘을 붙이기 전에 몸을 돌봐야 했다. 수련은 다음으로 미뤘다.";
       life.haki.armament = Math.min(2, life.haki.armament + 1); return "도구를 잡은 손에 힘을 고르게 모을 수 있었다.";
     } },
     { id: "craft", label: "익숙한 도구와 항해술을 연마한다", risk: "기술 +10 · 비능력자도 선택 가능", apply: (life) => { life.skill += 10; return "도구의 마모와 물길의 변화를 더 빨리 알아봤다."; } }
@@ -234,9 +278,9 @@ const scenes = [
   { id: "life_power_trial", age: at(45, 240), art: "lifeStorm", title: "갑판 아래의 소리", body: "정박한 배 아래에서 무너지는 소리가 났다. 갇힌 일꾼을 찾으려면 급히 움직여야 했다. 한 사람의 힘만으로 끝낼 일은 아니었다.", choices: [
     { id: "observe", label: "견문색으로 위치를 찾는다", when: (life) => life.haki.observation > 0, risk: "견문색 사용 · 지역의 신뢰 +10", apply: (life) => { life.trust += 10; return "작은 숨소리가 들리는 쪽을 짚어 동료들에게 알렸다. 일꾼을 꺼낼 길이 열렸다."; } },
     { id: "armor", label: "무장색으로 무너지는 판자를 버틴다", when: (life) => life.haki.armament > 0, risk: "무장색 사용 · 건강 -10 · 지역의 신뢰 +10", apply: (life) => { life.health -= 10; life.trust += 10; return "버티는 동안 동료들이 일꾼을 꺼냈다. 몸에 피로가 남았다."; } },
-    { id: "fruit", label: "열매의 힘으로 매듭을 조인다", when: (life) => Boolean(life.devilFruit), risk: "열매 숙련 2 또는 물자 40이 버팀의 기준 · 매듭이 풀릴 수 있음", apply: (life) => {
+    { id: "fruit", label: (life) => life.creationVersion >= 3 ? "열매의 힘으로 무너지는 판자를 붙잡는다" : "열매의 힘으로 매듭을 조인다", when: (life) => Boolean(life.devilFruit), risk: "열매 숙련 2 또는 물자 40이 버팀의 기준 · 매듭이 풀릴 수 있음", apply: (life) => {
       if (life.fruitMastery < 2 && life.supplies < 40) { life.health -= 10; return "밧줄이 급히 풀렸다. 동료들이 대신 판자를 받치며 일꾼을 꺼냈다."; }
-      life.trust += 10; return "조여진 밧줄이 판자를 붙잡았다. 동료들이 그 아래에서 일꾼을 꺼냈다.";
+      life.trust += 10; return life.creationVersion >= 3 ? "열매의 힘이 판자를 붙잡았다. 동료들이 그 아래에서 일꾼을 꺼냈다." : "조여진 밧줄이 판자를 붙잡았다. 동료들이 그 아래에서 일꾼을 꺼냈다.";
     } },
     { id: "team", label: "동료와 도구를 모아 구조한다", cost: 10, risk: "물자 10 필요 · 기술 40이 지지대 설치의 기준", apply: (life) => {
       life.supplies -= 10;
@@ -261,7 +305,7 @@ const scenes = [
   { id: "life_command", age: at(51, 258), art: "deck", title: "책임의 크기", body: (life) => `${life.birth.name}의 판단을 기다리는 사람이 늘었다. ${life.affiliation}에서 보낸 세월은 숙련을 쌓았지만, 모든 결정이 옳았던 것은 아니었다.` },
   { id: "life_rival_return", age: at(52, 260), art: "lifeStorm", title: "다시 만난 선단", when: (life) => life.rival, body: "오래전 부두에서 마주친 무장 선단이 다시 나타났다. 이번에는 상대도 사람을 잃고 지쳐 있었다. 뒤로 돌거나, 말을 걸거나, 먼저 길을 막을 수 있었다.", choices: [
     { id: "truce", label: "서로의 피해를 말하고 휴전을 청한다", available: (life) => life.trust >= 40, risk: "지역의 신뢰 40 필요 · 상대의 대답은 아직 모름", personality: { empathy: 9, loyalty: 5 }, apply: (life) => { life.rival = false; life.trust += 10; return "이름을 지우지는 못했지만 다음 항로에서 서로를 먼저 공격하지 않기로 했다."; } },
-    { id: "fight", label: "동료를 앞세워 맞선다", available: (life) => life.skill >= 50 && life.health >= 30,
+    { id: "fight", label: "동료를 앞세워 맞선다", available: (life) => life.skill >= 50 && life.health >= 30, needs: { skill: 50, health: 30 },
       risk: "기술 50 · 건강 30 필요 · 기술 70 또는 무장색이 전투의 변수",
       personality: { ambition: 7, caution: -6 }, apply: (life) => {
         if (life.skill < 70 && !life.haki.armament) { life.health -= 20; return "상대의 배가 더 빨랐다. 동료를 잃지 않으려 물러났다."; }
@@ -297,7 +341,7 @@ const scenes = [
     { id: "prepare", label: "대피와 보급을 준비한다", cost: 10, risk: "물자 -10 · 건강 +10", apply: (life) => { life.supplies -= 10; life.health += 10; return "쓸 일이 없기를 바라던 장비가 한 번은 사람을 살렸다."; } },
     { id: "press", label: "속도를 내어 먼저 건넌다", risk: "물자 +10 · 건강 -10", apply: (life) => { life.supplies += 10; life.health -= 10; return "먼저 건넜지만 피로가 오래 남았다."; } }
   ] },
-  { id: "life_homecoming", age: at(67, 276), when: (life) => life.creationVersion === 1 || life.leftHome && !life.homebound, art: (life) => ({ 인간: "deck", 어인: "fishman", 밍크족: "mink", "하늘섬 사람": "sky", 거인족: "giant" })[life.birth.species], title: "고향의 다른 얼굴", body: (life) => `${life.birth.home}에 돌아왔을 때 아는 길도 조금 달라져 있었다. ${life.birth.name}을 기억하는 사람과 새로 온 사람이 한곳에서 일했다.`, after: (life) => { life.location = life.birth.home; life.travelHistory.push(life.location); return "고향에 잠시 머물렀다."; } },
+  { id: "life_homecoming", age: at(67, 276), when: (life) => life.creationVersion === 1 || life.leftHome && !life.homebound, art: (life) => ({ 인간: "deck", 어인: "fishman", 밍크족: "mink", "하늘섬 사람": "sky", 거인족: "giant" })[life.birth.species], title: "고향의 다른 얼굴", body: (life) => `${life.birth.home}에 돌아왔을 때 아는 길도 조금 달라져 있었다. ${life.birth.name}을 기억하는 사람과 새로 온 사람이 한곳에서 일했다.`, after: (life) => { moveTo(life, life.birth.home); return "고향에 잠시 머물렀다."; } },
   { id: "life_old_friend", age: at(69, 278), art: "deck", title: "오래된 친구", body: (life) => life.friendBond >= 40 ? "옛 친구와 다시 마주 앉았다. 서로의 선택을 모두 이해하지는 못해도, 물어볼 이야기가 남아 있었다." : "옛 친구의 소식은 다른 사람을 통해 들었다. 멀어진 시간은 서로의 삶에 실제로 있었다." },
   { id: "life_late_work", age: at(71, 280), art: "workbench", title: "몸에 남은 노동", body: "손에 익은 일은 여전히 해낼 수 있었다. 회복에는 전보다 긴 시간이 필요해졌고, 맡을 일을 고르는 방식도 달라져야 했다.", choices: [
     { id: "share", label: "일을 후배와 나눈다", risk: "건강 +10 · 업무를 나눔", apply: (life) => { life.health += 10; life.successor = true; return "혼자 붙들던 일을 나누자 몸과 일정에 여유가 생겼다."; } },
@@ -456,7 +500,7 @@ const RANK_ROLES = {
 };
 
 function careerOpportunity(life, age, base) {
-  if (life.creationVersion !== 2 || !life.path || life.retired) return null;
+  if (life.creationVersion < 2 || !life.path || life.retired) return null;
   const yearsFromCareer = age - life.careerStartAge;
   const tenureNeeded = giant(life) ? 35 : 10;
   const offerGap = giant(life) ? 50 : 18;
@@ -483,7 +527,7 @@ function careerOpportunity(life, age, base) {
           apply: (state) => { state.lastCrewOfferAge = age; state.skill += 10; return "익숙한 배에서 하던 일을 이어 갔다."; } },
         { id: "found", label: "동료들과 독립 해적단을 만든다", available: (state) => state.skill >= 40 && state.supplies >= 30 && state.friendBond >= 40,
           risk: "기술 40 · 물자 30 · 친구와의 유대 40 필요 · 출항 물자 -20", personality: { ambition: 8, freedom: 7, loyalty: 4 },
-          apply: (state) => { state.independent = true; state.rankTier = 3; state.job = "해적단 선장"; state.affiliation = "자신이 꾸린 해적단"; state.role = "선장"; state.supplies -= 20; state.lastCrewOfferAge = age; return "동료와 배의 장부를 함께 만들고 선장으로 항로를 정했다."; } }
+          apply: (state) => { state.independent = true; state.rankTier = 3; state.job = "해적단 선장"; state.affiliation = ownCrew(state); state.role = "선장"; state.supplies -= 20; state.lastCrewOfferAge = age; return "동료와 배의 장부를 함께 만들고 선장으로 항로를 정했다."; } }
       ] });
   }
   if (life.path !== "marine" && yearsFromCareer >= tenureNeeded && life.trust >= 50
@@ -505,9 +549,10 @@ function careerOpportunity(life, age, base) {
       body: "기항지의 작은 해적단이 일손을 구했다. 이미 다른 배를 탔더라도 옮길 수 있지만, 새 선장 아래서는 지난 직책을 그대로 받을 수 없었다.", choices: [
         { id: "remain", label: "지금의 소속과 일을 지킨다", risk: "현재 소속 유지 · 항로 정보만 들음",
           apply: (state) => { state.lastPirateOfferAge = age; return "그들의 배가 떠나는 모습을 보고 자기 자리로 돌아왔다."; } },
-        { id: "join", label: "그 해적단의 견습 선원이 된다", available: (state) => state.skill >= 35 && state.health >= 35,
+        { id: "join", label: "그 해적단의 견습 선원이 된다", available: (state) => state.skill >= 35 && state.health >= 35, needs: { skill: 35, health: 35 }, failRisk: "건강 -15 · 현재 소속 유지", fail: (state) => { state.health -= 15; state.lastPirateOfferAge = age; return "입단 시험 삼아 붙은 싸움에서 졌다. 그 해적단은 웃으며 떠났다."; },
           risk: "기술 35 · 건강 35 필요 · 새 선장 아래에서 견습부터", personality: { freedom: 8, ambition: 5 },
-          apply: (state) => { setCareer(state, "pirate"); state.affiliation = "기항지에서 만난 해적단"; state.lastPirateOfferAge = age; depart(state); return "새 선장의 배에 올라 견습 일부터 다시 맡았다."; } }
+          apply: (state) => { setCareer(state, "pirate"); state.affiliation = "기항지에서 만난 해적단"; state.lastPirateOfferAge = age; depart(state); return "새 선장의 배에 올라 견습 일부터 다시 맡았다."; } },
+        canonCrewChoice("canon_crew", (state) => { state.lastPirateOfferAge = age; }, depart)
       ] });
   }
   if (life.path !== "civilian" && yearsFromCareer >= tenureNeeded && life.trust >= 40
@@ -520,7 +565,7 @@ function careerOpportunity(life, age, base) {
         { id: "home", label: "고향으로 돌아가 마을 일을 맡는다", available: (state) => state.supplies >= 10,
           risk: "물자 10 필요 · 고향에서 다시 시작", personality: { loyalty: 6, caution: 5 }, apply: (state) => {
             setCareer(state, "civilian"); state.supplies -= 10; state.homebound = true; state.job = "마을 일꾼"; state.affiliation = "고향 마을";
-            state.role = "마을 일꾼"; state.goal = "익숙한 삶터를 지키기"; state.location = state.birth.home; state.travelHistory.push(state.location);
+            state.role = "마을 일꾼"; state.goal = "익숙한 삶터를 지키기"; moveTo(state, state.birth.home);
             state.lastCivilianOfferAge = age; return "고향으로 돌아와 오래 비운 일터의 일을 다시 배웠다.";
           } }
       ] });
@@ -529,28 +574,25 @@ function careerOpportunity(life, age, base) {
 }
 
 function rankOpportunity(life, age, base) {
-  if (life.creationVersion !== 2 || !life.path || life.homebound || life.independent || life.retired) return null;
+  if (life.creationVersion < 2 || !life.path || life.homebound || life.independent || life.retired) return null;
   const tier = life.rankTier;
   const requirements = [{ skill: 45, trust: 40 }, { skill: 65, trust: 50 }, { skill: 80, trust: 60 },
     { skill: 85, trust: 70 }, { skill: 90, trust: 80 }];
-  if (tier >= RANK_ROLES[life.path].length || age - life.careerStartAge < 3 || age - life.lastRankOfferAge < (giant(life) ? 20 : 12)
-    || life.skill < requirements[tier].skill || life.trust < requirements[tier].trust
+  // Rule 3 offers the next rank sooner after an accepted promotion; a declined offer waits the old interval.
+  const rankGap = life.creationVersion >= 3 && !life.rankDeclined && life.lastRankOfferAge >= life.careerStartAge ? giant(life) ? 12 : 6 : giant(life) ? 20 : 12;
+  // In original mode a canon crew's officer seats are taken by canon characters, so the player stays a deckhand.
+  if (life.canonCrew && life.mode === "original" && tier >= 1) return null;
+  if (tier >= RANK_ROLES[life.path].length || age - life.careerStartAge < 3 || age - life.lastRankOfferAge < rankGap
+    || life.skill < requirements[tier].skill || standing(life) < requirements[tier].trust
     || !life.seen.includes("life_orders")) return null;
   const nextRole = RANK_ROLES[life.path][tier];
   return { ...base, id: `life_rank_${tier + 1}_${age}`, urgent: true, art: "workbench", title: `${nextRole}의 제안`,
     body: `${life.affiliation}에서 ${life.birth.name}이 남긴 일과 동료의 평판을 살폈다. 더 많은 사람을 맡을 자리가 비었지만 받아들일지는 본인이 정해야 했다.`, choices: [
       { id: "remain", label: "지금의 직책에서 더 배운다", risk: "현재 직책 유지 · 기술 +10", personality: { caution: 4 },
-        apply: (state) => { state.lastRankOfferAge = age; state.skill += 10; return "제안을 미루고 현장에서 맡은 일을 계속했다."; } },
-      { id: "accept", label: `${nextRole}의 책임을 맡는다`, risk: `기술 ${requirements[tier].skill} · 지역의 신뢰 ${requirements[tier].trust} 필요`,
-        personality: { ambition: 5, loyalty: 4 }, apply: (state) => { state.rankTier += 1; state.role = nextRole; state.lastRankOfferAge = age; return `동료들이 ${state.birth.name}에게 ${nextRole}의 일을 맡겼다.`; } }
+        apply: (state) => { state.lastRankOfferAge = age; state.rankDeclined = true; state.skill += 10; return "제안을 미루고 현장에서 맡은 일을 계속했다."; } },
+      { id: "accept", label: `${nextRole}의 책임을 맡는다`, risk: `기술 ${requirements[tier].skill} · ${life.creationVersion >= 3 ? "평판" : "지역의 신뢰"} ${requirements[tier].trust} 필요`,
+        personality: { ambition: 5, loyalty: 4 }, apply: (state) => { state.rankTier += 1; state.role = nextRole; state.lastRankOfferAge = age; state.rankDeclined = false; return `동료들이 ${state.birth.name}에게 ${nextRole}의 일을 맡겼다.`; } }
     ] };
-}
-
-function yearRoll(seed, age) {
-  let value = (seed ^ Math.imul(age, 0x9e3779b1)) >>> 0;
-  value = Math.imul(value ^ value >>> 16, 0x7feb352d);
-  value = Math.imul(value ^ value >>> 15, 0x846ca68b);
-  return (value ^ value >>> 16) >>> 0;
 }
 
 function lastYear(life, age) {
@@ -568,35 +610,53 @@ function lastYear(life, age) {
   return yearRoll(life.seed, age) % 1000 < Math.min(1000, risk);
 }
 
-export function yearlyScene(life) {
+function sceneForAge(life) {
   const age = life.age + 1;
   const base = { id: `life_year_${age}`, age, act: age < (giant(life) ? 112 : 19) ? 1 : 2, species: "all", yearly: true };
-  if (life.creationVersion === 2 && age === (giant(life) ? 78 : 14)) return {
+  if (life.creationVersion >= 2 && age === (giant(life) ? 78 : 14)) return {
     ...base, id: "life_early_departure", urgent: true, art: "deck", title: "일손을 찾는 배",
     body: "고향에 여러 깃발의 배가 들렀다. 어린 일손을 받아 주겠다는 곳도 있었지만, 어느 배든 집 밖의 일을 먼저 배워야 했다.", choices: [
       { id: "stay", label: "고향에서 배움을 이어 간다", risk: "기술 +10 · 출항은 다음으로", personality: { caution: 5 },
         apply: (state) => { state.skill += 10; return "배가 떠난 뒤에도 고향에서 할 일은 남아 있었다."; } },
-      { id: "board", label: "해적선의 견습 일손으로 오른다", available: (state) => state.skill >= 20 && state.supplies >= 20,
+      { id: "board", label: "해적선의 견습 일손으로 오른다", available: (state) => state.skill >= 20 && state.supplies >= 20, needs: { skill: 20, supplies: 20 }, failRisk: "물자 -10 · 고향에 남음", fail: (state) => { state.supplies -= 10; return "선장은 짐 나르는 솜씨를 보더니 다음에 오라고 했다. 배는 떠났다."; },
         risk: "기술 20 · 물자 20 필요 · 견습부터 시작", personality: { freedom: 8, ambition: 6 },
         apply: (state) => { setCareer(state, "pirate"); depart(state); return "양육자에게 편지를 남기고 해적선의 가장 작은 일부터 맡았다."; } },
-      { id: "marine", label: "해군 지부의 견습 교육을 받는다", available: (state) => state.skill >= 20 && state.health >= 55,
+      { id: "marine", label: "해군 지부의 견습 교육을 받는다", available: (state) => state.skill >= 20 && state.health >= 55, needs: { skill: 20, health: 55 }, failRisk: "건강 -10 · 고향에 남음", fail: (state) => { state.health -= 10; return "체력 시험 도중 쓰러졌다. 교관은 몸부터 만들고 다시 오라고 했다."; },
         risk: "기술 20 · 건강 55 필요 · 수병 교육부터", personality: { loyalty: 6, caution: 4 },
         apply: (state) => { setCareer(state, "marine"); depart(state); return "해군 지부의 교육을 받으며 청소와 기록부터 익혔다."; } },
       { id: "liberator", label: "구호 연락망의 어린 심부름꾼이 된다", available: (state) => state.trust >= 40,
         risk: "지역의 신뢰 40 필요 · 연락 업무부터", personality: { empathy: 7, freedom: 5 },
         apply: (state) => { setCareer(state, "liberator"); if (state.birth.yearsBeforeCurrent - age <= 22) state.affiliation = "혁명군"; depart(state); return "위험한 이름은 듣지 않고 편지와 식량을 옮기는 일부터 배웠다."; } }
     ] };
-  if (age === life.birth.yearsBeforeCurrent - 1 && life.mode === "free" && !life.retired && ["pirate", "marine"].includes(life.path)
-    && (life.creationVersion === 1 || (life.path === "pirate" ? life.independent && life.role === "선장" : life.rankTier >= 5))) {
+  // Rule 3 opens the IF to mid-rank careers and the revolutionary army, so the free mode's "what if" is actually reachable.
+  const ifReady = life.creationVersion === 1 ? true : life.creationVersion === 2
+    ? life.path === "pirate" ? life.independent && life.role === "선장" : life.rankTier >= 5
+    : standing(life) >= 50 && (life.path === "pirate" ? life.independent || life.rankTier >= 2 : life.rankTier >= (life.path === "marine" ? 3 : 2));
+  if (age === life.birth.yearsBeforeCurrent - 1 && life.mode === "free" && !life.retired
+    && (life.creationVersion === 3 ? ["pirate", "marine", "liberator"] : ["pirate", "marine"]).includes(life.path) && ifReady) {
+    if (life.path === "liberator") return { ...base, id: "life_free_rank", urgent: true, art: "workbench", title: "비어 있는 군대장 자리",
+      canon: "https://one-piece.com/anime/65681/index.html",
+      body: (state) => `${state.birth.name}이 이어 온 탈출로와 연락망이 혁명군 지휘부의 눈에 띄었다. 이 선택은 원작과 다른 세계선을 연다. 새 군대장의 자리에 나설지는 아직 정해지지 않았다.`,
+      choices: [
+        { id: "attempt", label: "새 군대장의 자리를 맡는다", available: (state) => state.skill >= 70 && state.trust >= 60 && state.health >= 30,
+          needs: { skill: 70, health: 30 }, failRisk: "건강 -20 · 지역의 신뢰 -20", fail: (state) => { state.health -= 20; state.trust -= 20; return "첫 작전에서 연락망 일부가 드러났다. 지휘부는 자리를 다른 사람에게 맡겼다."; },
+          risk: "기술 70 · 신뢰 60 · 건강 30 필요", personality: { ambition: 8, empathy: 5 },
+          apply: (state) => { state.role = "혁명군 군대장"; state.worldBranch = "commander"; state.pendingBranch = true; state.people.branchAge = age; state.trust += 10;
+            return `${state.birth.name}이 혁명군의 새 군대장으로 이름을 올리는 IF가 열렸다.`; } },
+        { id: "decline", label: "현장의 연락망에 남는다", risk: "기존 직책 유지 · 지역의 신뢰 +10",
+          personality: { loyalty: 6, caution: 4 }, apply: (state) => { state.trust += 10; return "지휘부의 자리 대신 손이 닿는 사람들 곁에 남았다."; } }
+      ] };
     const pirate = life.path === "pirate";
+    const need = life.creationVersion === 3 ? { skill: 70, trust: 60, health: 30 } : { skill: 80, trust: 80, health: 40 };
     return { ...base, id: "life_free_rank", urgent: true, art: "deck", title: pirate ? "와노국 이후의 새 자리" : "전쟁 뒤 바뀐 지휘부",
       canon: pirate ? "https://one-piece.com/story/land_of_wano/index.html" : "https://one-piece.com/character/Aramaki/index.html",
       body: (state) => `${state.birth.name}이 쌓아 온 경력과 동료의 신뢰가 세계의 재편과 맞물렸다. 이 선택은 원작과 다른 세계선을 연다. 그 자리에 나설지는 아직 정해지지 않았다.`,
       choices: [
         { id: "attempt", label: pirate ? "사황의 자리를 노린다" : "대장의 자리를 노린다",
-          available: (state) => state.skill >= 80 && state.trust >= 80 && state.health >= 40,
-          risk: "기술 80 · 신뢰 80 · 건강 40 필요", personality: { ambition: 10, loyalty: 5 },
-          apply: (state) => { state.role = pirate ? "사황" : "해군 대장"; state.worldBranch = pirate ? "emperor" : "admiral"; state.pendingBranch = true; state.trust += 10;
+          available: (state) => state.skill >= need.skill && state.trust >= need.trust && state.health >= need.health,
+          ...(life.creationVersion === 3 ? { needs: { skill: need.skill, health: need.health }, failRisk: "건강 -20 · 지역의 신뢰 -20", fail: (state) => { state.health -= 20; state.trust -= 20; return "자리를 노린 시도는 실패로 끝났다. 세상은 원작대로 흘렀고, 무리한 이름만 소문으로 남았다."; } } : {}),
+          risk: `기술 ${need.skill} · 신뢰 ${need.trust} · 건강 ${need.health} 필요`, personality: { ambition: 10, loyalty: 5 },
+          apply: (state) => { state.role = pirate ? "사황" : "해군 대장"; state.worldBranch = pirate ? "emperor" : "admiral"; state.pendingBranch = true; state.people.branchAge = age; state.trust += 10;
             return pirate ? `${state.birth.name}의 세력이 버기 대신 사황으로 인정받는 IF가 열렸다.` : `${state.birth.name}이 아라마키 대신 해군 대장으로 임명되는 IF가 열렸다.`; } },
         { id: "decline", label: "지금 맡은 사람들을 지킨다", risk: "기존 직책 유지 · 지역의 신뢰 +10",
           personality: { loyalty: 6, caution: 4 }, apply: (state) => { state.trust += 10; return "더 큰 이름을 얻는 대신 곁의 사람들과 남았다."; } }
@@ -609,7 +669,7 @@ export function yearlyScene(life) {
   if (age === life.birth.yearsBeforeCurrent - 22) return { ...base, id: "life_revolution_choice", urgent: true, art: "workbench", title: "혁명군의 이름", canon: "https://one-piece.com/anime/65681/index.html", body: "오하라 사건 이후, 먼 항구에서 혁명군이라는 이름이 들려왔다. 누가 조직을 세웠는지까지는 알려지지 않았다. 독립적으로 사람을 돕던 이들에게 새로운 연락망이 생길 수 있었다.", choices: [
     { id: "join", label: "혁명군의 지역 임무에 합류한다", when: (state) => state.creationVersion === 1 || state.path === "liberator" || state.injustice,
       available: (state) => state.path === "liberator" || state.trust >= 70,
-      risk: "해방 활동 경력 또는 지역의 신뢰 70 필요", personality: { empathy: 8, freedom: 7 }, apply: (state) => { if (state.path !== "liberator") setCareer(state, "liberator"); state.affiliation = "혁명군"; state.role = "연락원"; state.trust += 10; if (state.creationVersion === 2) depart(state); return "오래 쌓은 지역 연락망을 바탕으로 혁명군의 일을 맡았다."; } },
+      risk: "해방 활동 경력 또는 지역의 신뢰 70 필요", personality: { empathy: 8, freedom: 7 }, apply: (state) => { if (state.path !== "liberator") setCareer(state, "liberator"); state.affiliation = "혁명군"; state.role = "연락원"; state.trust += 10; if (state.creationVersion >= 2) depart(state); return "오래 쌓은 지역 연락망을 바탕으로 혁명군의 일을 맡았다."; } },
     { id: "independent", label: "지금의 소속과 일을 이어 간다", risk: "현재 소속 유지 · 물자 +10", personality: { caution: 5 }, apply: (state) => { state.supplies += 10; return "새 조직의 소식을 들었지만 지금 맡은 사람들 곁에 남았다."; } }
   ] };
   if (age === life.birth.yearsBeforeCurrent - 15) return { ...base, id: "life_tiger_liberation_news", urgent: true, art: "deck", title: "해방의 소식", canon: "https://one-piece.com/comics/o63/index.html",
@@ -625,10 +685,22 @@ export function yearlyScene(life) {
     body: "워터 세븐에서 온 배가 조선공 톰의 처형 소식을 전했다. 그가 만든 배와 해상열차는 남았지만, 작업장의 사람들은 이제 다른 길을 찾아야 했다." };
   if (age === life.birth.yearsBeforeCurrent - 6 && (life.mode === "original" || life.role !== "사황")) return { ...base, id: "life_shanks_news", urgent: true, art: "deck", title: "붉은 머리의 새 호칭", canon: "https://one-piece.com/vivre/revision/index.html", body: (state) => `바다의 신문은 샹크스를 사황이라고 불렀다. ${state.birth.name}이 만난 적 없는 사람의 이름도 항로의 분위기를 바꾸었다.` };
   if (age === life.birth.yearsBeforeCurrent - 2) return { ...base, id: "life_marineford_news", urgent: true, art: "workbench", title: "마린포드 전쟁의 신문", canon: "https://one-piece.com/story/marineford/index.html", body: "마린포드 전쟁에서 에이스와 흰 수염이 목숨을 잃고, 샹크스가 싸움을 멈추게 했다는 신문이 닿았다. 전장에 없던 사람은 그곳을 봤다고 말할 수 없었다." };
+  // Rule 3 fills the two years from the war to the original present (the Elbaf arc), which older rules left empty.
+  if (life.creationVersion >= 3 && age === life.birth.yearsBeforeCurrent - 1) return { ...base, id: "life_timeskip_news", urgent: true, art: "deck", title: "전쟁 뒤의 신문",
+    body: "마린포드 전쟁 뒤 해군 원수가 바뀌고, 검은 수염이 새로운 사황으로 불리기 시작했다. 밀짚모자 일당의 이름은 한동안 신문에서 사라졌다." };
+  if (life.creationVersion >= 3 && age === life.birth.yearsBeforeCurrent && life.location !== "엘바프") return { ...base, id: "life_new_era_news", urgent: true, art: "deck", title: "새 시대의 신문",
+    canon: "https://one-piece.com/story/land_of_wano/index.html",
+    body: "2년 만에 다시 모인 밀짚모자 일당의 소식이 연달아 실렸다. 드레스로자의 도플라밍고, 와노국의 카이도와 빅 맘이 차례로 쓰러졌고 루피는 새 사황으로 불렸다. 에그헤드 사건 뒤 일당은 엘바프로 향했다." };
 
-  const encounter = life.creationVersion === 2 ? encounterAt({ ...life, age }) : null;
+  const encounter = life.creationVersion >= 2 ? encounterAt({ ...life, age }) : null;
   if (encounter) return { ...encounterScene({ ...life, age, pendingEncounter: encounter }), urgent: true };
-  if (life.leftHome && !life.homebound && age >= (giant(life) ? 140 : 24) && age % (giant(life) ? 10 : 3) === 0) return travelScene(life, age);
+  const isle = islandEvent(life, age, base);
+  if (isle) return isle;
+  const beat = personalBeat(life, age, base);
+  if (beat) return beat;
+  // Rule 3 lives start nearer the canon era, so voyages begin sooner and come more often to reach its islands in time.
+  const [voyageFrom, voyageEvery] = life.creationVersion >= 3 ? giant(life) ? [116, 4] : [21, 2] : giant(life) ? [140, 10] : [24, 3];
+  if (life.leftHome && !life.homebound && age >= voyageFrom && age % voyageEvery === 0) return travelScene(life, age);
   const career = careerOpportunity(life, age, base);
   if (career) return career;
   const rank = rankOpportunity(life, age, base);
@@ -639,7 +711,7 @@ export function yearlyScene(life) {
   const cadence = phase === "growing" && giant(life) ? 8 : 7;
   if (age % cadence === 0) {
     // Only new-rule giants get the larger pool, so older saves replay the same choice ids.
-    const pool = life.creationVersion === 2 && giant(life)
+    const pool = life.creationVersion >= 2 && giant(life)
       ? [...(phase === "growing" ? giantGrowingDecisions : giantAdultDecisions), ...annualDecisions] : annualDecisions;
     const decision = pool[(Math.floor(age / cadence) + life.seed) % pool.length];
     return { ...base, art: phase === "later" ? "workbench" : "deck", title: decision.title, body: decision.body, choices: decision.choices };
@@ -650,16 +722,35 @@ export function yearlyScene(life) {
   // Giant lives span centuries of quiet years, so they draw from a larger giant-only pool first.
   const pool = giant(life) ? [...(phase === "growing" ? giantGrowingYears : phase === "later" ? giantLaterYears
     : life.homebound ? giantHomeYears : giantWorkingYears), ...shared] : shared;
-  const [title, body] = pool[(age + life.seed) % pool.length];
-  return { ...base, art: phase === "later" ? "workbench" : "deck", title, body };
+  let index = (age + life.seed) % pool.length;
+  // Folded years put fewer scenes between pool repeats, so rule 3 skips a title shown in the last ten scenes.
+  const recent = life.creationVersion >= 3 ? life.journal.slice(-10).map((entry) => entry.title) : [];
+  for (let tries = 0; tries < pool.length && recent.includes(pool[index][0]); tries += 1) index = (index + 1) % pool.length;
+  const [title, body] = pool[index];
+  return { ...base, art: phase === "later" ? "workbench" : "deck", title, body, quiet: true };
+}
+
+// Rule 3 folds a run of quiet years into one scene; it never skips past lastQuietAge (the next authored card).
+export function yearlyScene(life, lastQuietAge = Infinity) {
+  const scene = sceneForAge(life);
+  if (life.creationVersion < 3 || !scene.quiet) return scene;
+  const limit = Math.min(lastQuietAge, scene.age + (giant(life) ? 12 : 3));
+  let end = scene.age;
+  while (end < limit && sceneForAge({ ...life, age: end }).quiet) end += 1;
+  if (end === scene.age) return scene;
+  const years = end - scene.age + 1;
+  return { ...scene, id: `life_years_${scene.age}_${end}`, age: end,
+    body: (state) => `${years}년이 큰일 없이 흘렀다. ${typeof scene.body === "function" ? scene.body(state) : scene.body}` };
 }
 
 export function branchScene(life) {
-  const emperor = life.worldBranch === "emperor";
+  const kind = life.worldBranch;
   return { id: "life_branch_aftermath", age: life.age, act: 4, species: "all", yearly: true,
-    art: "workbench", title: emperor ? "새로운 사황의 항로" : "새 대장의 첫 명령",
-    body: emperor
-      ? `${life.birth.name}의 이름이 실린 신문이 항구에 닿았다. 동맹은 앞으로의 항로와 물자를 다시 묻고, 버기가 있었을 자리의 이야기는 여기서부터 달라졌다.`
-      : `${life.birth.name}의 임명 소식이 부하들의 손에 전해졌다. 아라마키가 맡았을 원작의 임무는 이제 같은 방식으로 흘러갈 수 없었다.`,
+    art: "workbench", title: { emperor: "새로운 사황의 항로", admiral: "새 대장의 첫 명령", commander: "다섯 번째 깃발" }[kind],
+    body: {
+      emperor: `${life.birth.name}의 이름이 실린 신문이 항구에 닿았다. 동맹은 앞으로의 항로와 물자를 다시 묻고, 버기가 있었을 자리의 이야기는 여기서부터 달라졌다.`,
+      admiral: `${life.birth.name}의 임명 소식이 부하들의 손에 전해졌다. 아라마키가 맡았을 원작의 임무는 이제 같은 방식으로 흘러갈 수 없었다.`,
+      commander: `혁명군의 네 군대장 곁에 ${life.birth.name}의 이름이 하나 더 올랐다. 원작에 없던 군대가 움직이면서 몇몇 왕국의 이야기는 다른 방향으로 흘렀다.`
+    }[kind],
     after: (state) => { state.pendingBranch = false; return "처음 열린 IF 세계선의 결과가 생애 일지에 남았다."; } };
 }

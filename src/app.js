@@ -1,4 +1,6 @@
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, createGame, getScene, personalitySummary, replay, saveRecord } from "./game.js";
+import { crewNews } from "./world.js";
+import { peopleSummary } from "./people.js";
 import { createObservation, tickObservation } from "./observation.js";
 import { scenes } from "./story.js";
 
@@ -126,7 +128,13 @@ function powerSummary() {
 function statLabel(stat) {
   if (stat.key.startsWith("personality.")) return PERSONALITY.find((entry) => entry.key === stat.key.slice(12))?.label || stat.key;
   if (stat.key === "bond") return `${life.guardianName || "준"}${life.rules === 3 ? "와의" : "과의"} 유대`;
-  if (stat.key === "friendBond") return `${life.friendName || "린"}${life.rules === 3 ? "와의" : "과의"} 유대`;
+  if (stat.key === "friendBond") {
+    const name = life.friendName || "린";
+    const last = name.codePointAt(name.length - 1);
+    const closed = last >= 0xac00 && last <= 0xd7a3 && (last - 0xac00) % 28 !== 0;
+    return `${name}${life.creationVersion >= 3 ? closed ? "과의" : "와의" : life.rules === 3 ? "와의" : "과의"} 유대`;
+  }
+  if (stat.key === "trust" && life.creationVersion >= 3) return `${life.location.split(" · ").at(-1)}의 신뢰`;
   return stat.label;
 }
 
@@ -207,7 +215,9 @@ function renderGame(focusTitle = false) {
   byId("scene-body").textContent = scene.body;
   byId("scene-image").src = scene.art.src;
   byId("scene-image").alt = scene.art.alt;
-  byId("route-trail").textContent = (life.travelHistory || [life.birth.home]).slice(-4).join(" → ");
+  byId("route-trail").textContent = (life.travelHistory || [life.birth.home]).join(" → ");
+  byId("crew-line").hidden = life.rules !== 3;
+  byId("crew-news").textContent = byId("crew-news").title = life.rules === 3 ? crewNews(life, scene.age) : "";
   const changeText = describeChanges(life.lastChanges);
   byId("scene-result").textContent = [life.lastOutcome, changeText].filter(Boolean).join(" · ");
   byId("scene-result").hidden = !life.lastOutcome && !changeText;
@@ -286,7 +296,11 @@ function renderEnding() {
   byId("ending-work").textContent = `${life.job} · ${life.affiliation} · ${life.role} · ${powerSummary()}`;
   byId("ending-goal").textContent = completeLife ? life.goal : `${life.goal} · ${life.ending === "death" ? "미완" : life.ending === "retire" ? "책임 승계" : "진행 중"}`;
   byId("ending-personality").textContent = personalitySummary(life.personality);
-  byId("ending-bonds").textContent = completeLife
+  const route = (life.travelHistory || [life.birth.home]).filter((place, index, all) => place !== all[index - 1]);
+  byId("ending-route").textContent = `${route.join(" → ")} (${new Set(route).size}곳)`;
+  byId("ending-bonds").textContent = completeLife && life.creationVersion >= 3
+    ? [peopleSummary(life), life.successor && "후배에게 전한 일", life.people?.fruitOwner && `이 세계선의 ${life.people.fruitOwner.owner}는 ${life.people.fruitOwner.fruit}를 먹지 않았다`].filter(Boolean).join(" · ") || "곁에 남은 이름 없이 혼자 걸은 삶"
+    : completeLife
     ? `양육자와의 기억 · 옛 친구와의 ${life.friendBond > 1 ? "지속된 인연" : "서로 다른 길"}${life.successor ? " · 후배에게 전한 일" : ""}`
     : `${life.guardianName || "준"}과의 기억 · ${life.friendName || "린"}과의 ${life.friendBond > 1 ? "지속된 인연" : "서로 다른 길"}${life.successor ? " · 후배에게 전한 일" : ""}`;
   window.scrollTo(0, 0);
@@ -391,6 +405,7 @@ function updateHomeOptions() {
 function selectedProfile() {
   const profile = {};
   if (byId("profile-name-mode").value === "custom") profile.name = byId("profile-name-input").value;
+  if (byId("profile-crew").value.trim()) profile.crew = byId("profile-crew").value;
   for (const key of ["gender", "species", "home", "means"]) {
     const value = byId(`profile-${key}`).value;
     if (value !== "random") profile[key] = value;
@@ -403,6 +418,7 @@ byId("profile-species").addEventListener("change", updateHomeOptions);
 byId("all-random").addEventListener("click", () => {
   for (const key of ["name-mode", "gender", "species", "means"]) byId(`profile-${key}`).value = "random";
   byId("profile-name-input").value = "";
+  byId("profile-crew").value = "";
   updateNameInput();
   updateHomeOptions();
   byId("profile-error").hidden = true;

@@ -3,6 +3,57 @@ const BLUE_ROUTE = ["리버스 마운틴", "쌍둥이 언덕", "위스키 피크
 const GRAND_ROUTE = BLUE_ROUTE.slice(6);
 const NEW_ROUTE = ["스핑크스 섬", "드레스로자", "그린 비트", "조", "엘바프", "하치노스 근해", "와노국 외해", "홀케이크 아일랜드 외해"];
 
+// Places where pirates gather; marines start with less goodwill there and pirates with more.
+const PIRATE_HAVENS = ["자야 · 모크 타운", "하치노스 근해", "샤본디 제도"];
+
+function firstTrust(life, place) {
+  let hash = 0;
+  for (const char of place) hash = Math.imul(hash ^ char.codePointAt(0), 0x01000193) >>> 0;
+  const lean = PIRATE_HAVENS.includes(place) ? { pirate: 15, marine: -15 }[life.path] || 0 : 0;
+  return [15, 30, 45][yearRoll(life.seed ^ hash, 3) % 3] + lean;
+}
+
+// Standing inside an organization follows the best reputation built anywhere, not the island the ship happens to be at.
+export function standing(life) {
+  return life.creationVersion >= 3 ? Math.max(life.trust, ...Object.values(life.trustBy)) : life.trust;
+}
+
+export function knownTrust(life, place) {
+  return place === life.location ? life.trust : life.trustBy?.[place];
+}
+
+// Rule 3 keeps one trust value per place: leaving stores it, arriving loads it (or a first impression).
+export function moveTo(life, place) {
+  if (life.creationVersion >= 3 && place !== life.location) {
+    life.trustBy[life.location] = life.trust;
+    life.trust = life.trustBy[place] ?? firstTrust(life, place);
+  }
+  life.location = place;
+  life.travelHistory.push(place);
+}
+
+// "로" after a vowel or ㄹ, "으로" after any other final consonant.
+export function ro(word) {
+  const code = word.codePointAt(word.length - 1) - 0xac00;
+  return `${word}${code >= 0 && code <= 11171 && code % 28 !== 0 && code % 28 !== 8 ? "으로" : "로"}`;
+}
+
+// Canon crews a nameless deckhand could join; from/to are years before the original present.
+const CANON_CREWS = [
+  { name: "로저 해적단", from: 30, to: 25 },
+  { name: "흰 수염 해적단", from: 60, to: 3 },
+  { name: "빅 맘 해적단", from: 60, to: 1 },
+  { name: "백수 해적단", from: 30, to: 1 },
+  { name: "붉은 머리 해적단", from: 20, to: 0 },
+  { name: "태양 해적단", from: 15, to: 12, species: "어인" }
+];
+
+export function canonCrew(life, age = life.age) {
+  const before = life.birth.yearsBeforeCurrent - age;
+  const open = CANON_CREWS.filter((crew) => before <= crew.from && before >= crew.to && (!crew.species || crew.species === life.birth.species));
+  return open.length ? open[yearRoll(life.seed ^ 0x2c1b3c6d, age) % open.length].name : null;
+}
+
 export function routeFor(life) {
   if (life.birth.species === "거인족" || life.birth.species === "밍크족" || life.birth.home.includes("신세계")) return NEW_ROUTE;
   if (life.birth.species === "어인") return ["샤본디 제도", "어인섬", ...NEW_ROUTE];
@@ -18,13 +69,13 @@ const ENCOUNTERS = [
       { id: "share", label: "두 거인에게 식량을 나눈다", available: (life) => life.supplies >= 20, risk: "물자 20 필요 · 지역의 신뢰 +10", personality: { empathy: 8, loyalty: 5 }, apply: (life) => { life.supplies -= 20; life.trust += 10; return "두 거인은 식량을 받아 들고 다시 자기들의 승부로 돌아갔다."; } },
       { id: "watch", label: "멀리서 결투를 보고 떠난다", risk: "결투에 끼어들지 않음 · 기술 +10", personality: { caution: 6 }, apply: (life) => { life.skill += 10; return "물러설 때를 아는 것도 오래 남는 배움이었다."; } }
     ] },
-  { id: "kureha", place: "드럼섬", earliest: 30, latest: 3, name: "닥터 쿠레하", canon: "https://one-piece.com/character/Dr_Kureha/index.html",
+  { id: "kureha", place: "드럼섬", earliest: 30, latest: 3, latestV3: 0, name: "닥터 쿠레하", canon: "https://one-piece.com/character/Dr_Kureha/index.html",
     body: "드럼섬에서 오래 일한 의사 닥터 쿠레하를 만났다. 그는 환자의 몸보다 먼저 여행 준비가 허술하다고 지적했다.",
     choices: [
       { id: "treat", label: "치료와 진찰을 부탁한다", available: (life) => life.supplies >= 20, risk: "물자 20 필요 · 건강 +20", personality: { caution: 5 }, apply: (life) => { life.supplies -= 20; life.health += 20; return "진찰은 거칠었지만 돌아갈 힘이 생겼다."; } },
       { id: "listen", label: "준비에 관한 말을 듣는다", risk: "기술 +10", personality: { caution: 5 }, apply: (life) => { life.skill += 10; return "약보다 먼저 필요한 물자와 쉬는 날을 적었다."; } }
     ] },
-  { id: "crocus", place: "쌍둥이 언덕", earliest: 24, latest: 3, name: "크로커스", canon: "https://one-piece.com/character/Crocus/index.html",
+  { id: "crocus", place: "쌍둥이 언덕", earliest: 24, latest: 3, latestV3: 0, name: "크로커스", canon: "https://one-piece.com/character/Crocus/index.html",
     body: "쌍둥이 언덕의 등대에서 크로커스를 만났다. 항로를 묻자 그는 기록지침과 기다릴 시간을 먼저 확인했다.",
     choices: [
       { id: "ask", label: "기록지침을 살펴 달라고 한다", cost: 10, risk: "기술 +10 · 물자 -10", personality: { caution: 5 }, apply: (life) => { life.skill += 10; life.supplies -= 10; return "새 항로보다 먼저 틀린 기록을 고쳤다."; } },
@@ -58,7 +109,9 @@ const ENCOUNTERS = [
 
 export function encounterAt(life) {
   const beforePresent = life.birth.yearsBeforeCurrent - life.age;
-  return ENCOUNTERS.find((entry) => life.location === entry.place && beforePresent <= entry.earliest && beforePresent >= entry.latest && !life.seen.includes(`life_meet_${entry.id}`))?.id || null;
+  // latestV3: canon still shows them there in the present; older rules keep their original window for replay.
+  const latest = (entry) => life.creationVersion >= 3 && entry.latestV3 !== undefined ? entry.latestV3 : entry.latest;
+  return ENCOUNTERS.find((entry) => life.location === entry.place && beforePresent <= entry.earliest && beforePresent >= latest(entry) && !life.seen.includes(`life_meet_${entry.id}`))?.id || null;
 }
 
 export function encounterScene(life) {
@@ -74,18 +127,46 @@ export function travelScene(life, age) {
   const farIndex = (life.routeIndex + 2) % route.length;
   function visit(state, index, cost) {
     state.routeIndex = index;
-    state.location = route[index];
+    moveTo(state, route[index]);
     state.age = age;
-    state.travelHistory.push(state.location);
     state.supplies -= cost;
     state.pendingEncounter = encounterAt(state);
-    return `${state.birth.name}의 배는 ${state.location}에 닿았다. 새 기항지의 물길과 사람을 살피기 시작했다.`;
+    if (state.creationVersion < 3) return `${state.birth.name}의 배는 ${state.location}에 닿았다. 새 기항지의 물길과 사람을 살피기 시작했다.`;
+    const mood = state.trust >= 45 ? "반기는 얼굴이 많았다" : state.trust <= 20 ? "낯선 배를 경계하는 눈길이 날카로웠다" : "사람들은 아직 지켜보기만 했다";
+    return `${state.birth.name}의 배는 ${state.location}에 닿았다. 부두에서는 ${mood}.`;
   }
+  const place = (index) => {
+    if (life.creationVersion < 3) return "";
+    const known = knownTrust(life, route[index]);
+    return known === undefined ? " · 처음 가는 곳" : ` · 그곳의 신뢰 ${known}`;
+  };
   return { id: `life_voyage_${age}`, age, act: 2, species: "all", yearly: true, urgent: true, art: "deck",
     title: life.creationVersion === 1 ? "다음 기항지를 고르다" : `${life.location}에서의 출항`,
     body: `${life.location}에서 다음 항로를 정할 때가 왔다. 기록지침과 동행의 준비를 확인했다. 먼 섬으로 갈수록 식량과 배를 손볼 물자가 더 필요했다.`, choices: [
-      { id: "near", label: `${route[nearIndex]}으로 간다`, available: (state) => state.supplies >= 10, risk: "물자 10 필요 · 가까운 항로", personality: { freedom: 5 }, apply: (state) => visit(state, nearIndex, 10) },
-      { id: "far", label: `${route[farIndex]}으로 긴 항해를 한다`, available: (state) => state.supplies >= 20, risk: "물자 20 필요 · 긴 항로", personality: { ambition: 7, freedom: 5 }, apply: (state) => visit(state, farIndex, 20) },
-      { id: "convoy", label: `동행 선단과 ${route[nearIndex]}으로 간다`, risk: "물자 없이 이동 · 친구와의 유대 -5", personality: { loyalty: 4, freedom: -3 }, apply: (state) => { const result = visit(state, nearIndex, 0); state.friendBond -= 5; return result; } }
+      { id: "near", label: `${ro(route[nearIndex])} 간다`, available: (state) => state.supplies >= 10, risk: `물자 10 필요 · 가까운 항로${place(nearIndex)}`, personality: { freedom: 5 }, apply: (state) => visit(state, nearIndex, 10) },
+      { id: "far", label: `${ro(route[farIndex])} 긴 항해를 한다`, available: (state) => state.supplies >= 20, risk: `물자 20 필요 · 긴 항로${place(farIndex)}`, personality: { ambition: 7, freedom: 5 }, apply: (state) => visit(state, farIndex, 20) },
+      { id: "convoy", label: `동행 선단과 ${ro(route[nearIndex])} 간다`, risk: `물자 없이 이동 · 친구와의 유대 -5${place(nearIndex)}`, personality: { loyalty: 4, freedom: -3 }, apply: (state) => { const result = visit(state, nearIndex, 0); state.friendBond -= 5; return result; } }
     ] };
+}
+
+export function yearRoll(seed, age) {
+  let value = (seed ^ Math.imul(age, 0x9e3779b1)) >>> 0;
+  value = Math.imul(value ^ value >>> 16, 0x7feb352d);
+  value = Math.imul(value ^ value >>> 15, 0x846ca68b);
+  return (value ^ value >>> 16) >>> 0;
+}
+
+// A one-line public summary of the canon crew's whereabouts in the same year, in this game's own words.
+export function crewNews(life, age = life.age) {
+  const before = life.birth.yearsBeforeCurrent - age;
+  const line = before > 19 ? "아직 없다. 훗날의 선장도 태어나기 전이다."
+    : before > 12 ? "훗날의 선장 루피는 이스트 블루 푸샤 마을의 어린아이다."
+      : before === 12 ? "푸샤 마을을 떠나는 샹크스가 어린 루피에게 밀짚모자를 맡겼다."
+        : before > 2 ? "루피는 코르보산에서 형제들과 자라며 바다로 나갈 날을 기다린다."
+          : before === 2 ? "루피가 바다로 나가 동료를 모았다. 마린포드 전쟁 뒤 일당은 흩어져 수련에 들어갔다."
+            : before === 1 ? "흩어진 일당이 각자의 섬에서 2년의 수련을 이어 간다."
+              : before === 0 ? "다시 모인 일당이 신세계를 건너 엘바프에 닿았다."
+                : "원작이 아직 그리지 않은 시간이다. 일당의 다음 항해는 공개되지 않았다.";
+  const taken = life.people?.fruitOwner;
+  return taken ? `${line} (이 세계선의 ${taken.owner}는 ${taken.fruit}를 먹지 않았다.)` : line;
 }

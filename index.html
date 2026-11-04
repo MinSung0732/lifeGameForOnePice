@@ -69,6 +69,10 @@
                 <small id="home-hint" class="profile-hint">고향을 고르려면 종족을 선택하세요.</small>
               </div>
               <div class="profile-row">
+                <label for="profile-crew">해적단 이름</label>
+                <input id="profile-crew" type="text" maxlength="12" placeholder="직접 꾸릴 때 쓸 이름 (선택)" autocomplete="off">
+              </div>
+              <div class="profile-row">
                 <label for="profile-means">가정 형편</label>
                 <select id="profile-means">
                   <option value="random">무작위</option><option value="넉넉지 않은">넉넉지 않은</option><option value="그럭저럭 버틸 수 있는">그럭저럭 버틸 수 있는</option>
@@ -106,6 +110,7 @@
           <div id="age-progress" class="age-track" role="meter" aria-label="원작 현재 시점까지 흐른 세월" aria-valuemin="0" aria-valuemax="66" aria-valuenow="0"><span id="age-fill"></span></div>
         </div>
         <nav class="route-trail" aria-label="지나온 항로"><span>항로</span><strong id="route-trail"></strong></nav>
+        <p class="route-trail" id="crew-line" hidden><span>같은 해 밀짚모자 일당</span><strong id="crew-news"></strong></p>
 
         <aside class="life-strip" aria-label="현재의 삶">
           <div><span>이름·출신</span><strong id="life-name"></strong></div>
@@ -157,6 +162,7 @@
           <div><dt>개인 목표</dt><dd id="ending-goal"></dd></div>
           <div><dt>종합 성향</dt><dd id="ending-personality"></dd></div>
           <div><dt>남긴 인연</dt><dd id="ending-bonds"></dd></div>
+          <div><dt>거쳐 온 항로</dt><dd id="ending-route"></dd></div>
         </dl>
         <div class="ending-actions">
           <button id="ending-journal" class="secondary-button" type="button">생애 일지 보기</button>

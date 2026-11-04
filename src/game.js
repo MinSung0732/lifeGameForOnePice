@@ -1,6 +1,6 @@
 import { CANON_CHAPTER, scenes } from "./story.js";
 import { branchScene, yearlyScene } from "./life-story.js";
-import { encounterScene } from "./world.js";
+import { encounterScene, yearRoll } from "./world.js";
 
 export const SAVE_VERSION = 1;
 export const MODES = ["original", "free"];
@@ -111,7 +111,7 @@ function nextEligibleIndex(life, from) {
 
 function normalizeProfile(profile, homes, genders) {
   if (!profile || typeof profile !== "object" || Array.isArray(profile)) throw new Error("캐릭터 설정 형식이 맞지 않습니다.");
-  const allowed = ["name", "gender", "species", "home", "means"];
+  const allowed = ["name", "gender", "species", "home", "means", "crew"];
   if (Object.keys(profile).some((key) => !allowed.includes(key))) throw new Error("알 수 없는 캐릭터 설정입니다.");
   const chosen = {};
   if (profile.name !== undefined) {
@@ -119,6 +119,12 @@ function normalizeProfile(profile, homes, genders) {
     const name = profile.name.trim();
     if (!name || Array.from(name).length > 12 || /[\x00-\x1f\x7f]/.test(name)) throw new Error("이름은 줄바꿈 없이 1~12자로 입력해 주세요.");
     chosen.name = name;
+  }
+  if (profile.crew !== undefined) {
+    if (typeof profile.crew !== "string") throw new Error("해적단 이름을 확인해 주세요.");
+    const crew = profile.crew.trim();
+    if (!crew || Array.from(crew).length > 12 || /[\x00-\x1f\x7f]/.test(crew)) throw new Error("해적단 이름은 줄바꿈 없이 1~12자로 입력해 주세요.");
+    chosen.crew = crew;
   }
   for (const [key, values] of [["gender", genders], ["species", PROFILE_OPTIONS.species], ["means", PROFILE_OPTIONS.means]]) {
     if (profile[key] !== undefined) {
@@ -135,11 +141,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 2) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 3) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -157,13 +163,17 @@ export function createGame(mode, seed, profile = {}, rules = 3, creationVersion 
     home: chosen.home || randomHome,
     means: chosen.means || randomMeans,
     yearsBeforeCurrent: rules === 3
-      ? creationVersion === 2
+      // Rule 3: born at most 20 years before Roger's execution (24 years before the present) so canon news lands within the life;
+      // giants need about 112 years to come of age, so they reach adulthood around that era instead.
+      ? creationVersion === 3
+        ? species === "거인족" ? 126 + random() % 25 : 26 + random() % 19
+        : creationVersion === 2
         ? species === "거인족" ? 160 + random() % 101 : 35 + random() % 51
         : species === "거인족" ? 280 + random() % 71 : 95 + random() % 26
       : 66
   };
   // Keep old rule-3 saves on their original fixed birth values.
-  const birthStats = rules === 3 && creationVersion === 2 ? {
+  const birthStats = rules === 3 && creationVersion >= 2 ? {
     species: SPECIES_START[species],
     individual: { skill: random() % 11 - 5, health: random() % 17 - 8 },
     personality: Object.fromEntries(PERSONALITY.map(({ key }) => [key, random() % 13 - 6]))
@@ -180,11 +190,11 @@ export function createGame(mode, seed, profile = {}, rules = 3, creationVersion 
     personality: Object.fromEntries(PERSONALITY.map(({ key }) => [key, 50 + (birthStats?.personality[key] || 0)])),
     devilFruit: null, fruitMastery: 0, haki: { observation: 0, armament: 0, conqueror: 0 },
     successor: false, independent: false, leftHome: false, continued: false, retired: false, rescued: 0,
-    homebound: false, rankTier: 0, careerStartAge: null, lastRankOfferAge: -100,
+    homebound: false, canonCrew: null, rankTier: 0, careerStartAge: null, lastRankOfferAge: -100,
     lastMarineOfferAge: -100, lastPirateOfferAge: -100, lastCivilianOfferAge: -100,
     lastCrewOfferAge: -100, lastRevolutionOfferAge: -100, injustice: false,
     routeIndex: -1, travelHistory: [birth.home], pendingEncounter: null, pendingBranch: false,
-    worldBranch: null, alliance: false, coalition: false, rival: false,
+    people: {}, trustBy: {}, worldBranch: null, alliance: false, coalition: false, rival: false,
     ending: null, deathCause: "", finished: false, lastOutcome: "", lastChanges: [], actions: [], journal: [], seen: []
   };
   life.index = nextEligibleIndex(life, 0);
@@ -198,14 +208,31 @@ function sceneCard(life) {
   if (life.pendingBranch) return branchScene(life);
   const age = authored && (typeof authored.age === "function" ? authored.age(life) : authored.age);
   if (age === life.age) return authored;
-  const yearly = yearlyScene(life);
+  const yearly = yearlyScene(life, authored ? age - 1 : Infinity);
   if (yearly.urgent || !authored || age > life.age + 1) return yearly;
   return authored;
 }
 
+// Rule 3: an ability-gated choice can still be attempted; the target roll grows with how far short each ability falls.
+function diceTarget(choice, life) {
+  if (life.creationVersion < 3 || !choice.needs) return 0;
+  const shortfall = Object.entries(choice.needs).reduce((sum, [key, need]) => sum + Math.max(0, need - life[key]), 0);
+  return shortfall ? Math.min(95, 20 + shortfall * 2) : 0;
+}
+
+function diceRoll(life, sceneId, choiceId) {
+  let hash = 0;
+  for (const char of `${sceneId}:${choiceId}`) hash = Math.imul(hash ^ char.codePointAt(0), 0x01000193) >>> 0;
+  return yearRoll(life.seed ^ hash, life.age) % 100 + 1;
+}
+
+const failedAttempt = (life) => { life.health -= 15; return "준비가 모자란 채 밀어붙였다가 몸을 다쳤다. 한동안 쉬어야 했다."; };
+
 function canChoose(choice, life) {
   const cost = typeof choice.cost === "function" ? choice.cost(life) : choice.cost || 0;
-  return life.supplies >= cost && (!choice.available || choice.available(life));
+  if (life.supplies < cost) return false;
+  if (life.creationVersion >= 3 && choice.needs) return true;
+  return !choice.available || choice.available(life);
 }
 
 export function getScene(life) {
@@ -221,9 +248,11 @@ export function getScene(life) {
       .map((choice) => {
         const cost = typeof choice.cost === "function" ? choice.cost(life) : choice.cost || 0;
         const risk = typeof choice.risk === "function" ? choice.risk(life) : choice.risk;
+        const target = diceTarget(choice, life);
+        const shown = life.supplies < cost && !risk.includes(`물자 ${cost} 필요`) ? `${risk} · 물자 ${cost} 필요` : risk;
         return { id: choice.id, label: typeof choice.label === "function" ? choice.label(life) : choice.label,
-          risk: life.supplies < cost && !risk.includes(`물자 ${cost} 필요`) ? `${risk} · 물자 ${cost} 필요` : risk,
-          disabled: !canChoose(choice, life) };
+          risk: target ? `${shown} · 조건 부족: 주사위 1~100에서 ${target} 이상이면 성공, 실패하면 ${choice.failRisk || "건강 -15"}` : shown,
+          dice: target || null, disabled: !canChoose(choice, life) };
       })
   };
 }
@@ -238,7 +267,14 @@ export function advance(life, choiceId = null) {
 
   const next = structuredClone(life);
   if (card.encounter) next.pendingEncounter = null;
-  const result = personalize((chosen ? chosen.apply(next) : card.after?.(next)) || "", life.birth.name);
+  const target = chosen ? diceTarget(chosen, life) : 0;
+  let outcome;
+  if (target) {
+    const roll = diceRoll(life, card.id, chosen.id);
+    const success = roll >= target;
+    outcome = `주사위 ${roll} (${target} 이상 성공) · ${success ? "성공" : "실패"}. ${(success ? chosen.apply(next) : (chosen.fail || failedAttempt)(next)) || ""}`;
+  } else outcome = chosen ? chosen.apply(next) : card.after?.(next);
+  const result = personalize(outcome || "", life.birth.name);
   if (next.rules >= 2) {
     for (const stat of STATS) next[stat.key] = Math.max(0, Math.min(next.rules === 3 ? stat.max : stat.key === "health" ? 3 : 5, next[stat.key]));
   }

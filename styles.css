@@ -113,6 +113,8 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
 .route-trail { display: flex; align-items: baseline; gap: 10px; min-width: 0; margin: -3px 0 8px; color: var(--muted); font-size: 11px; white-space: nowrap; }
 .route-trail span { flex: 0 0 auto; color: var(--copper); font-weight: 700; }
 .route-trail strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+/* The full route fills the bar's width; older stops are clipped on the left so the latest stop stays visible. */
+#route-trail { flex: 1 1 auto; display: flex; justify-content: flex-end; text-overflow: clip; }
 .playback { display: flex; align-items: center; gap: 14px; color: var(--muted); font-size: 14px; }
 .playback select { min-height: 38px; border: 1px solid var(--line); padding: 5px 29px 5px 9px; border-radius: 0; background: var(--paper); color: var(--ink); }
 .scene-layout { display: grid; grid-template-columns: minmax(0, 1.43fr) minmax(360px, 1fr); gap: 28px; align-items: start; }
