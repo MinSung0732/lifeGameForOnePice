@@ -562,10 +562,15 @@ test("새 규칙은 주사위 시도, 섬별 신뢰, 다시 오는 인물, 섬 �
   assert.match(crewNews({ birth: { yearsBeforeCurrent: 60 }, age: 70 }), /공개되지 않았다/);
 
   const { canonCrew } = await import("../src/world.js");
-  const named = reach(0, "life_career", {}, { species: "인간", crew: "붉은 파도" });
+  const named = reach(0, "life_career", {}, { species: "인간" });
   named.skill = 40; named.supplies = 50; named.friendBond = 50;
-  assert.equal(advance(named, "captain").affiliation, "붉은 파도 해적단");
-  assert.throws(() => createGame("original", 1, { crew: "가".repeat(13) }));
+  assert.equal(getScene(named).choices.find((choice) => choice.id === "captain").naming, true);
+  const founded = advance(named, "captain:붉은 파도");
+  assert.equal(founded.affiliation, "붉은 파도 해적단");
+  assert.equal(replay(saveRecord(founded)).affiliation, "붉은 파도 해적단", "설립 때 지은 이름은 저장 기록으로 복원된다");
+  assert.equal(advance(named, "captain").affiliation, `${named.birth.name} 해적단`);
+  assert.throws(() => advance(named, `captain:${"가".repeat(13)}`));
+  assert.throws(() => advance(named, "marine:이름"), "이름을 받지 않는 선택에는 붙일 수 없다");
   const roger = { seed: 1, birth: { yearsBeforeCurrent: 40, species: "인간" } };
   assert.ok(["로저 해적단", "흰 수염 해적단", "빅 맘 해적단", "백수 해적단"].includes(canonCrew(roger, 14)));
   assert.ok(!["로저 해적단", "흰 수염 해적단"].includes(canonCrew(roger, 39)), "해체·소멸한 해적단에는 들어갈 수 없다");

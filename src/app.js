@@ -244,7 +244,7 @@ function renderGame(focusTitle = false) {
     arrow.textContent = "↗";
     copy.append(label, risk);
     button.append(copy, arrow);
-    button.addEventListener("click", () => advanceLife(choice.id));
+    button.addEventListener("click", () => choice.naming ? askCrewName(choice) : advanceLife(choice.id));
     choices.append(button);
   }
   byId("scene-hint").textContent = scene.choices.length
@@ -256,6 +256,38 @@ function renderGame(focusTitle = false) {
     byId("scene-title").focus({ preventScroll: true });
   }
   scheduleObservation();
+}
+
+// Founding a crew asks for its name in place; leaving it blank uses the captain's name.
+function askCrewName(choice) {
+  stopTimer();
+  const form = document.createElement("form");
+  form.className = "crew-name-form";
+  const label = document.createElement("label");
+  label.htmlFor = "crew-name";
+  label.textContent = "새 해적단의 이름";
+  const input = document.createElement("input");
+  input.id = "crew-name";
+  input.type = "text";
+  input.maxLength = 12;
+  input.autocomplete = "off";
+  input.placeholder = `비워 두면 ${life.birth.name} 해적단`;
+  const confirm = document.createElement("button");
+  confirm.type = "submit";
+  confirm.className = "text-button";
+  confirm.textContent = "이 이름으로 출항";
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "text-button";
+  cancel.textContent = "다시 고르기";
+  cancel.addEventListener("click", () => renderGame());
+  form.append(label, input, confirm, cancel);
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    advanceLife(input.value.trim() ? `${choice.id}:${input.value}` : choice.id);
+  });
+  byId("choices").replaceChildren(form);
+  input.focus();
 }
 
 function advanceLife(choiceId) {
@@ -405,7 +437,6 @@ function updateHomeOptions() {
 function selectedProfile() {
   const profile = {};
   if (byId("profile-name-mode").value === "custom") profile.name = byId("profile-name-input").value;
-  if (byId("profile-crew").value.trim()) profile.crew = byId("profile-crew").value;
   for (const key of ["gender", "species", "home", "means"]) {
     const value = byId(`profile-${key}`).value;
     if (value !== "random") profile[key] = value;
@@ -418,7 +449,6 @@ byId("profile-species").addEventListener("change", updateHomeOptions);
 byId("all-random").addEventListener("click", () => {
   for (const key of ["name-mode", "gender", "species", "means"]) byId(`profile-${key}`).value = "random";
   byId("profile-name-input").value = "";
-  byId("profile-crew").value = "";
   updateNameInput();
   updateHomeOptions();
   byId("profile-error").hidden = true;

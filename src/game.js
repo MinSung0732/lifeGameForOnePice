@@ -252,18 +252,34 @@ export function getScene(life) {
         const shown = life.supplies < cost && !risk.includes(`물자 ${cost} 필요`) ? `${risk} · 물자 ${cost} 필요` : risk;
         return { id: choice.id, label: typeof choice.label === "function" ? choice.label(life) : choice.label,
           risk: target ? `${shown} · 조건 부족: 주사위 1~100에서 ${target} 이상이면 성공, 실패하면 ${choice.failRisk || "건강 -15"}` : shown,
-          dice: target || null, disabled: !canChoose(choice, life) };
+          dice: target || null, naming: Boolean(choice.naming), disabled: !canChoose(choice, life) };
       })
   };
 }
 
-export function advance(life, choiceId = null) {
+// A naming choice carries the typed name in its action ("found:붉은 파도"), so the save replays the same name.
+function splitAction(action) {
+  if (typeof action !== "string" || !action.includes(":")) return [action, null];
+  const at = action.indexOf(":");
+  return [action.slice(0, at), action.slice(at + 1)];
+}
+
+function typedName(text) {
+  const name = text.trim();
+  if (!name || Array.from(name).length > 12 || /[\x00-\x1f\x7f]/.test(name)) throw new Error("이름은 줄바꿈 없이 1~12자로 입력해 주세요.");
+  return name;
+}
+
+export function advance(life, action = null) {
   const view = getScene(life);
   if (!view) throw new Error("이미 끝난 생애입니다.");
   const card = sceneCard(life);
+  const [choiceId, typed] = splitAction(action);
   const chosen = card.choices?.find((choice) => choice.id === choiceId && (!choice.when || choice.when(life)) && canChoose(choice, life));
   if (card.choices && !chosen) throw new Error("이 장면에서 고를 수 없는 선택입니다.");
-  if (!card.choices && choiceId !== null) throw new Error("관찰 장면에는 선택지가 없습니다.");
+  if (typed !== null && !chosen?.naming) throw new Error("이 선택에는 이름을 붙일 수 없습니다.");
+  const name = typed === null ? null : typedName(typed);
+  if (!card.choices && action !== null) throw new Error("관찰 장면에는 선택지가 없습니다.");
 
   const next = structuredClone(life);
   if (card.encounter) next.pendingEncounter = null;
@@ -272,8 +288,8 @@ export function advance(life, choiceId = null) {
   if (target) {
     const roll = diceRoll(life, card.id, chosen.id);
     const success = roll >= target;
-    outcome = `주사위 ${roll} (${target} 이상 성공) · ${success ? "성공" : "실패"}. ${(success ? chosen.apply(next) : (chosen.fail || failedAttempt)(next)) || ""}`;
-  } else outcome = chosen ? chosen.apply(next) : card.after?.(next);
+    outcome = `주사위 ${roll} (${target} 이상 성공) · ${success ? "성공" : "실패"}. ${(success ? chosen.apply(next, name) : (chosen.fail || failedAttempt)(next)) || ""}`;
+  } else outcome = chosen ? chosen.apply(next, name) : card.after?.(next);
   const result = personalize(outcome || "", life.birth.name);
   if (next.rules >= 2) {
     for (const stat of STATS) next[stat.key] = Math.max(0, Math.min(next.rules === 3 ? stat.max : stat.key === "health" ? 3 : 5, next[stat.key]));
@@ -293,7 +309,7 @@ export function advance(life, choiceId = null) {
   next.age = view.age;
   next.lastOutcome = result;
   next.lastChanges = changes;
-  next.actions.push(choiceId);
+  next.actions.push(action);
   next.seen.push(card.id);
   next.journal.push({ id: card.id, act: card.act, age: view.age, title: card.title, choice: view.choices.find((choice) => choice.id === choiceId)?.label || null, result, changes, canon: card.canon || null });
   next.index = nextEligibleIndex(next, life.index + (card.yearly ? 0 : 1));

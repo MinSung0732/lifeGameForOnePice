@@ -159,6 +159,9 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
 .game.many-choices .choice:nth-child(odd) { border-right: 1px solid var(--line); }
 .choice { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; text-align: left; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 6px 8px; background: transparent; color: var(--ink); }
 .choice:hover, .choice:focus-visible { background: #ebe9df; }
+.crew-name-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 8px; border-bottom: 1px solid var(--line); }
+.crew-name-form label { width: 100%; font-weight: 700; }
+.crew-name-form input { flex: 1 1 180px; min-height: 38px; border: 1px solid var(--line); padding: 5px 9px; background: var(--paper); color: var(--ink); }
 .choice:disabled { cursor: not-allowed; background: #e7e4dd; color: #777c78; }
 .choice:disabled small, .choice:disabled .choice-arrow { color: #858a84; }
 .choice strong { display: block; font-size: 15px; font-weight: 700; }

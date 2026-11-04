@@ -53,9 +53,9 @@ function setCareer(life, path) {
 }
 
 // The player's own crew takes the name typed at character creation, or the captain's name.
-function ownCrew(life) {
+function ownCrew(life, named) {
   if (life.creationVersion < 3) return "자신이 꾸린 해적단";
-  const typed = life.profile.crew;
+  const typed = named || life.profile.crew;
   return typed ? typed.endsWith("해적단") ? typed : `${typed} 해적단` : `${life.birth.name} 해적단`;
 }
 
@@ -132,7 +132,7 @@ const scenes = [
     { id: "captain", label: "동료와 작은 해적단을 꾸린다", when: (life) => life.creationVersion >= 2,
       available: (life) => life.skill >= 30 && life.supplies >= 40 && life.friendBond >= 40,
       risk: "기술 30 · 물자 40 · 친구와의 유대 40 필요 · 출항 물자 -20", personality: { freedom: 9, ambition: 8, loyalty: 5 },
-      apply: (life) => { setCareer(life, "pirate"); life.independent = true; life.rankTier = 3; life.job = "해적단 선장"; life.affiliation = ownCrew(life); life.role = "선장"; life.supplies -= 20; return "작은 배에 동료의 몫을 싣고 선장으로 첫 항해를 준비했다."; } },
+      naming: true, apply: (life, named) => { setCareer(life, "pirate"); life.independent = true; life.rankTier = 3; life.job = "해적단 선장"; life.affiliation = ownCrew(life, named); life.role = "선장"; life.supplies -= 20; return "작은 배에 동료의 몫을 싣고 선장으로 첫 항해를 준비했다."; } },
     canonCrewChoice("canon_crew", null, null, true),
     { id: "marine", label: "해군에 지원한다", risk: "기술 +10 · 수병부터 시작", personality: { loyalty: 7, caution: 5 }, apply: (life) => { setCareer(life, "marine"); return "해군의 시험과 교육을 거쳐 수병 명부에 이름을 올렸다."; } },
     { id: "liberator", label: "사람을 빼내는 연락망에 합류한다", risk: "기술 +10 · 비공식 해방 활동", personality: { empathy: 8, freedom: 6 }, apply: (life) => { setCareer(life, "liberator"); return "억압받는 이들을 돕는 작은 독립 연락망에서 일을 시작했다."; } },
@@ -527,7 +527,7 @@ function careerOpportunity(life, age, base) {
           apply: (state) => { state.lastCrewOfferAge = age; state.skill += 10; return "익숙한 배에서 하던 일을 이어 갔다."; } },
         { id: "found", label: "동료들과 독립 해적단을 만든다", available: (state) => state.skill >= 40 && state.supplies >= 30 && state.friendBond >= 40,
           risk: "기술 40 · 물자 30 · 친구와의 유대 40 필요 · 출항 물자 -20", personality: { ambition: 8, freedom: 7, loyalty: 4 },
-          apply: (state) => { state.independent = true; state.rankTier = 3; state.job = "해적단 선장"; state.affiliation = ownCrew(state); state.role = "선장"; state.supplies -= 20; state.lastCrewOfferAge = age; return "동료와 배의 장부를 함께 만들고 선장으로 항로를 정했다."; } }
+          naming: true, apply: (state, named) => { state.independent = true; state.rankTier = 3; state.job = "해적단 선장"; state.affiliation = ownCrew(state, named); state.role = "선장"; state.supplies -= 20; state.lastCrewOfferAge = age; return "동료와 배의 장부를 함께 만들고 선장으로 항로를 정했다."; } }
       ] });
   }
   if (life.path !== "marine" && yearsFromCareer >= tenureNeeded && life.trust >= 50
