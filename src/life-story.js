@@ -2,6 +2,7 @@ import { canonCrew, encounterAt, encounterScene, moveTo, routeFor, standing, tra
 import { personalBeat } from "./people.js";
 import { islandEvent } from "./islands.js";
 import { fruitFor } from "./fruits.js";
+import { bountyScene } from "./bounty.js";
 import { giantAdultDecisions, giantGrowingDecisions, giantGrowingYears, giantHomeYears, giantLaterYears, giantWorkingYears } from "./giant-years.js";
 
 // A species describes where a life begins. Work and allegiance are chosen later.
@@ -10,10 +11,13 @@ const at = (ordinary, giantAge) => (life) => giant(life) ? giantAge : ordinary;
 const isAlive = (life) => !life.ending;
 const byPath = (life, pirate, marine, liberator, civilian) => ({ pirate, marine, liberator, civilian })[life.path];
 const canLeadRescue = (life) => life.skill >= 40 && life.health >= 40 && life.supplies >= (life.devilFruit ? 40 : 20);
+const fruitForCard = (life, ordinary, giantAge) => fruitFor(life.creationVersion >= 4
+  ? { ...life, age: at(ordinary, giantAge)(life) } : life);
 
-function eatFruit(life) {
+function eatFruit(life, ordinary, giantAge) {
   if (life.creationVersion >= 3) {
-    const fruit = fruitFor(life);
+    const fruit = fruitForCard(life, ordinary, giantAge);
+    if (!fruit) throw new Error("이 시기에 얻을 수 있는 열매가 없습니다.");
     life.devilFruit = `${fruit.name}(${fruit.type})`;
     life.fruitMastery = 1;
     if (fruit.owner) life.people.fruitOwner = { owner: fruit.owner, fruit: fruit.name };
@@ -159,6 +163,7 @@ const scenes = [
   ] },
   { id: "life_enemy", age: at(24, 135), art: "lifeStorm", title: "부두에서 맞선 배", body: "기항지에 먼저 닿은 무장 선단이 약한 배의 물자를 가로막았다. 한 선원이 길을 터 달라며 다가왔다. 무기를 드는 순간부터 다른 배들도 싸움에 휘말릴 수 있었다.", choices: [
     { id: "fight", label: "앞에 나서서 길을 연다", available: (life) => life.skill >= 30 && life.health >= 30, needs: { skill: 30, health: 30 },
+      bounty: (life) => life.path === "pirate" ? 3_000_000 : 0,
       risk: "기술 30 · 건강 30 필요 · 기술 60 또는 무장색이 전투의 변수",
       personality: { ambition: 7, caution: -6, loyalty: 5 }, apply: (life) => {
         life.rival = true;
@@ -181,10 +186,13 @@ const scenes = [
     { id: "help", label: "현장의 사람을 먼저 돕는다", cost: 10, risk: "물자 -10 · 지역의 신뢰 +10", personality: { empathy: 8, loyalty: 4 }, apply: (life) => { life.supplies -= 10; life.trust += 10; life.injustice = true; return "도움을 받은 이가 돌아왔다. 조직에서는 독단이었다고 꾸짖었다."; } }
   ] },
   { id: "life_repercussion", age: at(25, 140), art: "deck", title: "뒤따른 말", body: (life) => life.trust >= 40 ? "기항지의 사람들이 이름을 기억했다. 그 신뢰가 명령을 대신해 주지는 않았지만 다음 일을 함께 시작할 사람이 늘었다." : "기항지의 사람들은 쉽게 마음을 열지 않았다. 한 번의 결정이 오래 남을 수 있다는 사실을 배웠다." },
-  { id: "life_fruit_find", age: at(27, 149), art: "fruit", title: "물결에 밀려온 상자", when: (life) => life.seed % 3 === 0, body: (life) => life.creationVersion >= 3
+  { id: "life_fruit_find", age: at(27, 149), art: "fruit", title: "물결에 밀려온 상자", when: (life) => life.seed % 3 === 0
+    && (life.creationVersion < 4 || fruitForCard(life, 27, 149)), body: (life) => life.creationVersion >= 4
+    ? `떠밀려 온 상자에 악마의 열매가 있었다. 동행한 수집가는 ${fruitForCard(life, 27, 149).name}일 가능성을 말했다. ${fruitForCard(life, 27, 149).formerOwner ? "이전 능력자가 죽은 뒤 다시 나타났을 가능성이 있다." : "아직 능력자가 알려지기 전의 시기다."} 먹으면 바다에서 힘을 잃는다는 점만은 분명했다.`
+    : life.creationVersion >= 3
     ? `떠밀려 온 상자에 소용돌이 무늬의 열매가 하나 있었다. ${fruitFor(life).owner ? "낡은 도감 한쪽에서 비슷한 그림을 찾았지만 누가 먹었다는 기록은 없었다." : "도감에서 이름을 찾을 수 없었다. 어딘가에서 사용자가 죽고 새로 맺힌 열매일지도 몰랐다."} 먹으면 힘을 얻는 대신 바다에서는 몸을 가누기 어렵다는 말을 들었다.`
     : "떠밀려 온 상자에 기묘한 무늬의 열매가 하나 있었다. 도감에서 이름을 찾을 수 없었다. 먹으면 힘을 얻을지 몰라도 바다에서는 몸을 가누기 어렵다는 말을 들었다.", choices: [
-    { id: "eat", label: "정체를 모른 채 먹는다", risk: "새 힘을 얻을 수 있음 · 물에 잠기면 힘이 빠짐", personality: { ambition: 7, caution: -7 }, apply: eatFruit },
+    { id: "eat", label: (life) => life.creationVersion >= 4 ? "확신 없이 열매를 먹는다" : "정체를 모른 채 먹는다", risk: "새 힘을 얻을 수 있음 · 물에 잠기면 힘이 빠짐", personality: { ambition: 7, caution: -7 }, apply: (life) => eatFruit(life, 27, 149) },
     { id: "sell", label: "열매를 넘기고 항해 자금을 받는다", risk: "물자 +20 · 비능력자로 남음", personality: { caution: 6 }, apply: (life) => { life.supplies += 20; return "물자를 챙겨 배로 돌아왔다. 열매가 누구의 손에 갔는지는 듣지 못했다."; } },
     { id: "leave", label: "손대지 않고 발견 사실을 알린다", risk: "지역의 신뢰 +10 · 비능력자로 남음", personality: { empathy: 5, caution: 5 }, apply: (life) => { life.trust += 10; return "항구 사람들에게 상자의 위치를 알려 주고 지나왔다."; } }
   ] },
@@ -192,10 +200,13 @@ const scenes = [
     { id: "admit", label: "실수를 밝히고 다시 조사한다", cost: 10, risk: "물자 -10 · 지역의 신뢰 +10 · 기술 +10", personality: { loyalty: 7, caution: 5 }, apply: (life) => { life.supplies -= 10; life.trust += 10; life.skill += 10; return "손해를 메우는 데 오래 걸렸지만 같은 실수를 피할 기록이 남았다."; } },
     { id: "hide", label: "흔적을 덮고 떠난다", risk: "물자 유지 · 지역의 신뢰 -10", personality: { loyalty: -8, caution: -4 }, apply: (life) => { life.trust -= 10; return "다음 항구에서 소문이 먼저 도착했다. 변명은 신뢰를 되돌리지 못했다."; } }
   ] },
-  { id: "life_fruit_payment", age: at(29, 163), art: "fruit", title: "항해의 대가", when: (life) => life.seed % 3 === 1 && !life.devilFruit && (life.creationVersion === 1 || !life.homebound), body: (life) => life.creationVersion >= 3
+  { id: "life_fruit_payment", age: at(29, 163), art: "fruit", title: "항해의 대가", when: (life) => life.seed % 3 === 1 && !life.devilFruit && (life.creationVersion === 1 || !life.homebound)
+    && (life.creationVersion < 4 || fruitForCard(life, 29, 163)), body: (life) => life.creationVersion >= 4
+    ? `먼 항로의 일을 마친 대가로 상인이 열매 하나와 물자 꾸러미를 내놓았다. 동행한 수집가는 도감의 그림을 펴고 ${fruitForCard(life, 29, 163).name}일 가능성이 높다고 말했다. 누가 먹게 될지는 아직 몰랐다.`
+    : life.creationVersion >= 3
     ? `먼 항로의 일을 마친 대가로 상인이 열매 하나와 물자 꾸러미를 내놓았다. 동행한 수집가는 도감을 뒤적이다 ${fruitFor(life).type}의 ${fruitFor(life).name}${fruitFor(life).owner ? "일 거라고 했다." : "인 것 같지만 기록에 없는 새 열매라고 했다."}`
     : "먼 항로의 일을 마친 대가로 상인이 열매 하나와 물자 꾸러미를 내놓았다. 동행한 수집가는 열매가 작은 매듭을 조이는 초인계라고 알려 주었지만, 정확한 이름은 찾지 못했다.", choices: [
-    { id: "eat", label: "열매를 받아 먹는다", risk: (life) => `${life.creationVersion >= 3 ? fruitFor(life).type : "매듭을 조이는"} 힘 · 물에 잠기면 힘이 빠짐`, personality: { ambition: 6, caution: -4 }, apply: eatFruit },
+    { id: "eat", label: "열매를 받아 먹는다", risk: (life) => `${life.creationVersion >= 3 ? fruitForCard(life, 29, 163).type : "매듭을 조이는"} 힘 · 물에 잠기면 힘이 빠짐`, personality: { ambition: 6, caution: -4 }, apply: (life) => eatFruit(life, 29, 163) },
     { id: "supplies", label: "물자 꾸러미를 받는다", risk: "물자 +20 · 비능력자로 남음", personality: { caution: 5 }, apply: (life) => { life.supplies += 20; return "운반할 물자와 식량을 챙겼다. 손에 익힌 기술로 다음 항해를 준비했다."; } }
   ] },
   { id: "life_mentor", age: at(30, 170), art: "workbench", title: "오래 일한 사람", body: "오래 일한 선배가 젖은 장부를 펴 놓고 실패한 날을 다시 짚었다. 능숙함은 한 번의 대담한 행동보다 그 뒤의 수습에 있었다." },
@@ -306,6 +317,7 @@ const scenes = [
   { id: "life_rival_return", age: at(52, 260), art: "lifeStorm", title: "다시 만난 선단", when: (life) => life.rival, body: "오래전 부두에서 마주친 무장 선단이 다시 나타났다. 이번에는 상대도 사람을 잃고 지쳐 있었다. 뒤로 돌거나, 말을 걸거나, 먼저 길을 막을 수 있었다.", choices: [
     { id: "truce", label: "서로의 피해를 말하고 휴전을 청한다", available: (life) => life.trust >= 40, risk: "지역의 신뢰 40 필요 · 상대의 대답은 아직 모름", personality: { empathy: 9, loyalty: 5 }, apply: (life) => { life.rival = false; life.trust += 10; return "이름을 지우지는 못했지만 다음 항로에서 서로를 먼저 공격하지 않기로 했다."; } },
     { id: "fight", label: "동료를 앞세워 맞선다", available: (life) => life.skill >= 50 && life.health >= 30, needs: { skill: 50, health: 30 },
+      bounty: (life) => life.path === "pirate" ? 8_000_000 : 0,
       risk: "기술 50 · 건강 30 필요 · 기술 70 또는 무장색이 전투의 변수",
       personality: { ambition: 7, caution: -6 }, apply: (life) => {
         if (life.skill < 70 && !life.haki.armament) { life.health -= 20; return "상대의 배가 더 빨랐다. 동료를 잃지 않으려 물러났다."; }
@@ -360,6 +372,23 @@ export const lifeScenes = [...origin, ...scenes.map((card) => ({ act: card.age =
     const condition = card.when;
     return { ...card, when: (life) => isAlive(life) && (!condition || condition(life)) };
   });
+
+// Independent personal incidents can arrive in different years in rule 4.
+export const FLEX_IDS = new Set(["life_first_pay", "life_friendly_port", "life_route", "life_rival",
+  "life_command", "life_charter", "life_era_pressure", "life_old_friend", "life_late_work"]);
+
+function flexibleIncident(life, age) {
+  if (life.creationVersion < 4 || !life.path) return null;
+  const options = scenes.filter((card) => {
+    if (!FLEX_IDS.has(card.id) || life.seen.includes(card.id) || card.when && !card.when(life)) return false;
+    const center = typeof card.age === "function" ? card.age(life) : card.age;
+    const window = giant(life) ? 24 : 7;
+    return age >= center - window && age <= center + window;
+  });
+  if (!options.length || yearRoll(life.seed ^ 0x4ecb7f1a, age) % 3 !== 0) return null;
+  const chosen = options[yearRoll(life.seed ^ 0x93f4a26d, age) % options.length];
+  return { ...chosen, age, act: 2, species: "all", yearly: true, urgent: true };
+}
 
 const growingYears = [
   ["작은 수리", "양육자가 낡은 도구를 고쳤다. 고치는 동안 쓸 수 없는 물건은 다른 손으로 빌려야 했다."],
@@ -632,8 +661,9 @@ function sceneForAge(life) {
   const ifReady = life.creationVersion === 1 ? true : life.creationVersion === 2
     ? life.path === "pirate" ? life.independent && life.role === "선장" : life.rankTier >= 5
     : standing(life) >= 50 && (life.path === "pirate" ? life.independent || life.rankTier >= 2 : life.rankTier >= (life.path === "marine" ? 3 : 2));
-  if (age === life.birth.yearsBeforeCurrent - 1 && life.mode === "free" && !life.retired
-    && (life.creationVersion === 3 ? ["pirate", "marine", "liberator"] : ["pirate", "marine"]).includes(life.path) && ifReady) {
+  if ((age === life.birth.yearsBeforeCurrent - 1 || life.creationVersion >= 4 && age === life.birth.yearsBeforeCurrent)
+    && life.mode === "free" && !life.retired
+    && (life.creationVersion >= 3 ? ["pirate", "marine", "liberator"] : ["pirate", "marine"]).includes(life.path) && ifReady) {
     if (life.path === "liberator") return { ...base, id: "life_free_rank", urgent: true, art: "workbench", title: "비어 있는 군대장 자리",
       canon: "https://one-piece.com/anime/65681/index.html",
       body: (state) => `${state.birth.name}이 이어 온 탈출로와 연락망이 혁명군 지휘부의 눈에 띄었다. 이 선택은 원작과 다른 세계선을 연다. 새 군대장의 자리에 나설지는 아직 정해지지 않았다.`,
@@ -657,6 +687,7 @@ function sceneForAge(life) {
           ...(life.creationVersion === 3 ? { needs: { skill: need.skill, health: need.health }, failRisk: "건강 -20 · 지역의 신뢰 -20", fail: (state) => { state.health -= 20; state.trust -= 20; return "자리를 노린 시도는 실패로 끝났다. 세상은 원작대로 흘렀고, 무리한 이름만 소문으로 남았다."; } } : {}),
           risk: `기술 ${need.skill} · 신뢰 ${need.trust} · 건강 ${need.health} 필요`, personality: { ambition: 10, loyalty: 5 },
           apply: (state) => { state.role = pirate ? "사황" : "해군 대장"; state.worldBranch = pirate ? "emperor" : "admiral"; state.pendingBranch = true; state.people.branchAge = age; state.trust += 10;
+            if (pirate && state.creationVersion >= 4) state.bounty = Math.max(state.bounty, 3_000_000_000);
             return pirate ? `${state.birth.name}의 세력이 버기 대신 사황으로 인정받는 IF가 열렸다.` : `${state.birth.name}이 아라마키 대신 해군 대장으로 임명되는 IF가 열렸다.`; } },
         { id: "decline", label: "지금 맡은 사람들을 지킨다", risk: "기존 직책 유지 · 지역의 신뢰 +10",
           personality: { loyalty: 6, caution: 4 }, apply: (state) => { state.trust += 10; return "더 큰 이름을 얻는 대신 곁의 사람들과 남았다."; } }
@@ -684,13 +715,24 @@ function sceneForAge(life) {
   if (age === life.birth.yearsBeforeCurrent - 10) return { ...base, id: "life_tom_news", urgent: true, art: "workbench", title: "워터 세븐에서 온 부고", canon: "https://one-piece.com/vivre/revision/index.html",
     body: "워터 세븐에서 온 배가 조선공 톰의 처형 소식을 전했다. 그가 만든 배와 해상열차는 남았지만, 작업장의 사람들은 이제 다른 길을 찾아야 했다." };
   if (age === life.birth.yearsBeforeCurrent - 6 && (life.mode === "original" || life.role !== "사황")) return { ...base, id: "life_shanks_news", urgent: true, art: "deck", title: "붉은 머리의 새 호칭", canon: "https://one-piece.com/vivre/revision/index.html", body: (state) => `바다의 신문은 샹크스를 사황이라고 불렀다. ${state.birth.name}이 만난 적 없는 사람의 이름도 항로의 분위기를 바꾸었다.` };
-  if (age === life.birth.yearsBeforeCurrent - 2) return { ...base, id: "life_marineford_news", urgent: true, art: "workbench", title: "마린포드 전쟁의 신문", canon: "https://one-piece.com/story/marineford/index.html", body: "마린포드 전쟁에서 에이스와 흰 수염이 목숨을 잃고, 샹크스가 싸움을 멈추게 했다는 신문이 닿았다. 전장에 없던 사람은 그곳을 봤다고 말할 수 없었다." };
+  if (age === life.birth.yearsBeforeCurrent - 2) return { ...base, id: "life_marineford_news", urgent: true, art: "workbench",
+    title: life.creationVersion >= 4 && life.people?.fruitOwner ? "원작 연표 · 마린포드" : "마린포드 전쟁의 신문",
+    canon: "https://one-piece.com/story/marineford/index.html",
+    body: life.creationVersion >= 4 && life.people?.fruitOwner
+      ? "원작에서는 마린포드에서 에이스와 흰 수염이 죽고 샹크스가 전쟁을 멈췄다. 그러나 열매의 주인이 달라진 이 세계선에서 같은 전쟁이 벌어졌다고 단정할 수 없다."
+      : "마린포드 전쟁에서 에이스와 흰 수염이 목숨을 잃고, 샹크스가 싸움을 멈추게 했다는 신문이 닿았다. 전장에 없던 사람은 그곳을 봤다고 말할 수 없었다." };
   // Rule 3 fills the two years from the war to the original present (the Elbaf arc), which older rules left empty.
-  if (life.creationVersion >= 3 && age === life.birth.yearsBeforeCurrent - 1) return { ...base, id: "life_timeskip_news", urgent: true, art: "deck", title: "전쟁 뒤의 신문",
+  if (life.creationVersion === 3 && age === life.birth.yearsBeforeCurrent - 1) return { ...base, id: "life_timeskip_news", urgent: true, art: "deck", title: "전쟁 뒤의 신문",
     body: "마린포드 전쟁 뒤 해군 원수가 바뀌고, 검은 수염이 새로운 사황으로 불리기 시작했다. 밀짚모자 일당의 이름은 한동안 신문에서 사라졌다." };
-  if (life.creationVersion >= 3 && age === life.birth.yearsBeforeCurrent && life.location !== "엘바프") return { ...base, id: "life_new_era_news", urgent: true, art: "deck", title: "새 시대의 신문",
+  if (life.creationVersion === 3 && age === life.birth.yearsBeforeCurrent && life.location !== "엘바프") return { ...base, id: "life_new_era_news", urgent: true, art: "deck", title: "새 시대의 신문",
     canon: "https://one-piece.com/story/land_of_wano/index.html",
     body: "2년 만에 다시 모인 밀짚모자 일당의 소식이 연달아 실렸다. 드레스로자의 도플라밍고, 와노국의 카이도와 빅 맘이 차례로 쓰러졌고 루피는 새 사황으로 불렸다. 에그헤드 사건 뒤 일당은 엘바프로 향했다." };
+
+  const wanted = bountyScene(life, age, base);
+  if (wanted) return wanted;
+
+  const flexible = flexibleIncident(life, age);
+  if (flexible) return flexible;
 
   const encounter = life.creationVersion >= 2 ? encounterAt({ ...life, age }) : null;
   if (encounter) return { ...encounterScene({ ...life, age, pendingEncounter: encounter }), urgent: true };

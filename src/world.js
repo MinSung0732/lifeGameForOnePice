@@ -3,6 +3,31 @@ const BLUE_ROUTE = ["리버스 마운틴", "쌍둥이 언덕", "위스키 피크
 const GRAND_ROUTE = BLUE_ROUTE.slice(6);
 const NEW_ROUTE = ["스핑크스 섬", "드레스로자", "그린 비트", "조", "엘바프", "하치노스 근해", "와노국 외해", "홀케이크 아일랜드 외해"];
 
+// Rule-4 routes branch at islands. Older saves keep their linear route lists below.
+const ROUTES_V4 = {
+  "리버스 마운틴": ["쌍둥이 언덕", "위스키 피크"],
+  "쌍둥이 언덕": ["위스키 피크", "리틀 가든"],
+  "위스키 피크": ["리틀 가든", "드럼섬"],
+  "리틀 가든": ["드럼섬", "알라바스타 · 나노하나"],
+  "드럼섬": ["알라바스타 · 나노하나", "자야 · 모크 타운"],
+  "알라바스타 · 나노하나": ["자야 · 모크 타운", "롱 링 롱 랜드"],
+  "자야 · 모크 타운": ["롱 링 롱 랜드", "워터 세븐"],
+  "롱 링 롱 랜드": ["워터 세븐", "샤본디 제도"],
+  "워터 세븐": ["샤본디 제도", "롱 링 롱 랜드"],
+  "샤본디 제도": ["어인섬", "워터 세븐"],
+  "어인섬": ["펑크 하자드", "드레스로자"],
+  "펑크 하자드": ["드레스로자", "그린 비트"],
+  "스핑크스 섬": ["드레스로자", "조"],
+  "드레스로자": ["그린 비트", "조"],
+  "그린 비트": ["조", "홀케이크 아일랜드 외해"],
+  "조": ["와노국 외해", "홀케이크 아일랜드 외해"],
+  "홀케이크 아일랜드 외해": ["와노국 외해", "엘바프"],
+  "와노국 외해": ["에그헤드 외해", "엘바프"],
+  "에그헤드 외해": ["엘바프", "조"],
+  "엘바프": ["스핑크스 섬", "하치노스 근해"],
+  "하치노스 근해": ["스핑크스 섬", "조"]
+};
+
 // Places where pirates gather; marines start with less goodwill there and pirates with more.
 const PIRATE_HAVENS = ["자야 · 모크 타운", "하치노스 근해", "샤본디 제도"];
 
@@ -122,6 +147,7 @@ export function encounterScene(life) {
 }
 
 export function travelScene(life, age) {
+  if (life.creationVersion >= 4) return branchingTravelScene(life, age);
   const route = routeFor(life);
   const nearIndex = (life.routeIndex + 1) % route.length;
   const farIndex = (life.routeIndex + 2) % route.length;
@@ -146,6 +172,45 @@ export function travelScene(life, age) {
       { id: "near", label: `${ro(route[nearIndex])} 간다`, available: (state) => state.supplies >= 10, risk: `물자 10 필요 · 가까운 항로${place(nearIndex)}`, personality: { freedom: 5 }, apply: (state) => visit(state, nearIndex, 10) },
       { id: "far", label: `${ro(route[farIndex])} 긴 항해를 한다`, available: (state) => state.supplies >= 20, risk: `물자 20 필요 · 긴 항로${place(farIndex)}`, personality: { ambition: 7, freedom: 5 }, apply: (state) => visit(state, farIndex, 20) },
       { id: "convoy", label: `동행 선단과 ${ro(route[nearIndex])} 간다`, risk: `물자 없이 이동 · 친구와의 유대 -5${place(nearIndex)}`, personality: { loyalty: 4, freedom: -3 }, apply: (state) => { const result = visit(state, nearIndex, 0); state.friendBond -= 5; return result; } }
+    ] };
+}
+
+function branchingTravelScene(life, age) {
+  const log = ROUTES_V4[life.location] || ROUTES_V4[routeFor(life)[0]];
+  const isNewWorld = (place) => place.includes("신세계") || NEW_ROUTE.includes(place) || ["펑크 하자드", "에그헤드 외해"].includes(place);
+  const newWorld = isNewWorld(life.location);
+  const candidates = newWorld ? ["드레스로자", "조", "와노국 외해", "엘바프", "스핑크스 섬"]
+    : ["워터 세븐", "샤본디 제도", "어인섬", "자야 · 모크 타운", "알라바스타 · 나노하나"];
+  const poseOptions = candidates.filter((place) => place !== life.location && place !== "어인섬" && !log.includes(place));
+  const poseDestination = poseOptions[yearRoll(life.seed ^ 0x6d3c, age) % poseOptions.length];
+  const passageCost = (place, ordinary) => life.location === "샤본디 제도" && place === "어인섬" ? 30 : ordinary;
+  function visit(state, place, cost) {
+    state.age = age;
+    state.supplies -= cost;
+    moveTo(state, place);
+    state.pendingEncounter = encounterAt(state);
+    return `${state.birth.name}의 배는 ${place}에 닿았다. 낡은 해도에는 없던 부두의 소란이 먼저 들렸다.`;
+  }
+  const title = `${life.location}에서 바늘이 갈라질 때`;
+  return { id: `life_voyage_${age}`, age, act: 2, species: "all", yearly: true, urgent: true, art: "deck",
+    title: life.journal.slice(-10).some((entry) => entry.title === title) ? `${title} · ${age}세의 재출항` : title,
+    body: `기록지침이 서로 다른 섬을 가리켰다. 선원들은 식량을 세고 한쪽을 고르자고 했다. 영구 지침이 있으면 익숙한 목적지로 길을 틀 수도 있었다.`,
+    choices: [
+      { id: "near", label: `기록지침을 따라 ${ro(log[0])} 간다`, available: (state) => state.supplies >= passageCost(log[0], 10),
+        risk: `물자 ${passageCost(log[0], 10)} 필요 · ${log[0] === "어인섬" ? "선박 코팅 포함" : "기록지침 첫 항로"}`,
+        personality: { caution: 4 }, apply: (state) => visit(state, log[0], passageCost(log[0], 10)) },
+      { id: "far", label: `다른 바늘을 따라 ${ro(log[1])} 간다`, available: (state) => state.supplies >= passageCost(log[1], 20),
+        risk: `물자 ${passageCost(log[1], 20)} 필요 · ${log[1] === "어인섬" ? "선박 코팅 포함" : "다른 항로"}`,
+        personality: { freedom: 5 }, apply: (state) => visit(state, log[1], passageCost(log[1], 20)) },
+      { id: "convoy", label: `동행 선단과 ${ro(log[0])} 간다`, risk: `${log[0] === "어인섬" ? "코팅된 선박에 동승" : "물자 없이 이동"} · 친구와의 유대 -5`,
+        personality: { loyalty: 4 }, apply: (state) => { state.friendBond -= 5; return visit(state, log[0], 0); } },
+      { id: "pose", label: `영구 지침으로 ${ro(life.eternalPose || log[0])} 간다`,
+        when: (state) => Boolean(state.eternalPose) && state.eternalPose !== state.location && isNewWorld(state.eternalPose) === newWorld,
+        available: (state) => state.supplies >= 15, risk: "물자 15 필요 · 가지고 있는 영구 지침 사용",
+        personality: { caution: 4 }, apply: (state) => visit(state, state.eternalPose, 15) },
+      { id: "buy_pose", label: `영구 지침을 사서 ${ro(poseDestination)} 간다`, when: () => Boolean(poseDestination),
+        available: (state) => state.supplies >= 30, risk: "물자 30 필요 · 영구 지침 보유",
+        personality: { ambition: 5 }, apply: (state) => { state.eternalPose = poseDestination; return visit(state, poseDestination, 30); } }
     ] };
 }
 

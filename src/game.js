@@ -1,6 +1,7 @@
 import { CANON_CHAPTER, scenes } from "./story.js";
-import { branchScene, yearlyScene } from "./life-story.js";
+import { FLEX_IDS, branchScene, yearlyScene } from "./life-story.js";
 import { encounterScene, yearRoll } from "./world.js";
+import { CANON_IF_AFTER, canonScene } from "./canon-events.js";
 
 export const SAVE_VERSION = 1;
 export const MODES = ["original", "free"];
@@ -104,6 +105,8 @@ function personalize(text, name) {
 function nextEligibleIndex(life, from) {
   for (let index = from; index < scenes.length; index += 1) {
     const card = scenes[index];
+    if (life.creationVersion >= 4 && FLEX_IDS.has(card.id)) continue;
+    if (life.creationVersion >= 4 && (typeof card.age === "function" ? card.age(life) : card.age) < life.age) continue;
     if ((card.species === "all" || (card.species || "인간") === life.birth.species) && (!card.rules || card.rules.includes(life.rules)) && (!card.when || card.when(life))) return index;
   }
   return scenes.length;
@@ -141,11 +144,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 3) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 4) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -165,7 +168,7 @@ export function createGame(mode, seed, profile = {}, rules = 3, creationVersion 
     yearsBeforeCurrent: rules === 3
       // Rule 3: born at most 20 years before Roger's execution (24 years before the present) so canon news lands within the life;
       // giants need about 112 years to come of age, so they reach adulthood around that era instead.
-      ? creationVersion === 3
+      ? creationVersion >= 3
         ? species === "거인족" ? 126 + random() % 25 : 26 + random() % 19
         : creationVersion === 2
         ? species === "거인족" ? 160 + random() % 101 : 35 + random() % 51
@@ -195,6 +198,7 @@ export function createGame(mode, seed, profile = {}, rules = 3, creationVersion 
     lastCrewOfferAge: -100, lastRevolutionOfferAge: -100, injustice: false,
     routeIndex: -1, travelHistory: [birth.home], pendingEncounter: null, pendingBranch: false,
     people: {}, trustBy: {}, worldBranch: null, alliance: false, coalition: false, rival: false,
+    canonStep: 0, bounty: 0, eternalPose: null, lastHuntAge: -100, lastPublicActAge: -100,
     ending: null, deathCause: "", finished: false, lastOutcome: "", lastChanges: [], actions: [], journal: [], seen: []
   };
   life.index = nextEligibleIndex(life, 0);
@@ -203,10 +207,19 @@ export function createGame(mode, seed, profile = {}, rules = 3, creationVersion 
 
 function sceneCard(life) {
   const authored = scenes[life.index];
+  const age = authored && (typeof authored.age === "function" ? authored.age(life) : authored.age);
   if (life.rules !== 3) return authored;
   if (life.pendingEncounter) return encounterScene(life);
   if (life.pendingBranch) return branchScene(life);
-  const age = authored && (typeof authored.age === "function" ? authored.age(life) : authored.age);
+  if (life.creationVersion >= 4) {
+    if (life.canonStep === CANON_IF_AFTER && !life.seen.includes("life_free_rank")) {
+      const rank = yearlyScene({ ...life, age: life.birth.yearsBeforeCurrent - 1 });
+      if (rank.id === "life_free_rank") return rank;
+    }
+    if (life.canonStep > 0 && age === life.age) return authored;
+    const milestone = canonScene(life);
+    if (milestone) return milestone;
+  }
   if (age === life.age) return authored;
   const yearly = yearlyScene(life, authored ? age - 1 : Infinity);
   if (yearly.urgent || !authored || age > life.age + 1) return yearly;
@@ -242,6 +255,7 @@ export function getScene(life) {
   const age = typeof card.age === "function" ? card.age(life) : card.age;
   return {
     id: card.id, act: card.act, age, title: card.title,
+    manual: Boolean(card.manual || life.creationVersion >= 4 && card.canon && !card.choices), timeLabel: card.timeLabel || null,
     body: personalize(typeof card.body === "function" ? card.body(life) : card.body, life.birth.name),
     art: ART[artKey], canon: card.canon || null,
     choices: (card.choices || []).filter((choice) => !choice.when || choice.when(life))
@@ -283,6 +297,7 @@ export function advance(life, action = null) {
 
   const next = structuredClone(life);
   if (card.encounter) next.pendingEncounter = null;
+  if (card.canonBeat) next.canonStep += 1;
   const target = chosen ? diceTarget(chosen, life) : 0;
   let outcome;
   if (target) {
@@ -290,6 +305,9 @@ export function advance(life, action = null) {
     const success = roll >= target;
     outcome = `주사위 ${roll} (${target} 이상 성공) · ${success ? "성공" : "실패"}. ${(success ? chosen.apply(next, name) : (chosen.fail || failedAttempt)(next)) || ""}`;
   } else outcome = chosen ? chosen.apply(next, name) : card.after?.(next);
+  if (next.creationVersion >= 4 && chosen?.bounty) {
+    next.bounty += typeof chosen.bounty === "function" ? chosen.bounty(life) : chosen.bounty;
+  }
   const result = personalize(outcome || "", life.birth.name);
   if (next.rules >= 2) {
     for (const stat of STATS) next[stat.key] = Math.max(0, Math.min(next.rules === 3 ? stat.max : stat.key === "health" ? 3 : 5, next[stat.key]));
@@ -301,6 +319,7 @@ export function advance(life, action = null) {
   }
   const changes = STATS.filter((stat) => next[stat.key] !== life[stat.key])
     .map((stat) => ({ key: stat.key, delta: next[stat.key] - life[stat.key] }));
+  if (next.creationVersion >= 4 && next.bounty !== life.bounty) changes.push({ key: "bounty", delta: next.bounty - life.bounty });
   if (next.rules === 3) {
     for (const { key } of PERSONALITY) {
       if (next.personality[key] !== life.personality[key]) changes.push({ key: `personality.${key}`, delta: next.personality[key] - life.personality[key] });
@@ -311,7 +330,8 @@ export function advance(life, action = null) {
   next.lastChanges = changes;
   next.actions.push(action);
   next.seen.push(card.id);
-  next.journal.push({ id: card.id, act: card.act, age: view.age, title: card.title, choice: view.choices.find((choice) => choice.id === choiceId)?.label || null, result, changes, canon: card.canon || null });
+  next.journal.push({ id: card.id, act: card.act, age: view.age, title: card.title, choice: view.choices.find((choice) => choice.id === choiceId)?.label || null,
+    result, changes, canon: card.canon || null, ...(view.timeLabel ? { timeLabel: view.timeLabel } : {}) });
   next.index = nextEligibleIndex(next, life.index + (card.yearly ? 0 : 1));
   next.finished = next.rules === 3 ? Boolean(next.ending) : next.index === scenes.length;
   return next;

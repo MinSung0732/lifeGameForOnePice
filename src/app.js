@@ -1,6 +1,8 @@
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, createGame, getScene, personalitySummary, replay, saveRecord } from "./game.js";
 import { crewNews } from "./world.js";
 import { peopleSummary } from "./people.js";
+import { CANON_BEAT_COUNT, canonStatus } from "./canon-events.js";
+import { formatBounty } from "./bounty.js";
 import { createObservation, tickObservation } from "./observation.js";
 import { scenes } from "./story.js";
 
@@ -62,8 +64,8 @@ function scheduleObservation() {
   if (!life || life.finished) return;
   const scene = getScene(life);
   const panel = byId("observation-timeline");
-  panel.hidden = scene.choices.length > 0;
-  if (scene.choices.length) {
+  panel.hidden = scene.choices.length > 0 || scene.manual;
+  if (scene.choices.length || scene.manual) {
     observation = null;
     return;
   }
@@ -111,7 +113,7 @@ function renderLifeStrip() {
   byId("life-name").textContent = `${life.birth.name} · ${life.birth.gender} · ${life.birth.species} · ${life.birth.home}`;
   byId("life-work").textContent = `${life.job} · ${life.affiliation}${life.coalition ? " · 연합" : life.alliance ? " · 동맹" : ""}`;
   byId("life-role").textContent = life.role;
-  byId("life-power").textContent = powerSummary();
+  byId("life-power").textContent = `${powerSummary()}${life.creationVersion >= 4 && life.bounty ? ` · 현상금 ${formatBounty(life.bounty)}` : ""}`;
   byId("life-goal").textContent = life.goal;
 }
 
@@ -126,6 +128,7 @@ function powerSummary() {
 }
 
 function statLabel(stat) {
+  if (stat.key === "bounty") return "현상금";
   if (stat.key.startsWith("personality.")) return PERSONALITY.find((entry) => entry.key === stat.key.slice(12))?.label || stat.key;
   if (stat.key === "bond") return `${life.guardianName || "준"}${life.rules === 3 ? "와의" : "과의"} 유대`;
   if (stat.key === "friendBond") {
@@ -141,7 +144,7 @@ function statLabel(stat) {
 function describeChanges(changes) {
   return changes.map(({ key, delta }) => {
     const stat = STATS.find((entry) => entry.key === key) || { key };
-    return `${statLabel(stat)} ${delta > 0 ? "+" : ""}${delta}`;
+    return `${statLabel(stat)} ${delta > 0 ? "+" : ""}${key === "bounty" ? formatBounty(Math.abs(delta)) : delta}`;
   }).join(" · ");
 }
 
@@ -191,9 +194,10 @@ function renderPersonality() {
   byId("personality-summary").textContent = `성향 · ${personalitySummary(life.personality)}`;
 }
 
-function renderAgeTimeline(age) {
+function renderAgeTimeline(scene) {
+  const age = scene.age;
   const current = life.birth.yearsBeforeCurrent;
-  byId("timeline-age").textContent = `${age}세`;
+  byId("timeline-age").textContent = scene.timeLabel ? `${age}세 · ${scene.timeLabel}` : `${age}세`;
   byId("timeline-end").textContent = age <= current ? `원작 현재: ${current}세` : `원작 현재 이후 ${age - current}년 · 이후 미공개`;
   byId("age-fill").style.width = `${Math.min(100, age / current * 100)}%`;
   byId("age-progress").setAttribute("aria-valuemax", String(current));
@@ -206,25 +210,27 @@ function renderGame(focusTitle = false) {
   const scene = getScene(life);
   if (!scene) return renderEnding();
   showSection("game");
-  byId("game").classList.toggle("has-choices", scene.choices.length > 0);
+  byId("game").classList.toggle("has-choices", scene.choices.length > 0 || scene.manual);
   byId("game").classList.toggle("many-choices", scene.choices.length >= 4);
   const passage = life.journal.length === 0 ? "태어난 해" : scene.age === life.age ? "같은 해" : `${scene.age - life.age}년 후`;
   byId("scene-location").textContent = `${life.location} · ${modeName(life.mode)} · ${life.birth.name}`;
-  byId("scene-chapter").textContent = `${life.journal.length + 1}번째 장면 · ${passage}`;
+  byId("scene-chapter").textContent = `${life.journal.length + 1}번째 장면 · ${scene.timeLabel || passage}`;
   byId("scene-title").textContent = scene.title;
   byId("scene-body").textContent = scene.body;
   byId("scene-image").src = scene.art.src;
   byId("scene-image").alt = scene.art.alt;
   byId("route-trail").textContent = (life.travelHistory || [life.birth.home]).join(" → ");
   byId("crew-line").hidden = life.rules !== 3;
-  byId("crew-news").textContent = byId("crew-news").title = life.rules === 3 ? crewNews(life, scene.age) : "";
+  byId("crew-news").textContent = byId("crew-news").title = life.rules === 3
+    ? life.creationVersion >= 4 && life.seen.includes("life_marineford_news") && life.canonStep < CANON_BEAT_COUNT
+      ? canonStatus(life) : crewNews(life, scene.age) : "";
   const changeText = describeChanges(life.lastChanges);
   byId("scene-result").textContent = [life.lastOutcome, changeText].filter(Boolean).join(" · ");
   byId("scene-result").hidden = !life.lastOutcome && !changeText;
   renderLifeStrip();
   renderStats();
   renderPersonality();
-  renderAgeTimeline(scene.age);
+  renderAgeTimeline(scene);
 
   const choices = byId("choices");
   choices.replaceChildren();
@@ -247,8 +253,17 @@ function renderGame(focusTitle = false) {
     button.addEventListener("click", () => choice.naming ? askCrewName(choice) : advanceLife(choice.id));
     choices.append(button);
   }
+  if (scene.manual) {
+    const button = document.createElement("button");
+    button.className = "choice canon-continue";
+    button.type = "button";
+    button.textContent = "다음 원작 장면 보기 ↗";
+    button.addEventListener("click", () => advanceLife(null));
+    choices.append(button);
+  }
   byId("scene-hint").textContent = scene.choices.length
     ? "선택 장면에서는 시간이 흐르지 않습니다. 회색 선택지는 현재 조건이 부족합니다."
+    : scene.manual ? "이 장면은 자동으로 넘어가지 않습니다. 내용을 읽은 뒤 직접 계속하세요."
     : paused ? "자동 진행을 멈췄습니다. 준비되면 다시 진행하세요."
       : "게이지가 끝나면 다음 장면으로 넘어갑니다.";
   if (focusTitle) {
@@ -323,6 +338,11 @@ function renderEnding() {
     ? "처음의 손실과 마지막 선택이 남긴 것을 사람들의 시선에서 기록합니다. 목표의 미래를 대신 완성하지 않습니다."
     : life.ending === "retire" ? "일을 다음 사람에게 넘겼습니다. 그 뒤의 길은 그들이 결정합니다."
       : "현재까지의 삶을 한 장으로 닫습니다. 아직 일어나지 않은 원작의 미래는 쓰지 않습니다.";
+  byId("ending-poster").hidden = !(life.creationVersion >= 4 && life.bounty > 0);
+  if (life.creationVersion >= 4 && life.bounty > 0) {
+    byId("poster-name").textContent = life.birth.name;
+    byId("poster-bounty").textContent = formatBounty(life.bounty);
+  }
   byId("ending-birth").textContent = `${life.birth.species} · ${life.birth.gender} · ${life.birth.home}`;
   byId("ending-mode").textContent = modeName(life.mode);
   byId("ending-work").textContent = `${life.job} · ${life.affiliation} · ${life.role} · ${powerSummary()}`;
@@ -352,7 +372,7 @@ function openJournal() {
     for (const entry of life.journal) {
       const item = document.createElement("li");
       const title = document.createElement("strong");
-      title.textContent = `${entry.age}세 · ${entry.title}`;
+      title.textContent = `${entry.age}세 · ${entry.timeLabel ? `${entry.timeLabel} · ` : ""}${entry.title}`;
       item.append(title);
       if (entry.choice) {
         const choice = document.createElement("p");

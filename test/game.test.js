@@ -4,7 +4,11 @@ import { existsSync } from "node:fs";
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, createGame, getContentStats, getScene, personalitySummary, replay, saveRecord } from "../src/game.js";
 import { createObservation, tickObservation } from "../src/observation.js";
 import { scenes } from "../src/story.js";
-import { encounterAt } from "../src/world.js";
+import { encounterAt, travelScene } from "../src/world.js";
+import { fruitFor } from "../src/fruits.js";
+import { bountyScene, pursuerFor } from "../src/bounty.js";
+import { CANON_BEAT_COUNT, canonScene } from "../src/canon-events.js";
+import { FLEX_IDS, yearlyScene } from "../src/life-story.js";
 
 function play(mode, seed, picks = {}, profile = { species: "인간" }, rules = 3, version = 3) {
   let life = createGame(mode, seed, profile, rules, version);
@@ -91,7 +95,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 4 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 5 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -591,4 +595,124 @@ test("새 규칙은 주사위 시도, 섬별 신뢰, 다시 오는 인물, 섬 �
   assert.ok(mates >= 30, `다시 오는 친구가 대부분의 생애에 있어야 한다 (${mates})`);
   assert.ok(isles >= 10, `섬 사건이 여러 생애에 나와야 한다 (${isles})`);
   assert.ok(folded >= 30, `조용한 해가 묶여야 한다 (${folded})`);
+});
+
+test("새 생애에는 원작에 등장한 열매만 나오고 이전 생애는 옛 추첨을 유지한다", () => {
+  const canonNames = new Set(["고무고무 열매", "이글이글 열매", "꽃꽃 열매", "수술수술 열매", "동강동강 열매", "어둠어둠 열매", "고요고요 열매"]);
+  for (let seed = 0; seed < 50; seed += 1) {
+    for (const mode of ["original", "free"]) {
+      const life = createGame(mode, seed, { species: "인간" });
+      for (const before of [30, 20, 10, 0, -5]) {
+        life.age = life.birth.yearsBeforeCurrent - before;
+        const fruit = fruitFor(life);
+        if (fruit) assert.ok(canonNames.has(fruit.name), `${fruit.name}은 원작 열매여야 한다`);
+        if (fruit?.name === "고무고무 열매") assert.equal(fruit.type, "동물계 환수종");
+        if (mode === "original" && fruit) assert.equal(fruit.name, "고요고요 열매");
+      }
+    }
+  }
+  const old = createGame("original", 0, { species: "인간" }, 3, 3);
+  old.age = 27;
+  assert.ok(fruitFor(old));
+  assert.deepEqual(replay(saveRecord(old)).creationVersion, 3);
+  const offer = reach(0, "life_fruit_find", {}, { species: "인간" }, 4);
+  assert.match(getScene(offer).body, /고요고요 열매/);
+  assert.match(advance(offer, "eat").devilFruit, /고요고요 열매/);
+});
+
+test("마린포드 이후 원작의 주요 사건은 짧은 시간 간격으로 수동 진행된다", () => {
+  assert.equal(getScene(reach(0, "life_roger_news", {}, { species: "인간" }, 4)).manual, true);
+  const distant = createGame("original", 0, { species: "인간" });
+  distant.seen.push("life_marineford_news");
+  distant.canonStep = 3;
+  distant.path = "pirate";
+  distant.location = "워터 세븐";
+  assert.equal(canonScene(distant).choices, undefined, "멀리 있는 사건은 읽는 장면이어야 한다");
+  distant.location = "어인섬";
+  assert.equal(canonScene(distant).choices.length, 2, "관여할 수 있는 위치에서는 선택지가 열린다");
+  let life = reach(0, "life_marineford_news", {}, { species: "인간" }, 4);
+  life = advance(life, null);
+  const beats = [];
+  let steps = 0;
+  while (life.canonStep < CANON_BEAT_COUNT && steps++ < 40) {
+    const scene = getScene(life);
+    if (scene.id.startsWith("canon_")) {
+      beats.push(scene);
+      assert.ok(scene.timeLabel);
+      assert.equal(scene.manual, scene.choices.length === 0);
+    }
+    life = advance(life, scene.choices.find((choice) => !choice.disabled)?.id || null);
+  }
+  assert.equal(beats.length, CANON_BEAT_COUNT);
+  assert.ok(beats.some((scene) => scene.id === "canon_egghead"));
+  assert.ok(beats.some((scene) => scene.id === "canon_elbaf"));
+  assert.ok(beats.every((scene, index) => index === 0 || scene.age >= beats[index - 1].age));
+  assert.ok(beats.slice(2).every((scene) => scene.age === life.birth.yearsBeforeCurrent));
+  assert.deepEqual(replay(saveRecord(life)), life);
+});
+
+test("자유 모드의 상위 직책 IF는 와노국 이후 원작 장면 사이에서 열린다", () => {
+  let life = createGame("free", 0, { species: "인간" });
+  while (!life.finished && getScene(life).id !== "canon_wano") {
+    const scene = getScene(life);
+    life = advance(life, scene.choices.find((choice) => !choice.disabled)?.id || null);
+  }
+  assert.equal(getScene(life).id, "canon_wano");
+  life = advance(life, null);
+  life.path = "pirate";
+  life.independent = true;
+  life.skill = 90;
+  life.health = 90;
+  life.trust = 90;
+  assert.equal(getScene(life).id, "life_free_rank");
+  life = advance(life, "attempt");
+  assert.equal(life.role, "사황");
+  assert.ok(life.bounty >= 3_000_000_000);
+  life = advance(life, null);
+  assert.equal(getScene(life).id, "canon_egghead");
+  assert.match(getScene(life).body, /원작 기준/);
+});
+
+test("현상금은 행동으로 오르고 금액에 따라 추적 주체가 바뀐다", () => {
+  const before = reach(0, "life_enemy", {}, { species: "인간" }, 4);
+  assert.equal(before.path, "pirate");
+  const after = advance(before, "fight");
+  assert.equal(after.bounty - before.bounty, 3_000_000);
+  assert.equal(pursuerFor(after.bounty).name, "지부 해군");
+  assert.equal(pursuerFor(10_000_000).name, "현상금 사냥꾼");
+  assert.match(pursuerFor(100_000_000).name, /중장/);
+  assert.match(pursuerFor(1_000_000_000).name, /대장급/);
+  const hunt = Array.from({ length: 25 }, (_, index) => bountyScene(after, after.age + index + 1,
+    { age: after.age + index + 1, yearly: true })).find((card) => card?.id.startsWith("life_bounty_hunt_"));
+  assert.ok(hunt);
+  assert.ok(hunt.choices.some((choice) => choice.id === "escape"));
+});
+
+test("기록지침 항로와 영구 지침은 다른 섬으로 이어지고 개인 사건의 등장 연령이 달라진다", () => {
+  const life = createGame("original", 0, { species: "인간" });
+  life.location = "샤본디 제도";
+  life.path = "pirate";
+  life.leftHome = true;
+  const route = travelScene(life, 30);
+  assert.match(route.choices.find((choice) => choice.id === "near").risk, /선박 코팅/);
+  const near = structuredClone(life);
+  const pose = structuredClone(life);
+  route.choices.find((choice) => choice.id === "near").apply(near);
+  route.choices.find((choice) => choice.id === "buy_pose").apply(pose);
+  assert.notEqual(near.location, pose.location);
+  assert.equal(pose.eternalPose, pose.location);
+  life.location = "조";
+  life.eternalPose = "워터 세븐";
+  assert.equal(travelScene(life, 32).choices.find((choice) => choice.id === "pose").when(life), false);
+  assert.ok(FLEX_IDS.has("life_first_pay"));
+  const ages = new Set();
+  for (let seed = 0; seed < 25; seed += 1) {
+    for (let age = 20; age <= 30; age += 1) {
+      const candidate = createGame("original", seed, { species: "인간" });
+      candidate.path = "civilian";
+      candidate.age = age - 1;
+      if (yearlyScene(candidate).id === "life_first_pay") ages.add(age);
+    }
+  }
+  assert.ok(ages.size > 1, "같은 개인 사건이 다른 나이에 나타나야 한다");
 });
