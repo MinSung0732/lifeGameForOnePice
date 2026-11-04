@@ -1,9 +1,8 @@
-import { ART, PROFILE_OPTIONS, STATS, advance, createGame, getScene, replay, saveRecord } from "./game.js";
+import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, createGame, getScene, personalitySummary, replay, saveRecord } from "./game.js";
 import { createObservation, tickObservation } from "./observation.js";
 import { scenes } from "./story.js";
 
 const STORAGE_KEY = "a-life-at-sea.lives.v1";
-const ACT_NAMES = ["시작", "전개", "목표", "엔딩"];
 const modeName = (mode) => mode === "original" ? "원작 모드" : "더 자유로운 모드";
 const byId = (id) => document.getElementById(id);
 
@@ -81,6 +80,9 @@ function scheduleObservation() {
 }
 
 function showSection(section) {
+  const shell = document.querySelector(".page-shell");
+  shell.classList.toggle("intro-screen", section === "intro");
+  shell.classList.toggle("game-screen", section === "game");
   byId("intro").hidden = section !== "intro";
   byId("game").hidden = section !== "game";
   byId("ending").hidden = section !== "ending";
@@ -105,79 +107,108 @@ function renderIntro() {
 
 function renderLifeStrip() {
   byId("life-name").textContent = `${life.birth.name} · ${life.birth.gender} · ${life.birth.species} · ${life.birth.home}`;
-  byId("life-work").textContent = `${life.job} · ${life.affiliation}`;
+  byId("life-work").textContent = `${life.job} · ${life.affiliation}${life.coalition ? " · 연합" : life.alliance ? " · 동맹" : ""}`;
   byId("life-role").textContent = life.role;
+  byId("life-power").textContent = powerSummary();
   byId("life-goal").textContent = life.goal;
 }
 
+function powerSummary() {
+  const haki = life.haki || { observation: 0, armament: 0, conqueror: 0 };
+  const learned = [
+    haki.observation && `견문색 ${haki.observation}`,
+    haki.armament && `무장색 ${haki.armament}`,
+    haki.conqueror && `패왕색 ${haki.conqueror}`
+  ].filter(Boolean);
+  return [life.devilFruit ? "열매 능력자" : "비능력자", ...learned].join(" · ");
+}
+
 function statLabel(stat) {
-  if (stat.key === "bond") return `${life.guardianName || "준"}과의 유대`;
-  if (stat.key === "friendBond") return `${life.friendName || "린"}과의 유대`;
+  if (stat.key.startsWith("personality.")) return PERSONALITY.find((entry) => entry.key === stat.key.slice(12))?.label || stat.key;
+  if (stat.key === "bond") return `${life.guardianName || "준"}${life.rules === 3 ? "와의" : "과의"} 유대`;
+  if (stat.key === "friendBond") return `${life.friendName || "린"}${life.rules === 3 ? "와의" : "과의"} 유대`;
   return stat.label;
 }
 
 function describeChanges(changes) {
   return changes.map(({ key, delta }) => {
-    const stat = STATS.find((entry) => entry.key === key);
+    const stat = STATS.find((entry) => entry.key === key) || { key };
     return `${statLabel(stat)} ${delta > 0 ? "+" : ""}${delta}`;
   }).join(" · ");
+}
+
+function appendMeter(grid, labelText, value, max, className) {
+  const item = document.createElement("div");
+  item.className = `stat ${className}`;
+  const head = document.createElement("div");
+  head.className = "stat-head";
+  const label = document.createElement("span");
+  label.textContent = labelText;
+  const number = document.createElement("strong");
+  number.textContent = `${value} / ${max}`;
+  head.append(label, number);
+  const track = document.createElement("div");
+  track.className = "stat-track";
+  track.setAttribute("role", "meter");
+  track.setAttribute("aria-label", labelText);
+  track.setAttribute("aria-valuemin", "0");
+  track.setAttribute("aria-valuemax", String(max));
+  track.setAttribute("aria-valuenow", String(value));
+  const fill = document.createElement("span");
+  fill.style.width = `${value / max * 100}%`;
+  track.append(fill);
+  item.append(head, track);
+  grid.append(item);
 }
 
 function renderStats() {
   const grid = byId("stats-grid");
   grid.replaceChildren();
   for (const stat of STATS) {
-    const value = Math.max(0, Math.min(stat.max, life[stat.key]));
-    const item = document.createElement("div");
-    item.className = `stat stat-${stat.key}`;
-    const head = document.createElement("div");
-    head.className = "stat-head";
-    const label = document.createElement("span");
-    label.textContent = statLabel(stat);
-    const number = document.createElement("strong");
-    number.textContent = `${value} / ${stat.max}`;
-    head.append(label, number);
-    const track = document.createElement("div");
-    track.className = "stat-track";
-    track.setAttribute("role", "meter");
-    track.setAttribute("aria-label", statLabel(stat));
-    track.setAttribute("aria-valuemin", "0");
-    track.setAttribute("aria-valuemax", String(stat.max));
-    track.setAttribute("aria-valuenow", String(value));
-    const fill = document.createElement("span");
-    fill.style.width = `${value / stat.max * 100}%`;
-    track.append(fill);
-    item.append(head, track);
-    grid.append(item);
+    const max = life.rules === 3 ? stat.max : stat.key === "health" ? 3 : 5;
+    const value = Math.max(0, Math.min(max, life[stat.key]));
+    appendMeter(grid, statLabel(stat), value, max, `stat-${stat.key}`);
   }
 }
 
-function renderActTimeline(act) {
-  byId("act-timeline").querySelectorAll("li").forEach((item, index) => {
-    item.classList.toggle("is-current", index + 1 === act);
-    item.classList.toggle("is-done", index + 1 < act);
-    if (index + 1 === act) item.setAttribute("aria-current", "step");
-    else item.removeAttribute("aria-current");
-  });
+function renderPersonality() {
+  const grid = byId("personality-grid");
+  grid.replaceChildren();
+  for (const trait of PERSONALITY) appendMeter(grid, trait.label, life.personality[trait.key], 100, `trait-${trait.key}`);
+  byId("personality-summary").textContent = `성향 · ${personalitySummary(life.personality)}`;
+}
+
+function renderAgeTimeline(age) {
+  const current = life.birth.yearsBeforeCurrent;
+  byId("timeline-age").textContent = `${age}세`;
+  byId("timeline-end").textContent = `원작 현재는 출생 ${current}년 뒤`;
+  byId("age-fill").style.width = `${Math.min(100, age / current * 100)}%`;
+  byId("age-progress").setAttribute("aria-valuemax", String(current));
+  byId("age-progress").setAttribute("aria-valuenow", String(age));
+  byId("age-progress").setAttribute("aria-valuetext", `${age}세, 원작 현재까지 ${current - age}년`);
 }
 
 function renderGame(focusTitle = false) {
   const scene = getScene(life);
   if (!scene) return renderEnding();
   showSection("game");
-  byId("scene-location").textContent = `${life.location} · ${modeName(life.mode)} · ${life.birth.name}, ${scene.age}세`;
-  byId("scene-chapter").textContent = `0${scene.act} ${ACT_NAMES[scene.act - 1]} / ${life.journal.length + 1}번째 장면`;
+  byId("game").classList.toggle("has-choices", scene.choices.length > 0);
+  byId("game").classList.toggle("many-choices", scene.choices.length >= 4);
+  const passage = life.journal.length === 0 ? "태어난 해" : scene.age === life.age ? "같은 해" : `${scene.age - life.age}년 후`;
+  byId("scene-location").textContent = `${life.location} · ${modeName(life.mode)} · ${life.birth.name}`;
+  byId("scene-chapter").textContent = `${life.journal.length + 1}번째 장면 · ${passage}`;
   byId("scene-title").textContent = scene.title;
   byId("scene-body").textContent = scene.body;
   byId("scene-image").src = scene.art.src;
   byId("scene-image").alt = scene.art.alt;
-  byId("scene-caption").textContent = scene.art.alt;
+  byId("route-trail").textContent = (life.travelHistory || [life.birth.home]).slice(-4).join(" → ");
   const changeText = describeChanges(life.lastChanges);
   byId("scene-result").textContent = [life.lastOutcome, changeText].filter(Boolean).join(" · ");
   byId("scene-result").hidden = !life.lastOutcome && !changeText;
   renderLifeStrip();
   renderStats();
-  renderActTimeline(scene.act);
+  renderPersonality();
+  renderAgeTimeline(scene.age);
 
   const choices = byId("choices");
   choices.replaceChildren();
@@ -185,6 +216,7 @@ function renderGame(focusTitle = false) {
     const button = document.createElement("button");
     button.className = "choice";
     button.type = "button";
+    button.disabled = choice.disabled;
     const copy = document.createElement("span");
     const label = document.createElement("strong");
     label.textContent = choice.label;
@@ -199,11 +231,10 @@ function renderGame(focusTitle = false) {
     button.addEventListener("click", () => advanceLife(choice.id));
     choices.append(button);
   }
-  byId("next").hidden = scene.choices.length > 0;
   byId("scene-hint").textContent = scene.choices.length
-    ? "선택 장면에서는 시간이 흐르지 않습니다. 위험과 대가를 읽고 결정하세요."
-    : paused ? "자동 진행을 멈췄습니다. 다음 장면을 직접 열 수 있습니다."
-      : "게이지가 끝나면 다음 장면으로 넘어갑니다. 원하면 바로 열 수 있습니다.";
+    ? "선택 장면에서는 시간이 흐르지 않습니다. 회색 선택지는 현재 조건이 부족합니다."
+    : paused ? "자동 진행을 멈췄습니다. 준비되면 다시 진행하세요."
+      : "게이지가 끝나면 다음 장면으로 넘어갑니다.";
   if (focusTitle) {
     window.scrollTo(0, 0);
     byId("scene-title").focus({ preventScroll: true });
@@ -229,22 +260,29 @@ function renderEnding() {
   stopTimer();
   observation = null;
   showSection("ending");
-  const title = life.ending === "death" ? "돌아오지 못한 삶" : life.ending === "retire" ? "넘겨준 자리" : "아직 열린 이야기";
+  const completeLife = life.rules === 3 && life.ending === "death";
+  const title = completeLife ? life.deathCause === "어린 날의 해난 사고" ? "짧게 끝난 생애" : "한 생애의 끝"
+    : life.ending === "death" ? "돌아오지 못한 삶" : life.ending === "retire" ? "넘겨준 자리" : "아직 열린 이야기";
   const speciesArt = { 어인: "fishman", 밍크족: "mink", "하늘섬 사람": "sky", 거인족: "giant" }[life.birth.species];
-  const art = speciesArt ? ART[life.ending === "death" ? `${speciesArt}Crisis` : speciesArt]
+  const art = completeLife ? ART.legacy : speciesArt ? ART[life.ending === "death" ? `${speciesArt}Crisis` : speciesArt]
     : life.ending === "death" ? ART.rescue : life.ending === "retire" ? ART.retirement : ART.harbor;
   byId("ending-title").textContent = `${life.birth.name}의 기록 · ${title}`;
   byId("ending-image").src = art.src;
   byId("ending-image").alt = art.alt;
-  byId("ending-lead").textContent = life.ending === "death"
+  byId("ending-lead").textContent = completeLife
+    ? `${life.age}세에 ${life.deathCause}로 생을 마쳤습니다. 일지에는 선택한 길과 마지막 날까지 남은 사람이 기록되어 있습니다.`
+    : life.ending === "death"
     ? "처음의 손실과 마지막 선택이 남긴 것을 사람들의 시선에서 기록합니다. 목표의 미래를 대신 완성하지 않습니다."
     : life.ending === "retire" ? "일을 다음 사람에게 넘겼습니다. 그 뒤의 길은 그들이 결정합니다."
       : "현재까지의 삶을 한 장으로 닫습니다. 아직 일어나지 않은 원작의 미래는 쓰지 않습니다.";
   byId("ending-birth").textContent = `${life.birth.species} · ${life.birth.gender} · ${life.birth.home}`;
   byId("ending-mode").textContent = modeName(life.mode);
-  byId("ending-work").textContent = `${life.job} · ${life.affiliation} · ${life.role}`;
-  byId("ending-goal").textContent = `${life.goal} · ${life.ending === "death" ? "미완" : life.ending === "retire" ? "책임 승계" : "진행 중"}`;
-  byId("ending-bonds").textContent = `${life.guardianName || "준"}과의 기억 · ${life.friendName || "린"}과의 ${life.friendBond > 1 ? "지속된 인연" : "서로 다른 길"}${life.successor ? " · 후배에게 전한 일" : ""}`;
+  byId("ending-work").textContent = `${life.job} · ${life.affiliation} · ${life.role} · ${powerSummary()}`;
+  byId("ending-goal").textContent = completeLife ? life.goal : `${life.goal} · ${life.ending === "death" ? "미완" : life.ending === "retire" ? "책임 승계" : "진행 중"}`;
+  byId("ending-personality").textContent = personalitySummary(life.personality);
+  byId("ending-bonds").textContent = completeLife
+    ? `양육자와의 기억 · 옛 친구와의 ${life.friendBond > 1 ? "지속된 인연" : "서로 다른 길"}${life.successor ? " · 후배에게 전한 일" : ""}`
+    : `${life.guardianName || "준"}과의 기억 · ${life.friendName || "린"}과의 ${life.friendBond > 1 ? "지속된 인연" : "서로 다른 길"}${life.successor ? " · 후배에게 전한 일" : ""}`;
   window.scrollTo(0, 0);
 }
 
@@ -275,9 +313,10 @@ function openJournal() {
         item.append(result);
       }
       const card = scenes.find((scene) => scene.id === entry.id);
-      if (card?.canon) {
+      const canon = entry.canon || card?.canon;
+      if (canon) {
         const source = document.createElement("a");
-        source.href = card.canon;
+        source.href = canon;
         source.target = "_blank";
         source.rel = "noopener noreferrer";
         source.textContent = "원작 근거";
@@ -392,9 +431,9 @@ byId("resume").addEventListener("click", () => {
   else renderGame(true);
 });
 
-byId("next").addEventListener("click", () => advanceLife(null));
 byId("speed").addEventListener("change", (event) => { speed = Number(event.target.value); scheduleObservation(); });
 byId("pause").addEventListener("click", () => {
+  if (observation) observation = tickObservation(observation, performance.now(), speed, !paused && !document.hidden && !byId("journal").open);
   paused = !paused;
   byId("pause").setAttribute("aria-pressed", String(paused));
   byId("pause").textContent = paused ? "자동 진행 계속하기" : "자동 진행 멈추기";

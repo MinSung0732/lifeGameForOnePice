@@ -1,4 +1,5 @@
 import { speciesScenes } from "./species-story.js";
+import { lifeScenes } from "./life-story.js";
 
 export const CANON_CHAPTER = 1197;
 
@@ -8,7 +9,7 @@ const artForTrade = (life) => life.trade === "repair" ? "repaired" : "harbor";
 const ageAtEnd = 66;
 const canSail = (life) => life.skill >= 2 && life.supplies >= 1 && life.health >= 2;
 
-export const scenes = [
+const legacyScenes = [
   {
     id: "birth", act: 1, age: 0, art: "birth", title: "바다 곁에서 태어나다",
     body: (life) => `동쪽 바다의 ${home(life)}에서 네가 태어났다. 조산사가 포대기를 고쳐 감는 동안 양육자 준은 따뜻한 물을 가져왔다. 집에는 작은 배 한 척과 가족이 쓰던 나침반이 있었다. 아직 네가 고를 수 있는 것은 아무것도 없었다.`
@@ -308,4 +309,9 @@ export const scenes = [
     body: (life) => `${home(life)}의 다음 배는 아직 준비 중이다. ${life.successor ? "후배가 항로를 살피고" : "네가 항로를 살피고"}, 다른 사람들은 자기 몫의 일을 한다. 이 항구를 만든 삶의 이야기는 여기서 한 장을 닫는다.`
   },
   ...speciesScenes
+];
+
+export const scenes = [
+  ...legacyScenes.map((card) => ({ ...card, rules: [1, 2] })),
+  ...lifeScenes.map((card) => ({ ...card, rules: [3] }))
 ];

@@ -1,5 +1,9 @@
 # 검토용 시안과 원본 그림
 
+## 새 생애 공용 그림
+
+현재 장면은 주인공의 성별·종족·나이와 충돌하지 않도록 인물보다 장소와 물건을 보여 준다. [빈 갑판](assets/life-deck.png), [해도를 놓은 작업대](assets/life-workbench.png), [폭풍의 계류장](assets/life-storm.png), [마지막 일지](assets/life-legacy.png), [정체 모를 열매](assets/life-fruit.png)를 출생·항해·위기·힘·결말 장면에 재사용한다. 원작 인물과 악마의 열매 디자인은 복제하지 않았다. 게임 장면 왼쪽 그림 아래에는 별도 캡션을 두지 않는다.
+
 그림은 OpenAI 내장 `image_gen`으로 생성했고 공식 원피스 이미지·로고·음성을 참조하거나 복사하지 않았다. [시범판](../docs/BUILD_STATUS.md)의 인간 경로는 [출생](assets/birth-harbor.png) → [폭풍](assets/storm-harbor-neutral.png) → [수리](assets/repaired-harbor-neutral.png) → [현재 항구](assets/harbor-now.png) → [구조 위기](assets/rescue-storm-neutral.png) → [은퇴](assets/retirement-harbor-neutral.png) 그림을 사용한다. PNG는 편집용 원본이며, 웹게임은 같은 이름의 WebP 압축본을 불러온다. 인물이 전면에 나오는 초기 [폭풍](assets/storm-harbor.png)·[수리](assets/repaired-harbor.png)·[구조 위기](assets/rescue-storm.png)·[은퇴](assets/retirement-harbor.png) 그림은 비교용 시안으로 남겼다. 현재 플레이용 장면은 무작위 성별·나이와 충돌하지 않도록 배와 항구를 중심으로 다시 만들었다. PC·휴대폰의 제작 전 선택 장면은 각각 [PC SVG](scene-desktop.svg), [휴대폰 SVG](scene-mobile.svg)에 있고, [성장 비교 SVG](growth-before-after.svg)는 두 시점을 나란히 놓았다. SVG는 실행되는 UI가 아니다.
 
 ## 종족별 생활·위기 그림
