@@ -206,6 +206,30 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
 .past-life:hover { text-decoration: underline; }
 .noscript { margin: 40px; text-align: center; }
 
+@media (min-width: 701px) and (max-height: 760px) {
+  .masthead { min-height: 50px; }
+  .game { padding-top: 4px; }
+  .game-topline { margin-bottom: 2px; }
+  .playback select { min-height: 32px; }
+  .age-timeline { margin-bottom: 4px; }
+  .age-track { height: 5px; margin-top: 3px; }
+  .route-trail { margin: -2px 0 2px; }
+  .life-strip { margin-bottom: 5px; padding: 3px 0; }
+  .life-strip span { font-size: 10px; }
+  .life-strip strong { font-size: 12px; }
+  .life-strip small { font-size: 10px; }
+  .growth-panels { margin-bottom: 5px; }
+  .stats-panel { padding: 3px 0 4px; }
+  .stats-panel h2 { margin-bottom: 3px; }
+  .stats-grid { gap: 2px 8px; }
+  .stat-head { margin-bottom: 1px; line-height: 1.1; }
+  .stat-track { height: 4px; }
+  .scene-art img { height: min(43vh, 280px); }
+  .scene-body { margin: 8px 0 9px; line-height: 1.45; }
+  .choice { padding: 4px 6px; }
+  .choice small { line-height: 1.25; }
+}
+
 @media (max-width: 1000px) {
   .page-shell { padding: 0 30px; }
   .intro { gap: 35px; }
