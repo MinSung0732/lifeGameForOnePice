@@ -164,6 +164,11 @@ function appendMeter(grid, labelText, value, max, className) {
 function renderStats() {
   const grid = byId("stats-grid");
   grid.replaceChildren();
+  const birthStats = life.birthStats;
+  const signed = (value) => `${value >= 0 ? "+" : ""}${value}`;
+  byId("birth-stat-source").textContent = birthStats
+    ? `종족/개인차 · 기술 ${birthStats.species.skill}${signed(birthStats.individual.skill)}, 건강 ${birthStats.species.health}${signed(birthStats.individual.health)}`
+    : "";
   for (const stat of STATS) {
     const max = life.rules === 3 ? stat.max : stat.key === "health" ? 3 : 5;
     const value = Math.max(0, Math.min(max, life[stat.key]));
@@ -181,11 +186,12 @@ function renderPersonality() {
 function renderAgeTimeline(age) {
   const current = life.birth.yearsBeforeCurrent;
   byId("timeline-age").textContent = `${age}세`;
-  byId("timeline-end").textContent = `원작 현재는 출생 ${current}년 뒤`;
+  byId("timeline-end").textContent = age <= current ? `원작 현재: ${current}세` : `원작 현재 이후 ${age - current}년 · 이후 미공개`;
   byId("age-fill").style.width = `${Math.min(100, age / current * 100)}%`;
   byId("age-progress").setAttribute("aria-valuemax", String(current));
-  byId("age-progress").setAttribute("aria-valuenow", String(age));
-  byId("age-progress").setAttribute("aria-valuetext", `${age}세, 원작 현재까지 ${current - age}년`);
+  byId("age-progress").setAttribute("aria-valuenow", String(Math.min(age, current)));
+  byId("age-progress").setAttribute("aria-valuetext", age <= current
+    ? `${age}세, 원작 현재까지 ${current - age}년` : `${age}세, 원작 현재 이후 ${age - current}년`);
 }
 
 function renderGame(focusTitle = false) {

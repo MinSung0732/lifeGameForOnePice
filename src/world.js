@@ -16,7 +16,7 @@ const ENCOUNTERS = [
     body: "리틀 가든에서 도리와 브로기의 결투 소리가 들렸다. 둘은 오래된 승부를 이어 가고 있었다. 지나가는 배는 싸움에 끼어들지 않고 해안에 닻을 내렸다.",
     choices: [
       { id: "share", label: "두 거인에게 식량을 나눈다", available: (life) => life.supplies >= 20, risk: "물자 20 필요 · 지역의 신뢰 +10", personality: { empathy: 8, loyalty: 5 }, apply: (life) => { life.supplies -= 20; life.trust += 10; return "두 거인은 식량을 받아 들고 다시 자기들의 승부로 돌아갔다."; } },
-      { id: "watch", label: "멀리서 결투를 보고 떠난다", risk: "건강 유지 · 기술 +10", personality: { caution: 6 }, apply: (life) => { life.skill += 10; return "물러설 때를 아는 것도 오래 남는 배움이었다."; } }
+      { id: "watch", label: "멀리서 결투를 보고 떠난다", risk: "결투에 끼어들지 않음 · 기술 +10", personality: { caution: 6 }, apply: (life) => { life.skill += 10; return "물러설 때를 아는 것도 오래 남는 배움이었다."; } }
     ] },
   { id: "kureha", place: "드럼섬", earliest: 30, latest: 3, name: "닥터 쿠레하", canon: "https://one-piece.com/character/Dr_Kureha/index.html",
     body: "드럼섬에서 오래 일한 의사 닥터 쿠레하를 만났다. 그는 환자의 몸보다 먼저 여행 준비가 허술하다고 지적했다.",
@@ -47,6 +47,12 @@ const ENCOUNTERS = [
     choices: [
       { id: "share", label: "동행의 사정을 솔직히 말한다", risk: "지역의 신뢰 +10", personality: { loyalty: 6, empathy: 5 }, apply: (life) => { life.trust += 10; return "야를은 짧게 고개를 끄덕이고 기항할 자리를 알려 주었다."; } },
       { id: "observe", label: "예의를 갖추고 섬을 둘러본다", risk: "기술 +10", personality: { caution: 5 }, apply: (life) => { life.skill += 10; return "낯선 땅에서는 먼저 길과 일상을 익히기로 했다."; } }
+    ] },
+  { id: "luffy_elbaf", place: "엘바프", earliest: 0, latest: 0, name: "몽키 D. 루피", canon: "https://one-piece.com/story/elbaph/index.html",
+    body: "엘바프에서 밀짚모자 루피를 잠깐 마주쳤다. 그는 동료들이 있는 쪽을 묻고 있었고, 항구의 길은 여러 갈래였다.",
+    choices: [
+      { id: "guide", label: "동료들이 지나간 길을 가리킨다", risk: "짧은 대화 · 지역의 신뢰 +10", personality: { empathy: 5 }, apply: (life) => { life.trust += 10; return "루피는 고맙다며 손을 흔들었다. 이어지는 모험은 그의 동료들과 함께할 일이었다."; } },
+      { id: "pass", label: "다른 길목을 살피러 간다", risk: "기술 +10 · 각자의 항로", personality: { caution: 5 }, apply: (life) => { life.skill += 10; return "떠들썩한 항구를 뒤로하고 자기 배의 길을 확인했다."; } }
     ] }
 ];
 
@@ -75,7 +81,8 @@ export function travelScene(life, age) {
     state.pendingEncounter = encounterAt(state);
     return `${state.birth.name}의 배는 ${state.location}에 닿았다. 새 기항지의 물길과 사람을 살피기 시작했다.`;
   }
-  return { id: `life_voyage_${age}`, age, act: 2, species: "all", yearly: true, urgent: true, art: "deck", title: "다음 기항지를 고르다",
+  return { id: `life_voyage_${age}`, age, act: 2, species: "all", yearly: true, urgent: true, art: "deck",
+    title: life.creationVersion === 1 ? "다음 기항지를 고르다" : `${life.location}에서의 출항`,
     body: `${life.location}에서 다음 항로를 정할 때가 왔다. 기록지침과 동행의 준비를 확인했다. 먼 섬으로 갈수록 식량과 배를 손볼 물자가 더 필요했다.`, choices: [
       { id: "near", label: `${route[nearIndex]}으로 간다`, available: (state) => state.supplies >= 10, risk: "물자 10 필요 · 가까운 항로", personality: { freedom: 5 }, apply: (state) => visit(state, nearIndex, 10) },
       { id: "far", label: `${route[farIndex]}으로 긴 항해를 한다`, available: (state) => state.supplies >= 20, risk: "물자 20 필요 · 긴 항로", personality: { ambition: 7, freedom: 5 }, apply: (state) => visit(state, farIndex, 20) },

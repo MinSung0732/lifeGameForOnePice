@@ -27,6 +27,14 @@ const LEGACY_HOMES = {
     거인족: ["엘바프 북쪽 만", "엘바프 솔바람 마을"]
 };
 const LEGACY_GENDERS = ["남성", "여성", "비이분법"];
+// Game balance values, not numerical traits stated by the original work.
+const SPECIES_START = {
+  인간: { skill: 20, health: 70 },
+  어인: { skill: 21, health: 78 },
+  밍크족: { skill: 23, health: 72 },
+  "하늘섬 사람": { skill: 22, health: 68 },
+  거인족: { skill: 19, health: 84 }
+};
 export const STATS = [
   { key: "skill", label: "기술", max: 100 },
   { key: "health", label: "건강", max: 100 },
@@ -127,10 +135,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 2) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
+  if (![1, 2].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -147,17 +156,33 @@ export function createGame(mode, seed, profile = {}, rules = 3) {
     species,
     home: chosen.home || randomHome,
     means: chosen.means || randomMeans,
-    yearsBeforeCurrent: rules === 3 ? species === "거인족" ? 280 + random() % 71 : 95 + random() % 26 : 66
+    yearsBeforeCurrent: rules === 3
+      ? creationVersion === 2
+        ? species === "거인족" ? 160 + random() % 101 : 35 + random() % 51
+        : species === "거인족" ? 280 + random() % 71 : 95 + random() % 26
+      : 66
   };
+  // Keep old rule-3 saves on their original fixed birth values.
+  const birthStats = rules === 3 && creationVersion === 2 ? {
+    species: SPECIES_START[species],
+    individual: { skill: random() % 11 - 5, health: random() % 17 - 8 },
+    personality: Object.fromEntries(PERSONALITY.map(({ key }) => [key, random() % 13 - 6]))
+  } : null;
   const life = {
-    version: SAVE_VERSION, canonChapter: CANON_CHAPTER, mode, seed, profile: chosen, rules, birth,
+    version: SAVE_VERSION, canonChapter: CANON_CHAPTER, mode, seed, profile: chosen, rules,
+    creationVersion: rules === 3 ? creationVersion : 1, birth, birthStats,
     index: 0, age: 0, location: birth.home, trade: "", job: "아직 없음", affiliation: "무소속", role: "없음",
-    goal: "아직 없음", skill: rules === 3 ? 20 : 0, supplies: rules === 3 ? birth.means === "넉넉지 않은" ? 30 : 50 : birth.means === "넉넉지 않은" ? 1 : 2,
-    health: rules === 3 ? 70 : 3, bond: rules === 3 ? 40 : 1, friendBond: rules === 3 ? 40 : 1,
+    goal: "아직 없음", skill: birthStats ? birthStats.species.skill + birthStats.individual.skill : rules === 3 ? 20 : 0,
+    supplies: rules === 3 ? birth.means === "넉넉지 않은" ? 30 : 50 : birth.means === "넉넉지 않은" ? 1 : 2,
+    health: birthStats ? birthStats.species.health + birthStats.individual.health : rules === 3 ? 70 : 3,
+    bond: rules === 3 ? 40 : 1, friendBond: rules === 3 ? 40 : 1,
     apprenticeBond: 0, trust: rules === 3 ? 40 : 1,
-    personality: Object.fromEntries(PERSONALITY.map(({ key }) => [key, 50])),
+    personality: Object.fromEntries(PERSONALITY.map(({ key }) => [key, 50 + (birthStats?.personality[key] || 0)])),
     devilFruit: null, fruitMastery: 0, haki: { observation: 0, armament: 0, conqueror: 0 },
     successor: false, independent: false, leftHome: false, continued: false, retired: false, rescued: 0,
+    homebound: false, rankTier: 0, careerStartAge: null, lastRankOfferAge: -100,
+    lastMarineOfferAge: -100, lastPirateOfferAge: -100, lastCivilianOfferAge: -100,
+    lastCrewOfferAge: -100, lastRevolutionOfferAge: -100, injustice: false,
     routeIndex: -1, travelHistory: [birth.home], pendingEncounter: null, pendingBranch: false,
     worldBranch: null, alliance: false, coalition: false, rival: false,
     ending: null, deathCause: "", finished: false, lastOutcome: "", lastChanges: [], actions: [], journal: [], seen: []
@@ -197,7 +222,8 @@ export function getScene(life) {
         const cost = typeof choice.cost === "function" ? choice.cost(life) : choice.cost || 0;
         const risk = typeof choice.risk === "function" ? choice.risk(life) : choice.risk;
         return { id: choice.id, label: typeof choice.label === "function" ? choice.label(life) : choice.label,
-          risk: life.supplies < cost ? `${risk} · 물자 ${cost} 필요` : risk, disabled: !canChoose(choice, life) };
+          risk: life.supplies < cost && !risk.includes(`물자 ${cost} 필요`) ? `${risk} · 물자 ${cost} 필요` : risk,
+          disabled: !canChoose(choice, life) };
       })
   };
 }
@@ -240,15 +266,17 @@ export function advance(life, choiceId = null) {
 }
 
 export function saveRecord(life) {
-  return { version: SAVE_VERSION, mode: life.mode, seed: life.seed, profile: life.profile, rules: life.rules, actions: [...life.actions] };
+  return { version: SAVE_VERSION, mode: life.mode, seed: life.seed, profile: life.profile, rules: life.rules,
+    creationVersion: life.creationVersion, actions: [...life.actions] };
 }
 
 export function replay(record) {
-  if (!record || record.version !== SAVE_VERSION || !Array.isArray(record.actions) || record.actions.length > (record.rules === 3 ? 400 : scenes.length)) {
+  if (!record || record.version !== SAVE_VERSION || !Array.isArray(record.actions) || record.actions.length > (record.rules === 3 ? 600 : scenes.length)) {
     throw new Error("저장 기록 형식이 맞지 않습니다.");
   }
   const rules = record.rules === undefined ? 1 : record.rules;
-  let life = createGame(record.mode, record.seed, record.profile === undefined ? {} : record.profile, rules);
+  let life = createGame(record.mode, record.seed, record.profile === undefined ? {} : record.profile, rules,
+    record.creationVersion === undefined ? 1 : record.creationVersion);
   for (const action of record.actions) {
     if (action !== null && typeof action !== "string") throw new Error("선택 기록 형식이 맞지 않습니다.");
     life = advance(life, action);

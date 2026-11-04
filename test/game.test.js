@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { ART, PROFILE_OPTIONS, advance, createGame, getContentStats, getScene, personalitySummary, replay, saveRecord } from "../src/game.js";
+import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, createGame, getContentStats, getScene, personalitySummary, replay, saveRecord } from "../src/game.js";
 import { createObservation, tickObservation } from "../src/observation.js";
 import { scenes } from "../src/story.js";
 import { encounterAt } from "../src/world.js";
@@ -26,13 +26,14 @@ function play(mode, seed, picks = {}, profile = { species: "인간" }, rules = 3
 
 function reach(seed, target, picks = {}, profile = { species: "인간" }) {
   let life = createGame("original", seed, profile);
-  while (!life.finished && getScene(life).id !== target) {
+  const matches = (scene) => typeof target === "function" ? target(scene) : scene.id === target;
+  while (!life.finished && !matches(getScene(life))) {
     const scene = getScene(life);
     const chosen = scene.choices.find((choice) => choice.id === picks[scene.id] && !choice.disabled)?.id
       ?? scene.choices.find((choice) => !choice.disabled)?.id ?? null;
     life = advance(life, chosen);
   }
-  assert.equal(getScene(life)?.id, target, `${target} 장면에 도착해야 한다`);
+  assert.ok(getScene(life) && matches(getScene(life)), `${target} 장면에 도착해야 한다`);
   return life;
 }
 
@@ -61,6 +62,48 @@ test("출생 추첨은 시드와 모드에 재현 가능하고 잘못된 선택�
   assert.throws(() => createGame("unknown", 1));
   assert.throws(() => advance(life, "repair"));
   assert.equal(life.actions.length, 0);
+});
+
+test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기록은 예전 수치로 복원한다", () => {
+  const human = createGame("original", 42, { species: "인간" });
+  const giant = createGame("original", 42, { species: "거인족" });
+  assert.deepEqual(human.birthStats.individual, giant.birthStats.individual);
+  assert.deepEqual(human.birthStats.personality, giant.birthStats.personality);
+  assert.equal(human.skill, human.birthStats.species.skill + human.birthStats.individual.skill);
+  assert.equal(human.health, human.birthStats.species.health + human.birthStats.individual.health);
+  assert.equal(giant.health - human.health, 14);
+  assert.ok(human.birth.yearsBeforeCurrent >= 35 && human.birth.yearsBeforeCurrent <= 85);
+  assert.ok(giant.birth.yearsBeforeCurrent >= 160 && giant.birth.yearsBeforeCurrent <= 260);
+  assert.notDeepEqual(human.birthStats.individual, createGame("original", 43, { species: "인간" }).birthStats.individual);
+  assert.ok(PROFILE_OPTIONS.species.every((species) => {
+    const life = createGame("original", 42, { species });
+    return [...STATS, ...PERSONALITY].every(({ key }) => {
+      const value = life.personality[key] ?? life[key];
+      return value >= 0 && value <= 100;
+    });
+  }));
+  assert.deepEqual(replay(saveRecord(human)), human);
+  const former = replay({ version: 1, mode: "original", seed: 42, profile: { species: "인간" }, rules: 3, actions: [] });
+  assert.equal(former.creationVersion, 1);
+  assert.equal(former.skill, 20);
+  assert.equal(former.health, 70);
+  assert.equal(former.birthStats, null);
+  assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 3 }));
+});
+
+test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
+  const child = reach(12, "life_child_crisis", { life_first_skill: "carry" }, { species: "어인" });
+  const childChoices = getScene(child).choices;
+  assert.match(childChoices.find((choice) => choice.id === "rush").risk, /기술 30/);
+  assert.doesNotMatch(childChoices.map((choice) => choice.risk).join(" "), /안전|사망|돌아오지 못/);
+  const enemy = reach(0, "life_enemy");
+  const fight = getScene(enemy).choices.find((choice) => choice.id === "fight");
+  assert.match(fight.risk, /기술 30 · 건강 30 필요/);
+  assert.doesNotMatch(fight.risk, /승산|유리|밀리면|충족/);
+  const rival = reach(0, "life_rival_return", { life_enemy: "withdraw" });
+  const rivalRisks = getScene(rival).choices.map((choice) => choice.risk).join(" ");
+  assert.doesNotMatch(rivalRisks, /승산|유리|적대관계 해소|적대관계 지속/);
 });
 
 test("위험을 무릅쓴 사망, 책임을 넘긴 은퇴, 현재 시점의 세 결말이 도달 가능하다", () => {
@@ -176,29 +219,81 @@ test("종족과 소속은 독립적이며 새 생애는 이른 죽음부터 긴 
   const affiliations = { pirate: "독립 해적단", marine: "해군", liberator: "독립 해방망", civilian: "민간 조합" };
   for (const species of PROFILE_OPTIONS.species) {
     for (const [career, affiliation] of Object.entries(affiliations)) {
-      const life = play("original", 23, { life_career: career }, { species });
-      assert.equal(life.affiliation, affiliation);
+      const careerChoice = advance(reach(23, "life_career", {}, { species }), career);
+      assert.equal(careerChoice.affiliation, affiliation);
+      const life = play("original", 23, { life_career: career, life_revolution_choice: "independent", life_change_path: "stay" }, { species });
       assert.equal(life.ending, "death");
-      assert.ok(life.age <= life.birth.yearsBeforeCurrent);
       assert.ok(life.seen.length > 50);
     }
   }
-  const longLife = play("original", 0);
-  assert.ok(longLife.age > 84);
-  assert.notEqual(longLife.age, 84);
-  const giantLife = play("original", 5, {}, { species: "거인족" });
-  assert.ok(giantLife.age > 290);
+  const ordinaryLives = Array.from({ length: 20 }, (_, seed) => play("original", seed, {}, { species: "인간" }));
+  assert.ok(ordinaryLives.some((life) => life.age > 84));
+  assert.ok(ordinaryLives.some((life) => life.age > life.birth.yearsBeforeCurrent));
+  const giantLives = Array.from({ length: 20 }, (_, seed) => play("original", seed, {}, { species: "거인족" }));
+  assert.ok(giantLives.some((life) => life.age > 290));
 
-  let child = createGame("original", 12, { species: "어인", name: "미라" });
-  while (getScene(child).id !== "life_child_crisis") {
-    const scene = getScene(child);
-    child = advance(child, scene.id === "life_first_skill" ? "carry" : scene.choices[0]?.id ?? null);
-  }
-  assert.doesNotMatch(getScene(child).choices.find((choice) => choice.id === "rush").risk, /사망/);
-  const lost = advance(child, "rush");
-  assert.equal(lost.ending, "death");
+  const crises = Array.from({ length: 60 }, (_, seed) => reach(seed, "life_child_crisis", { life_first_skill: "carry" }, { species: "어인" }));
+  const outcomes = crises.map((child) => advance(child, "rush"));
+  assert.ok(crises.every((child) => !/사망/.test(getScene(child).choices.find((choice) => choice.id === "rush").risk)));
+  const lost = outcomes.find((life) => life.ending === "death");
+  const rescued = outcomes.find((life) => !life.ending);
+  assert.ok(lost && rescued, "기술이 낮아도 구조 결과가 한쪽으로 고정되지 않아야 한다");
   assert.equal(lost.age, 11);
   assert.equal(getScene(lost), null);
+  assert.ok(rescued.health < crises[outcomes.indexOf(rescued)].health);
+});
+
+test("직업은 사건과 조건으로 일찍 또는 늦게 바꾸고 승급을 거절할 수 있다", () => {
+  const young = reach(0, "life_early_departure");
+  assert.equal(advance(young, "board").path, "pirate");
+  assert.equal(advance(young, "marine").path, "marine");
+  assert.equal(advance(young, "liberator").path, "liberator");
+  const firstCareer = reach(0, "life_career");
+  const captain = advance(firstCareer, "captain");
+  assert.equal(captain.role, "선장");
+  assert.equal(captain.independent, true);
+  const home = play("original", 0, { life_career: "home", life_orders: "obey", life_retire_choice: "continue" });
+  assert.equal(home.homebound, true);
+  assert.deepEqual(home.travelHistory, [home.birth.home]);
+  assert.equal(home.ending, "death");
+
+  const quietPicks = { life_career: "home", life_orders: "obey", life_revolution_choice: "independent" };
+  const marine = reach(0, (scene) => scene.id.startsWith("life_marine_invitation_"), quietPicks);
+  assert.ok(getScene(marine).age < 35, "입대 제안은 고정된 중년 나이를 기다리지 않아야 한다");
+  const enlisted = advance(marine, "enlist");
+  assert.equal(enlisted.path, "marine");
+  assert.equal(enlisted.role, "수병");
+  assert.equal(enlisted.leftHome, true);
+  const pirate = reach(0, (scene) => scene.id.startsWith("life_pirate_invitation_"), quietPicks);
+  const recruited = advance(pirate, "join");
+  assert.equal(recruited.path, "pirate");
+  assert.equal(recruited.role, "견습 선원");
+  const otherCrew = reach(0, (scene) => scene.id.startsWith("life_pirate_invitation_"),
+    { life_career: "pirate", life_orders: "obey", life_revolution_choice: "independent" });
+  assert.equal(otherCrew.path, "pirate");
+  const transfer = advance(otherCrew, "join");
+  assert.equal(transfer.affiliation, "기항지에서 만난 해적단");
+  assert.equal(transfer.role, "견습 선원");
+  assert.equal(transfer.skill, otherCrew.skill, "이직 자체가 숙련도를 올리지는 않아야 한다");
+  let late = createGame("original", 0, { species: "인간" });
+  while (!late.finished) {
+    const scene = getScene(late);
+    if (scene.id.startsWith("life_marine_invitation_") && scene.age >= 40) break;
+    const choice = scene.id === "life_career" ? "home" : scene.id === "life_orders" ? "obey"
+      : scene.id === "life_revolution_choice" ? "independent" : scene.choices.find((item) => !item.disabled)?.id ?? null;
+    late = advance(late, choice);
+  }
+  assert.ok(!late.finished && getScene(late).age >= 40, "중년에 들어도 입대 제안이 다시 열려야 한다");
+  assert.equal(advance(late, "enlist").path, "marine");
+  const injuryPicks = { life_career: "home", life_orders: "help", life_revolution_choice: "independent" };
+  const revolution = reach(0, (scene) => scene.id.startsWith("life_revolution_invitation_"), injuryPicks);
+  assert.equal(revolution.injustice, true);
+  const joined = advance(revolution, "join");
+  assert.equal(joined.affiliation, "혁명군");
+  assert.equal(joined.leftHome, true);
+  const apprentice = play("original", 0, { life_career: "pirate", life_orders: "obey", life_revolution_choice: "independent", life_retire_choice: "continue" });
+  assert.equal(apprentice.role, "견습 선원");
+  assert.ok(apprentice.seen.some((id) => id.startsWith("life_rank_1_")));
 });
 
 test("열매의 획득 경위와 수영 제약, 패기와 비능력자 경로가 선택에 반영된다", () => {
@@ -237,12 +332,12 @@ test("열매의 획득 경위와 수영 제약, 패기와 비능력자 경로가
 
 test("100점 능력과 성격 변화가 종합 성향에 반영되고 조건 부족 선택은 막힌다", () => {
   const early = reach(0, "life_first_skill");
-  assert.equal(early.skill, 20);
-  assert.equal(early.health, 70);
-  assert.equal(personalitySummary(early.personality), "균형을 찾는 사람");
+  assert.equal(early.skill, early.birthStats.species.skill + early.birthStats.individual.skill);
+  assert.equal(early.health, early.birthStats.species.health + early.birthStats.individual.health);
+  assert.ok(personalitySummary(early.personality));
   const helpful = advance(early, "carry");
   assert.equal(helpful.supplies, early.supplies + 10);
-  assert.equal(helpful.personality.empathy, 57);
+  assert.equal(helpful.personality.empathy, early.personality.empathy + 7);
   assert.ok(helpful.lastChanges.some((change) => change.key === "personality.empathy" && change.delta === 7));
   const repeated = advance(reach(0, "life_enemy", { life_first_skill: "carry" }), "withdraw");
   assert.equal(repeated.rival, true);
@@ -307,12 +402,20 @@ test("실제 섬으로 이동하고 시기와 장소가 맞을 때만 원작 인
   tooEarly.location = "엘바프";
   tooEarly.age = tooEarly.birth.yearsBeforeCurrent - 50;
   assert.equal(encounterAt(tooEarly), "jarul");
+  const latest = createGame("original", 4, { species: "인간" });
+  latest.age = latest.birth.yearsBeforeCurrent - 1;
+  latest.location = "엘바프";
+  assert.equal(getScene(latest).id, "life_meet_luffy_elbaf");
+  const met = advance(latest, "guide");
+  assert.equal(met.age, met.birth.yearsBeforeCurrent);
+  assert.ok(met.seen.includes("life_meet_luffy_elbaf"));
+  assert.equal(encounterAt(met), null);
 });
 
 test("선택의 여파는 같은 해에 보이고 자유 모드의 상위 직책만 IF로 열린다", () => {
-  const picks = { life_career: "pirate", life_revolution_choice: "independent", life_retire_choice: "continue", life_free_rank: "attempt" };
-  const free = play("free", 133, picks);
-  const original = play("original", 133, picks);
+  const picks = { life_career: "captain", life_revolution_choice: "independent", life_retire_choice: "continue", life_free_rank: "attempt" };
+  const free = play("free", 0, picks);
+  const original = play("original", 0, picks);
   assert.equal(free.role, "사황");
   assert.equal(free.worldBranch, "emperor");
   assert.notEqual(original.role, "사황");
@@ -327,6 +430,33 @@ test("선택의 여파는 같은 해에 보이고 자유 모드의 상위 직책
     if (!entry.id.startsWith("life_year_")) continue;
     assert.ok(!free.journal.slice(Math.max(0, index - 10), index).some((previous) => previous.title === entry.title));
   }
+});
+
+test("해군 승급은 경력과 신뢰를 쌓은 뒤에만 대장 IF로 이어진다", () => {
+  function marineLife(mode) {
+    let life = createGame(mode, 3, { species: "인간" });
+    while (!life.finished) {
+      const scene = getScene(life);
+      const wanted = scene.id === "life_early_departure" || scene.id === "life_career" ? "marine"
+        : scene.id === "life_orders" ? "help"
+          : scene.id === "life_revolution_choice" ? "independent"
+            : scene.id === "life_retire_choice" ? "continue"
+              : scene.id === "life_free_rank" ? "attempt"
+                : scene.id.startsWith("life_rank_") ? "accept" : null;
+      const choice = scene.choices.find((item) => item.id === wanted && !item.disabled)
+        ?? scene.choices.find((item) => !item.disabled);
+      life = advance(life, choice?.id ?? null);
+    }
+    return life;
+  }
+  const free = marineLife("free");
+  const original = marineLife("original");
+  assert.equal(free.rankTier, 5);
+  assert.equal(free.worldBranch, "admiral");
+  assert.equal(free.role, "해군 대장");
+  assert.equal(original.rankTier, 5);
+  assert.equal(original.role, "중장");
+  assert.ok(!original.seen.includes("life_free_rank"));
 });
 
 test("저장 기록은 같은 삶으로 복원되고, 여러 시드가 막힘 없이 끝난다", () => {
@@ -345,6 +475,8 @@ test("저장 기록은 같은 삶으로 복원되고, 여러 시드가 막힘 �
     assert.equal(new Set(life.seen).size, life.seen.length);
     assert.ok(life.journal.every((entry, index, entries) => index === 0 || entry.age >= entries[index - 1].age));
     assert.ok(life.journal.every((entry, index, entries) => index === 0 || entry.age - entries[index - 1].age <= 1));
+    assert.ok(life.journal.every((entry, index, entries) => !entries.slice(Math.max(0, index - 10), index)
+      .some((previous) => previous.title === entry.title)), "최근 10장면의 제목은 반복되지 않아야 한다");
     for (const entry of life.journal) {
       if (entry.id === "life_roger_news") assert.equal(life.birth.yearsBeforeCurrent - entry.age, 24);
       if (entry.id === "life_revolution_choice") assert.equal(life.birth.yearsBeforeCurrent - entry.age, 22);
@@ -359,4 +491,29 @@ test("저장 기록은 같은 삶으로 복원되고, 여러 시드가 막힘 �
   }
   assert.deepEqual(completed, new Set(["death"]));
   assert.throws(() => replay({ version: 1, mode: "original", seed: 1, actions: ["not-a-choice"] }));
+});
+
+test("거인 전용 선택 사건은 위험 문구대로 수치를 바꾸고 새 규칙의 거인에게만 나온다", async () => {
+  const { giantAdultDecisions, giantGrowingDecisions } = await import("../src/giant-years.js");
+  const giantTitles = new Set([...giantGrowingDecisions, ...giantAdultDecisions].map((decision) => decision.title));
+  const isGiantDecision = (scene) => giantTitles.has(scene.title);
+  const life = reach(7, isGiantDecision, {}, { species: "거인족" });
+  const choice = getScene(life).choices.find((option) => !option.disabled);
+  const next = advance(life, choice.id);
+  const shown = Object.fromEntries(choice.risk.split(" · ").map((part) => {
+    const [label, delta] = [part.slice(0, part.lastIndexOf(" ")), Number(part.slice(part.lastIndexOf(" ") + 1))];
+    return [STATS.find((stat) => stat.label === label).key, delta];
+  }));
+  for (const stat of STATS) {
+    const expected = Math.max(0, Math.min(stat.max, life[stat.key] + (shown[stat.key] || 0)));
+    assert.equal(next[stat.key], expected, `${stat.label} 변화가 위험 문구와 같아야 한다`);
+  }
+  const legacy = play("original", 7, {}, { species: "거인족" }, 3);
+  assert.ok(legacy.journal.some((entry) => giantTitles.has(entry.title)), "새 규칙 거인 생애에는 거인 선택 사건이 나와야 한다");
+  for (let seed = 0; seed < 10; seed += 1) {
+    const former = replay({ ...saveRecord(createGame("original", seed, { species: "거인족" }, 3, 1)), actions: [] });
+    let old = former;
+    while (!old.finished) { const scene = getScene(old); old = advance(old, scene.choices.find((option) => !option.disabled)?.id ?? null); }
+    assert.ok(!old.journal.some((entry) => giantTitles.has(entry.title)), "이전 출생 규칙 기록에는 거인 선택 사건이 섞이지 않아야 한다");
+  }
 });
