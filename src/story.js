@@ -1,3 +1,5 @@
+import { speciesScenes } from "./species-story.js";
+
 export const CANON_CHAPTER = 1197;
 
 const home = (life) => life.birth.home;
@@ -139,7 +141,7 @@ export const scenes = [
     id: "guardian_health", act: 2, age: 29, art: "harbor", title: "준이 쉬는 날",
     body: "준은 전보다 늦게 부두에 나왔다. 오래 일한 어깨가 아프다고 했다. 네가 항구에 있든 가까운 바다를 돌든, 돌보는 일에는 시간과 물자가 든다. 아무도 대신 살아 줄 수 없는 하루였다.",
     choices: [
-      { id: "stay", label: "일을 줄이고 준 곁에 머문다", risk: "생활 자원 감소", apply: (life) => { life.bond += 1; life.supplies = Math.max(0, life.supplies - 1); return "준과 함께 집에 머물렀다. 그가 건네지 못한 옛 이야기를 들었다."; } },
+      { id: "stay", label: "일을 줄이고 준 곁에 머문다", risk: (life) => life.rules === 2 && life.supplies < 1 ? "필요: 물자 1 · 현재 부족하여 시도하면 실패" : "물자 -1 · 준과의 유대 +1", apply: (life) => { if (life.rules === 2 && life.supplies < 1) return "물자가 없어 일을 줄이지 못했다. 준과의 약속을 다음으로 미뤘다."; life.bond += 1; life.supplies = Math.max(0, life.supplies - 1); return "준과 함께 집에 머물렀다. 그가 건네지 못한 옛 이야기를 들었다."; } },
       { id: "work", label: "일을 이어 치료비를 모은다", risk: "함께할 시간 감소", apply: (life) => { life.supplies += 1; life.bond -= 1; return "치료비를 모았다. 준과 마주 앉을 시간은 더 짧아졌다."; } }
     ]
   },
@@ -173,7 +175,7 @@ export const scenes = [
     id: "apprentice_offer", act: 3, age: 50, art: "harbor", title: "배우러 온 사람",
     body: "한 젊은 일꾼이 네 일을 보고 배우고 싶다고 했다. 가르치면 지금 네 몫의 시간과 물자가 줄지만, 언젠가 네가 없을 때 항구에 남을 손이 생긴다. 거절해도 그 사람은 다른 길을 찾을 것이다.",
     choices: [
-      { id: "teach", label: "시간을 내어 가르친다", risk: "물자 감소 · 후계 관계의 시작", apply: (life) => { life.successor = true; life.apprenticeBond += 1; life.supplies = Math.max(0, life.supplies - 1); return "후배가 생겼다. 네가 한 일을 다른 사람이 다시 해볼 수 있게 되었다."; } },
+      { id: "teach", label: "시간을 내어 가르친다", risk: (life) => life.rules === 2 && life.supplies < 1 ? "필요: 물자 1 · 현재 부족하여 시도하면 실패" : "물자 -1 · 후계 관계의 시작", apply: (life) => { if (life.rules === 2 && life.supplies < 1) return "도구와 시간을 마련하지 못해 가르치는 일을 시작하지 못했다."; life.successor = true; life.apprenticeBond += 1; life.supplies = Math.max(0, life.supplies - 1); return "후배가 생겼다. 네가 한 일을 다른 사람이 다시 해볼 수 있게 되었다."; } },
       { id: "decline", label: "지금은 혼자 일한다", risk: "당장의 일은 빨라짐 · 후계자 없음", apply: (life) => { life.supplies += 1; return "일은 빠르게 끝냈지만, 네가 쉬는 날 대신할 사람은 아직 없다."; } }
     ]
   },
@@ -181,7 +183,7 @@ export const scenes = [
     id: "merchant", act: 3, age: 54, art: "harbor", title: "큰 계약",
     body: "먼 항구의 상인이 조합과 너의 일을 한꺼번에 사겠다고 제안했다. 돈은 필요하다. 하지만 그 계약을 따르면 작은 구조선보다 상인의 배를 먼저 고쳐야 할 수 있다.",
     choices: [
-      { id: "accept", label: "계약을 받아 물자를 모은다", risk: "물자 증가 · 지역 신뢰 감소", apply: (life) => { life.supplies += 2; life.trust -= 1; return "작업장에 물자가 쌓였다. 기다리는 작은 배도 늘었다."; } },
+      { id: "accept", label: "계약을 받아 물자를 모은다", risk: (life) => life.rules === 2 && life.trust < 2 ? "필요: 지역 신뢰 2 · 현재 부족하여 계약 실패" : "물자 +2 · 지역 신뢰 -1", apply: (life) => { if (life.rules === 2 && life.trust < 2) return "상인은 네게 큰 계약을 맡기지 않았다. 다음 일을 위해 신뢰를 쌓아야 한다."; life.supplies += 2; life.trust -= 1; return "작업장에 물자가 쌓였다. 기다리는 작은 배도 늘었다."; } },
       { id: "refuse", label: "항구의 작은 배부터 돌본다", risk: "물자 부족 · 지역 신뢰 증가", apply: (life) => { life.trust += 1; return "큰돈은 놓쳤다. 항구 사람들은 네가 어떤 배를 먼저 보는지 알게 되었다."; } }
     ]
   },
@@ -198,7 +200,7 @@ export const scenes = [
     id: "ration", act: 3, age: 64, art: "harbor", title: "모자란 물자",
     body: "항로를 바꿔 온 배에 돛감과 약이 필요하다. 항구에도 여유가 없다. 누군가는 배를, 누군가는 사람의 몸을 돌봐야 한다. 네가 낼 수 있는 도움을 정할 차례다.",
     choices: [
-      { id: "share", label: "비축 물자를 나눈다", risk: "물자 1 필요 · 항구의 신뢰", when: (life) => life.supplies > 0, apply: (life) => { life.supplies -= 1; life.trust += 1; return "돛감과 음식을 나눴다. 다음 위기에 쓸 몫은 줄었다."; } },
+      { id: "share", label: "비축 물자를 나눈다", risk: (life) => life.supplies < 1 ? "필요: 물자 1 · 현재 부족하여 나눌 수 없음" : "물자 -1 · 지역 신뢰 +1", when: (life) => life.rules === 2 || life.supplies > 0, apply: (life) => { if (life.rules === 2 && life.supplies < 1) return "나눌 비축 물자가 없어 다른 방법을 찾아야 했다."; life.supplies -= 1; life.trust += 1; return "돛감과 음식을 나눴다. 다음 위기에 쓸 몫은 줄었다."; } },
       { id: "labor", label: "일손과 기술을 보탠다", risk: "몸을 쉬게 할 시간이 줄어듦", apply: (life) => { life.trust += 1; life.health = Math.max(1, life.health - 1); return "배를 고치고 사람을 옮겼다. 항구의 일을 함께 나눴다."; } }
     ]
   },
@@ -212,9 +214,7 @@ export const scenes = [
     choices: [
       {
         id: "sail", label: "직접 구조선을 이끈다",
-        risk: (life) => canSail(life)
-          ? "현재 준비로 구조할 수 있지만, 몸에 상처가 남습니다."
-          : "현재 기술·물자·몸 상태 중 부족한 것이 있어, 출항하면 돌아오지 못합니다.",
+        risk: (life) => `${canSail(life) ? "구조 가능 · 건강 -1" : "조건 부족 · 출항 시 사망"} (필요 기술 2·건강 2·물자 1 / 현재 ${life.skill}·${life.health}·${life.supplies})`,
         apply: (life) => {
           if (!canSail(life)) {
             life.ending = "death";
@@ -306,5 +306,6 @@ export const scenes = [
   {
     id: "present_trace", act: 4, age: ageAtEnd, art: "harbor", title: "여기서 남기는 한 장", when: (life) => life.ending === "present",
     body: (life) => `${home(life)}의 다음 배는 아직 준비 중이다. ${life.successor ? "후배가 항로를 살피고" : "네가 항로를 살피고"}, 다른 사람들은 자기 몫의 일을 한다. 이 항구를 만든 삶의 이야기는 여기서 한 장을 닫는다.`
-  }
+  },
+  ...speciesScenes
 ];

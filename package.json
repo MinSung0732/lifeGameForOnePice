@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "python -m http.server 4173",
+    "dev": "python -m http.server 4173 --bind 127.0.0.1",
     "test": "node --test"
   }
 }

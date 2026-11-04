@@ -1,11 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { ART, advance, createGame, getContentStats, getScene, replay, saveRecord } from "../src/game.js";
+import { ART, PROFILE_OPTIONS, advance, createGame, getContentStats, getScene, replay, saveRecord } from "../src/game.js";
+import { createObservation, tickObservation } from "../src/observation.js";
 import { scenes } from "../src/story.js";
 
-function play(mode, seed, picks = {}) {
-  let life = createGame(mode, seed);
+function play(mode, seed, picks = {}, profile = { species: "인간" }) {
+  let life = createGame(mode, seed, profile);
   let steps = 0;
   while (!life.finished) {
     const scene = getScene(life);
@@ -26,7 +27,7 @@ test("장면 ID와 그림 키, 원작 사건 근거를 검사한다", () => {
   for (const card of scenes) {
     const artKey = typeof card.art === "function" ? card.art(createGame("original", 1)) : card.art;
     assert.ok(ART[artKey], `${card.id}의 그림 키가 없음`);
-    if (card.id === "roger_news" || card.id === "marineford_news") assert.match(card.canon, /^https:\/\/one-piece\.com\//);
+    if (card.canon) assert.match(card.canon, /^https:\/\/one-piece\.com\//);
   }
   for (const [key, art] of Object.entries(ART)) {
     assert.ok(existsSync(new URL(`../${art.src.slice(2)}`, import.meta.url)), `${key} 그림 파일이 없음`);
@@ -65,13 +66,81 @@ test("위험을 무릅쓴 사망, 책임을 넘긴 은퇴, 현재 시점의 세 
 test("구조선 선택 전에 현재 준비 상태에 맞는 결과를 알려준다", () => {
   const risk = scenes.find((card) => card.id === "rescue").choices.find((choice) => choice.id === "sail").risk;
   const life = createGame("original", 3);
-  assert.match(risk(life), /돌아오지 못합니다/);
+  assert.match(risk(life), /출항 시 사망/);
   life.skill = 2;
   life.supplies = 1;
   life.health = 2;
-  assert.match(risk(life), /구조할 수/);
+  assert.match(risk(life), /구조 가능/);
   life.health = 1;
-  assert.match(risk(life), /돌아오지 못합니다/);
+  assert.match(risk(life), /출항 시 사망/);
+});
+
+test("다섯 종족의 고향과 설정을 직접 고르거나 무작위로 재현한다", () => {
+  for (const species of PROFILE_OPTIONS.species) {
+    const home = PROFILE_OPTIONS.homes[species][0];
+    const profile = { name: "  미라 ", gender: "여성", species, home, means: "넉넉지 않은" };
+    const life = createGame("original", 11, profile);
+    assert.deepEqual([life.birth.name, life.birth.gender, life.birth.species, life.birth.home], ["미라", "여성", species, home]);
+    assert.equal(life.supplies, 1);
+    assert.equal(getScene(life).age, 0);
+    assert.ok(getScene(life).body.includes(home));
+    assert.equal(play("original", 11, {}, profile).finished, true);
+  }
+  const found = new Set();
+  for (let seed = 0; seed < 100; seed += 1) {
+    const first = createGame("free", seed);
+    assert.deepEqual(first.birth, createGame("free", seed).birth);
+    assert.ok(PROFILE_OPTIONS.homes[first.birth.species].includes(first.birth.home));
+    found.add(first.birth.species);
+  }
+  assert.deepEqual(found, new Set(PROFILE_OPTIONS.species));
+  assert.throws(() => createGame("original", 1, { name: " " }));
+  assert.throws(() => createGame("original", 1, { species: "어인", home: "엘바프 북쪽 만" }));
+  assert.throws(() => createGame("original", 1, { home: "해무 항구" }));
+  assert.throws(() => createGame("original", 1, { species: "알 수 없는 종족" }));
+});
+
+test("종족 경로에서 능력치 부족은 실제 실패하고 충분하면 성공한다", () => {
+  function reachTest(firstChoice) {
+    let life = createGame("original", 7, { species: "어인", means: "넉넉지 않은" });
+    while (getScene(life).id !== "fishman-test") {
+      const scene = getScene(life);
+      life = advance(life, scene.id === "fishman-first" ? firstChoice : scene.choices[0]?.id ?? null);
+    }
+    return life;
+  }
+  const unready = reachTest("gather");
+  assert.match(getScene(unready).choices.find((choice) => choice.id === "attempt").risk, /부족하면 실패/);
+  const failed = advance(unready, "attempt");
+  assert.equal(failed.health, unready.health - 1);
+  assert.equal(failed.trust, unready.trust);
+  assert.deepEqual(failed.lastChanges, [{ key: "health", delta: -1 }]);
+
+  const ready = reachTest("learn");
+  assert.match(getScene(ready).choices.find((choice) => choice.id === "attempt").risk, /현재 충족/);
+  const succeeded = advance(ready, "attempt");
+  assert.equal(succeeded.supplies, ready.supplies - 1);
+  assert.equal(succeeded.trust, ready.trust + 1);
+});
+
+test("관찰 게이지는 속도와 정지 상태를 반영한다", () => {
+  const clock = createObservation({ id: "birth", body: "짧은 장면" }, 100);
+  assert.equal(clock.duration, 10000);
+  const normal = tickObservation(clock, 1100, 1, true);
+  assert.equal(normal.elapsed, 1000);
+  const paused = tickObservation(normal, 6100, 4, false);
+  assert.equal(paused.elapsed, 1000);
+  assert.equal(tickObservation(paused, 7100, 4, true).elapsed, 5000);
+  assert.throws(() => tickObservation(paused, 6000, 1, true));
+});
+
+test("이전 버전의 인간 출생 저장 기록도 그대로 복원한다", () => {
+  const oldRecord = { version: 1, mode: "original", seed: 10, actions: [] };
+  const oldLife = replay(oldRecord);
+  assert.equal(oldLife.rules, 1);
+  assert.equal(oldLife.birth.species, "인간");
+  assert.equal(getScene(oldLife).id, "birth");
+  assert.deepEqual(replay(saveRecord(oldLife)), oldLife);
 });
 
 test("저장 기록은 같은 삶으로 복원되고, 1000개 시드가 막힘 없이 끝난다", () => {

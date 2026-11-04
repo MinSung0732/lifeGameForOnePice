@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5f1e7">
-  <meta name="description" content="원피스 세계의 한 항구에서 태어나 한 사람의 삶을 살아 보는 비공식 웹게임 시범판">
+  <meta name="description" content="원피스 세계의 다섯 출생지에서 한 사람의 삶을 살아 보는 비공식 웹게임 시범판">
   <title>한 사람의 바다</title>
   <link rel="stylesheet" href="./styles.css">
   <script type="module" src="./src/app.js"></script>
@@ -13,7 +13,7 @@
   <div class="page-shell">
     <header class="masthead">
       <a class="wordmark" href="./" aria-label="한 사람의 바다 시작 화면">한 사람의 바다</a>
-      <span class="edition">첫 항구 시범판</span>
+      <span class="edition">다섯 출생 시범판</span>
       <button id="journal-open" class="text-button" type="button" hidden>생애 일지</button>
     </header>
     <p id="save-warning" class="save-warning" role="alert" hidden></p>
@@ -23,8 +23,8 @@
         <div class="intro-copy">
           <p class="eyebrow">한 사람으로 태어나, 한 바다를 살다</p>
           <h1 id="intro-title">이름 없는 삶에도<br>돌아올 이야기가 있다.</h1>
-          <p class="lead">태어나는 곳은 고를 수 없습니다. 누군가의 결정과 바다의 사건을 지켜보다가, 마침내 내 몫의 선택을 하게 됩니다.</p>
-          <p class="scope-note">이번 시범판은 동쪽 바다의 창작 항구에서 태어난 인간의 삶을 다룹니다. 다른 종족과 해군·해적·사황 경로는 아직 열리지 않습니다.</p>
+          <p class="lead">이름과 출신을 직접 정하거나 운명에 맡기세요. 유년기의 사건을 지켜보다가, 마침내 내 몫의 선택을 하게 됩니다.</p>
+          <p class="scope-note">인간·어인·밍크족·하늘섬 사람·거인족의 민간 생활 경로를 플레이할 수 있습니다. 해군·해적·사황 경로는 아직 열리지 않습니다.</p>
           <fieldset class="mode-select">
             <legend>태어나기 전에 세계선 선택</legend>
             <label class="mode-row">
@@ -36,11 +36,45 @@
               <span><strong>더 자유로운 모드</strong><small>후속 해군·해적 경로에서는 조건을 갖춘 IF 세계선이 열립니다. 이번 민간 경로는 원작 연표를 따릅니다.</small></span>
             </label>
           </fieldset>
+          <fieldset class="profile-select">
+            <legend>태어나기 전의 설정</legend>
+            <p class="profile-help">각 항목을 직접 고르거나 무작위로 둘 수 있습니다. 모두 무작위를 누르면 전체 설정이 초기화됩니다.</p>
+            <button id="all-random" class="text-button" type="button">모두 무작위로</button>
+            <div class="profile-row">
+              <label for="profile-name-mode">이름</label>
+              <select id="profile-name-mode"><option value="random">무작위</option><option value="custom">직접 입력</option></select>
+              <input id="profile-name-input" type="text" maxlength="12" placeholder="이름 1~12자" autocomplete="off" aria-label="직접 정할 이름" hidden>
+            </div>
+            <div class="profile-row">
+              <label for="profile-gender">성별 표현</label>
+              <select id="profile-gender">
+                <option value="random">무작위</option><option value="남성">남성</option><option value="여성">여성</option><option value="비이분법">비이분법</option>
+              </select>
+            </div>
+            <div class="profile-row">
+              <label for="profile-species">종족</label>
+              <select id="profile-species">
+                <option value="random">무작위</option><option value="인간">인간</option><option value="어인">어인</option><option value="밍크족">밍크족</option><option value="하늘섬 사람">하늘섬 사람</option><option value="거인족">거인족</option>
+              </select>
+            </div>
+            <div class="profile-row">
+              <label for="profile-home">고향</label>
+              <select id="profile-home" disabled><option value="random">종족과 함께 무작위</option></select>
+            </div>
+            <p id="home-hint" class="profile-hint">고향을 직접 고르려면 종족을 먼저 선택하세요.</p>
+            <div class="profile-row">
+              <label for="profile-means">가정 형편</label>
+              <select id="profile-means">
+                <option value="random">무작위</option><option value="넉넉지 않은">넉넉지 않은</option><option value="그럭저럭 버틸 수 있는">그럭저럭 버틸 수 있는</option>
+              </select>
+            </div>
+            <p id="profile-error" class="profile-error" role="alert" hidden></p>
+          </fieldset>
           <div class="intro-actions">
             <button id="start" class="primary-button" type="button">새 삶 시작하기 <span aria-hidden="true">↗</span></button>
             <button id="resume" class="secondary-button" type="button" hidden>기록 이어보기</button>
           </div>
-          <p id="file-warning" class="file-warning" role="alert" hidden>파일을 직접 열면 게임이 작동하지 않습니다. 이 폴더에서 <code>npm run dev</code>를 실행한 다음 <code>http://localhost:4173</code>으로 접속하세요.</p>
+          <p id="file-warning" class="file-warning" role="alert" hidden>파일을 직접 열면 게임이 작동하지 않습니다. 이 폴더에서 <code>npm run dev</code>를 실행한 다음 <code>http://127.0.0.1:4173/</code>으로 접속하세요.</p>
           <p id="storage-message" class="storage-message" role="alert" hidden></p>
         </div>
         <figure class="intro-art">
@@ -62,6 +96,9 @@
             <button id="pause" class="text-button" type="button" aria-pressed="false">자동 진행 멈추기</button>
           </div>
         </div>
+        <ol id="act-timeline" class="act-timeline" aria-label="생애 진행 단계">
+          <li>시작</li><li>전개</li><li>목표</li><li>엔딩</li>
+        </ol>
 
         <div class="scene-layout">
           <figure class="scene-art">
@@ -73,6 +110,14 @@
             <h1 id="scene-title" tabindex="-1"></h1>
             <p id="scene-result" class="scene-result" role="status" hidden></p>
             <p id="scene-body" class="scene-body"></p>
+            <div id="observation-timeline" class="observation-timeline" hidden>
+              <div class="observation-head"><span>다음 장면까지</span><strong id="observation-remaining"></strong></div>
+              <div id="observation-progress" class="observation-track" role="progressbar" aria-label="다음 장면까지 남은 시간" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="observation-fill"></span></div>
+            </div>
+            <aside class="stats-panel" aria-labelledby="stats-title">
+              <h2 id="stats-title">현재 능력</h2>
+              <div id="stats-grid" class="stats-grid"></div>
+            </aside>
             <div id="choices" class="choices" aria-label="현재 장면의 선택"></div>
             <button id="next" class="primary-button next-button" type="button" hidden>다음 장면 <span aria-hidden="true">↗</span></button>
             <p id="scene-hint" class="scene-hint"></p>
@@ -84,8 +129,6 @@
           <div><span>일·소속</span><strong id="life-work"></strong></div>
           <div><span>직책</span><strong id="life-role"></strong></div>
           <div><span>목표</span><strong id="life-goal"></strong></div>
-          <div><span>배운 일</span><strong id="life-skill"></strong></div>
-          <div><span>몸·물자</span><strong id="life-supplies"></strong></div>
         </aside>
       </section>
 
