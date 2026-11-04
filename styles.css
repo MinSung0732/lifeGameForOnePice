@@ -76,6 +76,9 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
 .secondary-button { border: 1px solid var(--sea); background: transparent; color: var(--sea); }
 .secondary-button:hover { background: #e9e8df; }
 .storage-message { margin-top: 17px; color: #7b3e2f; font-size: 14px; }
+.file-warning { margin: 18px 0 0; padding: 10px 14px; border-left: 2px solid #7b3e2f; color: #7b3e2f; }
+.file-warning code { font-size: .95em; overflow-wrap: anywhere; }
+.primary-button:disabled { cursor: not-allowed; opacity: .55; }
 .save-warning { margin: 0; padding: 10px 0; border-bottom: 1px solid var(--line); color: #7b3e2f; font-size: 14px; }
 
 .game { padding-top: 26px; }
