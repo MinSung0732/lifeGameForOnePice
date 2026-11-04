@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f1e7">
+  <meta name="description" content="원피스 세계의 한 항구에서 태어나 한 사람의 삶을 살아 보는 비공식 웹게임 시범판">
+  <title>한 사람의 바다</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./src/app.js"></script>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="masthead">
+      <a class="wordmark" href="./" aria-label="한 사람의 바다 시작 화면">한 사람의 바다</a>
+      <span class="edition">첫 항구 시범판</span>
+      <button id="journal-open" class="text-button" type="button" hidden>생애 일지</button>
+    </header>
+    <p id="save-warning" class="save-warning" role="alert" hidden></p>
+
+    <main>
+      <section id="intro" class="intro" aria-labelledby="intro-title">
+        <div class="intro-copy">
+          <p class="eyebrow">한 사람으로 태어나, 한 바다를 살다</p>
+          <h1 id="intro-title">이름 없는 삶에도<br>돌아올 이야기가 있다.</h1>
+          <p class="lead">태어나는 곳은 고를 수 없습니다. 누군가의 결정과 바다의 사건을 지켜보다가, 마침내 내 몫의 선택을 하게 됩니다.</p>
+          <p class="scope-note">이번 시범판은 동쪽 바다의 창작 항구에서 태어난 인간의 삶을 다룹니다. 다른 종족과 해군·해적·사황 경로는 아직 열리지 않습니다.</p>
+          <fieldset class="mode-select">
+            <legend>태어나기 전에 세계선 선택</legend>
+            <label class="mode-row">
+              <input type="radio" name="mode" value="original" checked>
+              <span><strong>원작 모드</strong><small>확정된 역사와 원작 인물의 자리를 유지합니다.</small></span>
+            </label>
+            <label class="mode-row">
+              <input type="radio" name="mode" value="free">
+              <span><strong>더 자유로운 모드</strong><small>후속 해군·해적 경로에서는 조건을 갖춘 IF 세계선이 열립니다. 이번 민간 경로는 원작 연표를 따릅니다.</small></span>
+            </label>
+          </fieldset>
+          <div class="intro-actions">
+            <button id="start" class="primary-button" type="button">새 삶 시작하기 <span aria-hidden="true">↗</span></button>
+            <button id="resume" class="secondary-button" type="button" hidden>기록 이어보기</button>
+          </div>
+          <p id="storage-message" class="storage-message" role="alert" hidden></p>
+        </div>
+        <figure class="intro-art">
+          <img src="./design/assets/birth-harbor.webp" alt="조용한 항구에서 아기를 돌보는 사람들과 출항을 기다리는 작은 배" width="1672" height="941">
+          <figcaption>태어나기 전의 항구. 바다는 아직 아무 답도 주지 않았다.</figcaption>
+        </figure>
+      </section>
+
+      <section id="game" class="game" aria-labelledby="scene-title" hidden>
+        <div class="game-topline">
+          <p id="scene-location" class="eyebrow"></p>
+          <div class="playback" aria-label="관찰 장면 진행 설정">
+            <label for="speed">관찰 속도</label>
+            <select id="speed">
+              <option value="1">1배속</option>
+              <option value="2">2배속</option>
+              <option value="4">4배속</option>
+            </select>
+            <button id="pause" class="text-button" type="button" aria-pressed="false">자동 진행 멈추기</button>
+          </div>
+        </div>
+
+        <div class="scene-layout">
+          <figure class="scene-art">
+            <img id="scene-image" src="./design/assets/birth-harbor.webp" alt="" width="1672" height="941">
+            <figcaption id="scene-caption"></figcaption>
+          </figure>
+          <article class="scene-copy">
+            <p id="scene-chapter" class="eyebrow"></p>
+            <h1 id="scene-title" tabindex="-1"></h1>
+            <p id="scene-result" class="scene-result" role="status" hidden></p>
+            <p id="scene-body" class="scene-body"></p>
+            <div id="choices" class="choices" aria-label="현재 장면의 선택"></div>
+            <button id="next" class="primary-button next-button" type="button" hidden>다음 장면 <span aria-hidden="true">↗</span></button>
+            <p id="scene-hint" class="scene-hint"></p>
+          </article>
+        </div>
+
+        <aside class="life-strip" aria-label="현재의 삶">
+          <div><span>이름·출신</span><strong id="life-name"></strong></div>
+          <div><span>일·소속</span><strong id="life-work"></strong></div>
+          <div><span>직책</span><strong id="life-role"></strong></div>
+          <div><span>목표</span><strong id="life-goal"></strong></div>
+          <div><span>배운 일</span><strong id="life-skill"></strong></div>
+          <div><span>몸·물자</span><strong id="life-supplies"></strong></div>
+        </aside>
+      </section>
+
+      <section id="ending" class="ending" aria-labelledby="ending-title" hidden>
+        <p class="eyebrow">한 생애의 기록</p>
+        <h1 id="ending-title"></h1>
+        <figure class="ending-art"><img id="ending-image" src="./design/assets/harbor-now.webp" alt="" width="1672" height="941"></figure>
+        <p id="ending-lead" class="lead"></p>
+        <dl class="ending-facts">
+          <div><dt>태어난 곳</dt><dd id="ending-birth"></dd></div>
+          <div><dt>모드</dt><dd id="ending-mode"></dd></div>
+          <div><dt>마지막 생업·직책</dt><dd id="ending-work"></dd></div>
+          <div><dt>개인 목표</dt><dd id="ending-goal"></dd></div>
+          <div><dt>남긴 인연</dt><dd id="ending-bonds"></dd></div>
+        </dl>
+        <div class="ending-actions">
+          <button id="ending-journal" class="secondary-button" type="button">생애 일지 보기</button>
+          <button id="ending-new" class="primary-button" type="button">다른 삶 시작하기 <span aria-hidden="true">↗</span></button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>비공식 팬게임 시범판 · 원작 그림과 음악을 사용하지 않습니다.</span>
+      <span>기획 기준: 2026-11-04 · 원작 만화 1197화</span>
+    </footer>
+  </div>
+
+  <dialog id="journal" class="journal" aria-labelledby="journal-title">
+    <div class="journal-head">
+      <div><p class="eyebrow">돌아보는 길</p><h2 id="journal-title">생애 일지</h2></div>
+      <button id="journal-close" class="text-button" type="button">닫기</button>
+    </div>
+    <div id="journal-current"></div>
+    <div id="journal-past"></div>
+  </dialog>
+  <noscript><p class="noscript">이 게임을 플레이하려면 브라우저에서 JavaScript를 켜야 합니다.</p></noscript>
+</body>
+</html>

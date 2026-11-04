@@ -1,0 +1,9 @@
+{
+  "name": "a-life-at-sea",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "python -m http.server 4173",
+    "test": "node --test"
+  }
+}

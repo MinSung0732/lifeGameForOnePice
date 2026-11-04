@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="390" height="844" viewBox="0 0 390 844" role="img" aria-labelledby="title description">
+  <title id="title">한 사람의 바다, 폭풍 다음 날 선택 장면 휴대폰 시안</title>
+  <desc id="description">부서진 배 그림 다음에 짧은 본문과 세 선택지가 세로로 이어진다.</desc>
+  <defs><clipPath id="scene"><rect x="16" y="113" width="358" height="201"/></clipPath></defs>
+  <rect width="390" height="844" fill="#f5f1e7"/>
+  <path d="M16 61H374" stroke="#b7b2a3" stroke-width="1"/>
+  <path d="M16 61H127" stroke="#294d50" stroke-width="3"/>
+  <text x="16" y="41" fill="#203a3b" font-family="Batang, serif" font-weight="bold" font-size="21">한 사람의 바다</text>
+  <text x="323" y="40" fill="#294d50" font-family="Malgun Gothic, sans-serif" font-size="14">일지</text>
+  <text x="16" y="90" fill="#7b5936" font-family="Malgun Gothic, sans-serif" font-size="12">01 시작  /  장면 09  /  하온, 11세</text>
+  <text x="327" y="90" fill="#294d50" font-family="Malgun Gothic, sans-serif" font-size="12">1배속</text>
+  <image x="16" y="113" width="358" height="201" xlink:href="assets/storm-harbor.png" clip-path="url(#scene)" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="16" y="113" width="358" height="201" fill="none" stroke="#a7a69a" stroke-width="1"/>
+  <text x="16" y="333" fill="#596a68" font-family="Malgun Gothic, sans-serif" font-size="12">부서진 배 · 양육자 손의 나침반</text>
+  <text x="16" y="377" fill="#203a3b" font-family="Batang, serif" font-weight="bold" font-size="27">배가 돌아오지 않았다</text>
+  <path d="M16 394H374" stroke="#b7b2a3" stroke-width="1"/>
+  <g fill="#303d3c" font-family="Malgun Gothic, sans-serif" font-size="16">
+    <text x="16" y="425">폭풍 다음 날, 가족의 작은 배가</text>
+    <text x="16" y="451">부두 아래에 걸려 있었다.</text>
+    <text x="16" y="477">양육자는 가족의 나침반을 쥔 채</text>
+    <text x="16" y="503">오래 말을 잇지 못했다.</text>
+    <text x="16" y="541">집의 수입도 끊겼다. 네가 앞으로</text>
+    <text x="16" y="567">무엇을 할지 제안할 수 있다.</text>
+  </g>
+  <path d="M16 592H374M16 666H374M16 740H374M16 814H374" stroke="#b7b2a3" stroke-width="1"/>
+  <g fill="#203a3b" font-family="Malgun Gothic, sans-serif" font-size="16">
+    <text x="24" y="619">배를 고칠 방법을 찾는다</text>
+    <text x="24" y="693">다른 배의 일을 알아본다</text>
+    <text x="24" y="767">항구를 떠날 길을 찾는다</text>
+  </g>
+  <g fill="#5c665f" font-family="Malgun Gothic, sans-serif" font-size="12">
+    <text x="24" y="644">시간이 걸림 · 수리 기술을 배울 수 있음</text>
+    <text x="24" y="718">당장 수입 · 집에서 보내는 시간 감소</text>
+    <text x="24" y="792">위험 높음 · 양육자와 떨어질 수 있음</text>
+  </g>
+  <g fill="#7b5936" font-family="Malgun Gothic, sans-serif" font-size="17">
+    <text x="348" y="634">↗</text><text x="348" y="708">↗</text><text x="348" y="782">↗</text>
+  </g>
+</svg>

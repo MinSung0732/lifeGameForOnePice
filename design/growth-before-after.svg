@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title description">
+  <title id="title">한 사람의 바다 성장 경험 비교 시안</title>
+  <desc id="description">11세에는 배가 부서지고 아이가 나침반을 바라본다. 23세에는 성장한 주인공이 가족의 배를 수리해 다시 띄우고 양육자와 함께 선다.</desc>
+  <defs>
+    <clipPath id="before"><rect x="56" y="170" width="628" height="353"/></clipPath>
+    <clipPath id="after"><rect x="756" y="170" width="628" height="353"/></clipPath>
+  </defs>
+  <rect width="1440" height="900" fill="#f5f1e7"/>
+  <text x="56" y="60" fill="#203a3b" font-family="Batang, serif" font-weight="bold" font-size="32">한 선택이 나중에 돌아오는 방식</text>
+  <text x="56" y="96" fill="#596a68" font-family="Malgun Gothic, sans-serif" font-size="16">배를 고칠 방법을 찾은 생애의 예시 · 조건을 못 채우면 다른 결과로 갈라진다</text>
+  <path d="M56 119H1384" stroke="#b7b2a3"/>
+
+  <text x="56" y="150" fill="#7b5936" font-family="Malgun Gothic, sans-serif" font-size="14">11세  /  잃은 것</text>
+  <text x="756" y="150" fill="#7b5936" font-family="Malgun Gothic, sans-serif" font-size="14">23세  /  쌓인 것</text>
+  <image x="56" y="170" width="628" height="353" xlink:href="assets/storm-harbor.png" clip-path="url(#before)" preserveAspectRatio="xMidYMid slice"/>
+  <image x="756" y="170" width="628" height="353" xlink:href="assets/repaired-harbor.png" clip-path="url(#after)" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="56" y="170" width="628" height="353" fill="none" stroke="#a7a69a"/>
+  <rect x="756" y="170" width="628" height="353" fill="none" stroke="#a7a69a"/>
+  <text x="56" y="556" fill="#203a3b" font-family="Batang, serif" font-size="24">집의 배가 부서졌다</text>
+  <text x="756" y="556" fill="#203a3b" font-family="Batang, serif" font-size="24">그 배가 다시 바다로 나간다</text>
+  <path d="M56 581H684M756 581H1384" stroke="#b7b2a3"/>
+  <g fill="#303d3c" font-family="Malgun Gothic, sans-serif" font-size="16">
+    <text x="56" y="615">배운 일  없음</text><text x="56" y="651">소속  무소속</text><text x="56" y="687">인연  양육자와 함께 손실을 겪음</text>
+    <text x="756" y="615">배운 일  선박 수리 숙련</text><text x="756" y="651">생업  항구 작업장의 선박 장인</text><text x="756" y="687">인연  양육자와 수리한 배를 함께 봄</text>
+  </g>
+  <path d="M56 723H1384" stroke="#b7b2a3"/>
+  <text x="56" y="757" fill="#7b5936" font-family="Malgun Gothic, sans-serif" font-size="13">사건의 연결</text>
+  <text x="56" y="795" fill="#203a3b" font-family="Malgun Gothic, sans-serif" font-size="16">방법을 찾는다</text>
+  <text x="273" y="795" fill="#7b5936" font-family="Malgun Gothic, sans-serif" font-size="18">→</text>
+  <text x="331" y="795" fill="#203a3b" font-family="Malgun Gothic, sans-serif" font-size="16">견습 · 실패 · 재시도</text>
+  <text x="623" y="795" fill="#7b5936" font-family="Malgun Gothic, sans-serif" font-size="18">→</text>
+  <text x="683" y="795" fill="#203a3b" font-family="Malgun Gothic, sans-serif" font-size="16">배를 진수한다</text>
+  <text x="923" y="795" fill="#7b5936" font-family="Malgun Gothic, sans-serif" font-size="18">→</text>
+  <text x="982" y="795" fill="#203a3b" font-family="Malgun Gothic, sans-serif" font-size="16">구조선 수리 선택이 열린다</text>
+  <text x="56" y="865" fill="#616a61" font-family="Malgun Gothic, sans-serif" font-size="12">성장 시안 · 사건 원고와 실제 플레이 검수 전</text>
+</svg>
