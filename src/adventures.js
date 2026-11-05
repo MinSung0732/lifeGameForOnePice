@@ -293,7 +293,7 @@ export function adventureScene(life, age, base) {
   const options = MISHAPS.filter((entry) => fresh(entry, "life_mishap_"));
   if (!options.length) return null;
   const entry = pick(options, life, age, 0x5e2f8a61);
-  return { ...base, id: `life_mishap_${entry.id}`, urgent: true, art: "deck", title: entry.title,
+  return { ...base, id: `life_mishap_${entry.id}`, urgent: true, art: entry.art || "deck", title: entry.title,
     body: typeof entry.body === "function" ? entry.body(life) : entry.body, choices: entry.choices };
 }
 

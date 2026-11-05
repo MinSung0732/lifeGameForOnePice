@@ -66,6 +66,13 @@ export const ART = {
   deck: { src: "./design/assets/life-deck.png", alt: "인물 없는 배의 갑판과 먼바다" },
   workbench: { src: "./design/assets/life-workbench.png", alt: "해도를 펼친 빈 작업대와 바다가 보이는 창" },
   lifeStorm: { src: "./design/assets/life-storm.png", alt: "거친 비바람에 밧줄이 풀린 빈 계류장" },
+  // Rule 8 arc art, generated with Gemini in the same watercolor style. Scenes without their own art reuse an existing picture.
+  arcLoguetown: { src: "./design/assets/arc-loguetown.webp", alt: "폭풍 구름 아래 비에 젖은 항구 광장과 낡은 처형대" },
+  arcWhiskey: { src: "./design/assets/arc-whiskey.webp", alt: "선인장 모양 바위산 사이 등불이 켜진 밤의 마을과 빈 잔치 탁자" },
+  arcLittleGarden: { src: "./design/assets/arc-littlegarden.webp", alt: "거대한 갈비뼈 화석이 걸린 원시림과 연기 나는 화산" },
+  arcDrum: { src: "./design/assets/arc-drum.webp", alt: "북 모양 설산 꼭대기의 성과 아래쪽 눈 덮인 마을" },
+  arcAlabasta: { src: "./design/assets/arc-alabasta.webp", alt: "모래빛 건물과 둥근 지붕이 늘어선 사막 왕국의 항구" },
+  arcFishman: { src: "./design/assets/arc-fishman.webp", alt: "깊은 바닷속 거대한 거품 안에 자리한 산호 궁전 도시" },
   childMarket: { src: "./design/assets/child-market.webp", alt: "전보벌레와 과일 좌판이 있는 낮의 항구 장터" },
   childClinic: { src: "./design/assets/child-clinic.webp", alt: "약초와 붕대를 정리해 둔 마을 치료실" },
   childChart: { src: "./design/assets/child-chart.webp", alt: "나침반과 작은 배 표식이 놓인 해도 작업대" },
@@ -165,11 +172,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 7) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 8) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3, 4, 5, 6, 7].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4, 5, 6, 7, 8].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);

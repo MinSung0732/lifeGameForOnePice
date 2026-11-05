@@ -1,3 +1,4 @@
+import { arcScene } from "./canon-arcs.js";
 // Rule-4 canon milestones. Relative time labels avoid claiming an unpublished manga calendar.
 const BEATS = [
   { id: "war_after", offset: -2, time: "정상전쟁 뒤 · 얼마 지나지 않아", title: "전쟁이 남긴 빈자리",
@@ -62,6 +63,8 @@ export function canonScene(life) {
   if (life.creationVersion < 4 || !life.seen.includes("life_marineford_news")) return null;
   const beat = BEATS[life.canonStep];
   if (!beat) return null;
+  const arc = arcScene(life, beat, life.birth.yearsBeforeCurrent + beat.offset);
+  if (arc) return arc;
   const diverged = life.worldBranch || life.people?.fruitOwner;
   const body = typeof beat.body === "function" ? beat.body(life) : beat.body;
   const canHelpFishman = life.location.includes("어인섬") || life.location === "샤본디 제도" || life.birth.species === "어인";

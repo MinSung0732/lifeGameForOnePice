@@ -1,3 +1,4 @@
+import { arcScene } from "./canon-arcs.js";
 // Rule 5 follows the published arc order without assigning exact days to the voyage.
 const EAST = "https://one-piece.com/story/east_blue/index.html";
 const ALABASTA = "https://one-piece.com/story/alabasta/index.html";
@@ -113,6 +114,9 @@ export function preCanonScene(life) {
   if (life.creationVersion < 5 || life.preCanonStep >= BEATS.length || life.age < presentAt(life) - 1
     || life.seen.includes("life_marineford_news")) return null;
   const beat = BEATS[life.preCanonStep];
+  // Rule 8: scenes on the arc's island come first; the milestone itself closes the arc.
+  const arc = arcScene(life, beat, presentAt(life));
+  if (arc) return arc;
   const diverged = Boolean(life.worldBranch || life.people?.fruitOwner);
   const choices = !diverged && nearby(life, beat) ? beat.choices : undefined;
   const body = diverged

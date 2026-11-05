@@ -1,6 +1,7 @@
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, createGame, getScene, personalitySummary, replay, saveRecord } from "./game.js";
 import { crewNews } from "./world.js";
 import { peopleSummary } from "./people.js";
+import { crewLine } from "./crew.js";
 import { CANON_BEAT_COUNT, canonStatus } from "./canon-events.js";
 import { formatBounty } from "./bounty.js";
 import { preCanonStatus } from "./canon-before.js";
@@ -116,6 +117,7 @@ function renderLifeStrip() {
   byId("life-role").textContent = life.role;
   byId("life-power").textContent = `${powerSummary()}${life.creationVersion >= 4 && life.bounty ? ` · 현상금 ${formatBounty(life.bounty)}` : ""}`;
   byId("life-goal").textContent = life.goal;
+  byId("life-crew").textContent = byId("life-crew").title = crewLine(life);
 }
 
 function powerSummary() {

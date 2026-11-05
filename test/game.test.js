@@ -105,7 +105,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 8 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 9 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -804,7 +804,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 7);
+  assert.equal(createGame("original", 0).creationVersion, 8);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -952,4 +952,40 @@ test("규칙 7은 소동·위험 사건을 섞고 모든 생애를 원작 현재
   const old = createGame("original", 3, { species: "인간" }, 3, 6);
   assert.ok(!play("original", 3, {}, { species: "인간" }, 3, 6).seen.some((id) => id.startsWith("life_mishap_")), "규칙 6 기록에는 새 사건이 섞이지 않는다");
   assert.equal(old.creationVersion, 6);
+});
+
+test("규칙 8은 원작 편의 섬에 있으면 날짜별 장면에 휘말리고, 곁의 사람을 보여 준다", async () => {
+  const { ARC_ART, ARC_COUNT, ARC_SCENE_COUNT } = await import("../src/canon-arcs.js");
+  assert.ok(ARC_ART.every((key) => ART[key]), `없는 그림 키: ${ARC_ART.filter((key) => !ART[key])}`);
+  const { crewFor } = await import("../src/crew.js");
+  assert.ok(ARC_COUNT >= 17 && ARC_SCENE_COUNT >= 29);
+  let involved = 0; let lured = 0;
+  for (let seed = 0; seed < 80 && involved < 3; seed += 1) {
+    let life = createGame("free", seed * 7919 + 13, { species: "인간" });
+    let steps = 0;
+    while (!life.finished && steps++ < 700) {
+      const scene = getScene(life);
+      const usable = scene.choices.filter((choice) => !choice.disabled);
+      const safe = usable.filter((choice) => !choice.dice && !/목숨/.test(choice.risk));
+      let pick = (safe.length ? safe : usable)[0]?.id ?? null;
+      if (scene.id.endsWith("_lure")) { lured += 1; if (usable.some((choice) => choice.id === "go")) pick = "go"; }
+      const before = { pre: life.preCanonStep, post: life.canonStep };
+      life = advance(life, pick);
+      if (/^canon_arc_.*_\d+$/.test(scene.id)) {
+        assert.ok(scene.timeLabel, "원작 편 장면에는 상대적인 날짜가 붙는다");
+        assert.deepEqual({ pre: life.preCanonStep, post: life.canonStep }, before, "편 안의 장면은 원작 순서를 건너뛰지 않는다");
+      }
+    }
+    if (life.seen.some((id) => /^canon_arc_.*_\d+$/.test(id))) { involved += 1; assert.deepEqual(replay(saveRecord(life)), life); }
+  }
+  assert.ok(lured > 0 && involved >= 3, `소문 ${lured}, 휘말린 생애 ${involved}`);
+  assert.ok(!play("free", 13, {}, { species: "인간" }, 3, 7).seen.some((id) => id.startsWith("canon_arc_")), "규칙 7 기록에는 편 장면이 섞이지 않는다");
+
+  const captain = createGame("free", 5, { species: "인간" });
+  Object.assign(captain, { path: "pirate", independent: true, careerStartAge: 20, bounty: 150_000_000 });
+  const roster = crewFor(captain);
+  assert.ok(roster.length >= 5 && roster.some((member) => member.role === "산하 선단"), "이름난 선장에게는 산하 선단이 붙는다");
+  const marine = Object.assign(createGame("free", 5, { species: "인간" }), { path: "marine", careerStartAge: 20, rankTier: 2 });
+  assert.ok(crewFor(marine).some((member) => member.role === "부관"));
+  assert.equal(new Set(roster.map((member) => member.name)).size, roster.length, "곁의 사람 이름이 겹치지 않는다");
 });
