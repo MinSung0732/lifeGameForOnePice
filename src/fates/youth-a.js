@@ -22,7 +22,7 @@ export default [
             outcomes: {
               great: { text: "카즈라는 귀찮다며 빗자루를 던졌는데, 받아 든 {name}의 자세를 보고 눈썹을 치켜올렸다. 그날 밤 등대 밑에서 첫 번째 자세를 배웠다.", effects: { skill: 10, friendBond: 2 }, mark: "first_form" },
               good: { text: "외상값부터 갚으면 생각해 보겠다는 대답이 돌아왔다. {name}은 한 달 내내 주점 설거지를 하고서야 막대기 쥐는 법 하나를 얻었다.", effects: { skill: 5, supplies: -2 } },
-              bad: { text: "칼집 끝이 이마를 톡 쳤을 뿐인데 {name}은 부두 끝까지 굴러갔다. 구경하던 어부들이 한참을 웃었고, 혹은 열흘 동안 가라앉지 않았다.", effects: { health: -6, trust: -2 } }
+              bad: { text: "칼집 끝이 이마를 톡 쳤을 뿐인데 {name}은 부두 끝까지 굴러갔다. 구경하던 어부들이 한참을 웃었고, 이마의 혹은 열흘 동안 가라앉지 않았다.", effects: { health: -6, trust: -2 } }
             } },
           { id: "pay", label: "외상 술값을 대신 갚아 준다", hint: "모아 둔 돈이 줄어든다",
             check: { stat: "supplies", against: 45 }, personality: { empathy: 5, loyalty: 3 }, mark: "paid",
@@ -34,7 +34,7 @@ export default [
           { id: "report", label: "마을 어른들에게 알린다", hint: "칼 찬 사람은 위험하다",
             check: { stat: "trust", against: 40 }, personality: { caution: 6, loyalty: 2 }, mark: "wary",
             outcomes: {
-              great: { text: "어른들은 카즈라를 쫓아내는 대신 무너진 방파제를 쌓게 했다. 검객은 투덜대면서도 돌을 날랐고, 마을은 {name}의 꾀를 칭찬했다.", effects: { trust: 10, skill: 2 } },
+              great: { text: "어른들은 카즈라를 쫓아내는 대신 무너진 방파제를 쌓게 했다. 검객은 투덜대면서도 돌을 날랐고, 마을 사람들은 {name}이 일찍 알린 덕이라고 했다.", effects: { trust: 10, skill: 2 } },
               good: { text: "어른들은 검객을 불러 경고했다. 카즈라는 순순히 고개를 숙였지만, 돌아서며 {name}에게 고자질쟁이라고 입 모양으로 말했다.", effects: { trust: 5, friendBond: -2 } },
               bad: { text: "어른들은 괜한 걱정이라며 {name}을 돌려보냈다. 그 이야기는 주점까지 퍼졌고, 카즈라는 {name}이 지나갈 때마다 칼집을 일부러 덜컥거렸다.", effects: { trust: -4, friendBond: -3 } }
             } }
@@ -47,14 +47,14 @@ export default [
             check: { stat: "skill", against: 50 }, personality: { loyalty: 6, ambition: 3 }, mark: "stood_by",
             outcomes: {
               great: { text: "{name}의 막대가 맨 앞 수금꾼의 손목을 정확히 때렸고 녹슨 칼이 풀숲으로 날아갔다. 카즈라는 웃음을 참지 못했고, 수금꾼들은 다음에 보자며 물러갔다.", effects: { skill: 10, friendBond: 4 }, mark: "proven" },
-              good: { text: "둘이 등을 맞대고 버텨 수금꾼들을 쫓아냈다. 대신 {name}에게 오래 남을 멍이, 카즈라의 옷자락에는 칼자국이 남았다.", effects: { skill: 5, health: -3, friendBond: 4 } },
+              good: { text: "둘이 등을 맞대고 버텨 수금꾼들을 쫓아냈다. 대신 {name}에게는 오래 남을 멍이, 카즈라의 옷자락에는 칼자국이 남았다.", effects: { skill: 5, health: -3, friendBond: 4 } },
               bad: { text: "{name}은 첫 휘두름에 붙잡혀 칼끝 앞에 섰다. 카즈라는 아무 말 없이 자기 칼을 땅에 내려놓았고, 수금꾼들은 그 칼을 이자 대신 가져갔다.", effects: { health: -6, friendBond: -4 }, mark: "lost_sword" }
             } },
           { id: "hide", label: "등대 창고에 검객을 숨긴다", hint: "마을이 입을 맞춰야 한다",
             check: { stat: "trust", against: 45 }, personality: { caution: 4, empathy: 4 }, mark: "hid_him",
             outcomes: {
               great: { text: "수금꾼들이 집집마다 물었지만 {home} 사람들은 하나같이 칼 찬 사람은 본 적도 없다고 했다. 생선 장수 할멈은 오히려 수금꾼들에게 상한 생선을 비싸게 팔아 치웠다.", effects: { trust: 8, friendBond: 4 } },
-              good: { text: "창고 문 앞에서 수금꾼들은 발길을 돌렸다. 하지만 숨긴 일을 안 집안 어른은 한동안 {name}과 말을 섞지 않았다.", effects: { trust: 3, bond: -4, friendBond: 5 } },
+              good: { text: "창고 문 앞에서 수금꾼들은 발길을 돌렸다. 하지만 숨긴 일을 알게 된 집 어른은 한동안 {name}과 말을 섞지 않았다.", effects: { trust: 3, bond: -4, friendBond: 5 } },
               bad: { text: "수금꾼 하나가 창고 틈으로 새어 나오는 술 냄새를 맡았다. 카즈라는 뒷창으로 빠져나갔지만 화가 난 수금꾼들은 창고에 불을 질렀다.", effects: { supplies: -8, trust: -5 }, mark: "burned" }
             } }
         ] },
@@ -91,7 +91,7 @@ export default [
             outcomes: {
               great: { text: "낡은 망토에 빗자루를 칼처럼 찬 {name}은 골목을 휘저으며 수금꾼들을 언덕 너머 늪까지 끌고 갔다. 진흙투성이가 되어 돌아온 수금꾼들 앞에는 카즈라가 칼을 뽑고 서 있었다.", effects: { health: -2, friendBond: 8, trust: 6 } },
               good: { text: "수금꾼들을 마을 밖으로 꾀어내는 데는 성공했다. 붙잡혀 빗자루 칼이 부러지고 정강이를 걷어차였지만 그날 밤 부서진 집은 없었다.", effects: { health: -5, trust: 6, friendBond: 3 } },
-              bad: { text: "망토 끝이 그물에 걸려 {name}은 골목 한가운데서 고꾸라졌다. 수금꾼들은 가짜 검객을 앞세워 온 마을을 끌고 다니며 진짜를 불러냈다.", effects: { health: -8, trust: -3 } }
+              bad: { text: "망토 끝이 그물에 걸려 {name}은 골목 한가운데서 고꾸라졌다. 수금꾼들은 가짜 검객을 앞세우고 온 마을을 돌며 진짜를 불러냈다.", effects: { health: -8, trust: -3 } }
             } },
           { id: "bell", label: "친구들과 종을 울려 마을을 깨운다", hint: "혼자서는 못 막는다",
             check: { stat: "friendBond", against: 40 }, personality: { loyalty: 5, empathy: 3 }, mark: "rang_bell",
@@ -115,7 +115,7 @@ export default [
           { id: "block", label: "부두 끝에서 앞을 막아선다", hint: "상대는 검객이다",
             check: { stat: "skill", against: 55 }, personality: { loyalty: 5, ambition: 3 }, mark: "blocked",
             outcomes: {
-              great: { text: "{name}이 언덕에서 본 그대로 발을 디디자 카즈라의 칼끝이 허공에서 멈췄다. 검객은 금고를 내려놓고 오래 웃었다. 제법 컸다는 한마디만 남기고 맨손으로 폭풍 속에 떠났다.", effects: { skill: 8, trust: 8 }, mark: "returned_chest" },
+              great: { text: "{name}이 물러서지 않고 한 발 내디디자 카즈라의 칼끝이 허공에서 멈췄다. 검객은 금고를 내려놓고 오래 웃었다. 제법 컸다는 한마디만 남기고 맨손으로 폭풍 속에 떠났다.", effects: { skill: 8, trust: 8 }, mark: "returned_chest" },
               good: { text: "부딪친 끝에 금고 반쪽을 되찾았다. 나머지를 안고 떠나는 카즈라의 뒷모습은 미안하다고 말하는 것 같았지만 {name}은 끝까지 손을 흔들지 않았다.", effects: { trust: 6, health: -3 } },
               bad: { text: "칼집이 바람처럼 {name}의 옆구리를 쳤다. 정신을 차렸을 때 마그로의 배는 이미 수평선 너머였고, 마을 사람들은 젖은 부두에 쓰러진 {name}을 먼저 의심했다.", effects: { health: -10, trust: -4 }, mark: "blamed" }
             } },
@@ -199,7 +199,7 @@ export default [
             check: { stat: "skill", against: 55 }, personality: { ambition: 5, freedom: 3 },
             outcomes: {
               great: { text: "부두에서 맞붙은 끝에 칼집과 칼집이 동시에 멈췄다. 카즈라는 숨을 고르며 이제야 셈이 맞았다고 했다. 구경하던 뱃사람들이 박수를 쳤다.", effects: { skill: 10, trust: 3 } },
-              good: { text: "카즈라는 여전히 빨랐다. 그래도 {name}은 이번에는 한 번도 물웅덩이에 빠지지 않았다.", effects: { skill: 5, health: -2, friendBond: 2 } },
+              good: { text: "카즈라는 여전히 빨랐다. 그래도 {name}은 이번에는 끝까지 쓰러지지 않고 버텼다.", effects: { skill: 5, health: -2, friendBond: 2 } },
               bad: { text: "세월은 검객의 편이었다. 생선 상자 더미 위에 대자로 뻗은 {name}을 내려다보며 카즈라는 아직 멀었다고 했다.", effects: { health: -6, trust: -2 } }
             } }
         ] },
@@ -213,10 +213,10 @@ export default [
               good: { text: "장부 값은 비쌌지만 이름 옆에는 갚음이라는 두 글자가 있었다. 누가 갚았는지는 적혀 있지 않았다.", effects: { supplies: -4, friendBond: 5, trust: 2 } },
               bad: { text: "상인은 돈만 받고 사라졌다. 장부는 처음부터 없었고, {name}은 옛 이름 하나로 사기를 당했다는 사실에 웃지도 울지도 못했다.", effects: { supplies: -10, trust: -2 } }
             } },
-          { id: "ignore", label: "지난 일이라며 전보를 끊는다", hint: "과거에 발목 잡히지 않는다",
+          { id: "ignore", label: "지난 일이라며 연락을 끊는다", hint: "과거에 발목 잡히지 않는다",
             check: { stat: "trust", against: 35 }, personality: { freedom: 6, caution: 2 },
             outcomes: {
-              great: { text: "전보를 끊고 나서야 마음이 가벼워졌다. 며칠 뒤 같은 상인이 사기꾼으로 붙잡혔다는 소식이 들렸다.", effects: { trust: 6, health: 3 } },
+              great: { text: "연락을 끊고 나서야 마음이 가벼워졌다. 며칠 뒤 같은 상인이 사기꾼으로 붙잡혔다는 소식이 들렸다.", effects: { trust: 6, health: 3 } },
               good: { text: "그 이름은 한동안 꿈에 나왔다. 그래도 {name}은 오늘의 일에 마음을 붙였다.", effects: { health: 4, friendBond: -1 } },
               bad: { text: "몇 달 뒤 낯선 사람들이 옛 빚을 내놓으라며 {name}을 찾아왔다. 겨우 돌려보냈지만 끊어 낸 줄 알았던 과거가 발목을 잡은 셈이었다.", effects: { supplies: -6, health: -4 } }
             } },
@@ -268,9 +268,9 @@ export default [
           { id: "search", label: "조각배를 띄워 수색에 나선다", hint: "바다는 아직 성나 있다",
             check: { stat: "health", against: 40 }, personality: { loyalty: 5, freedom: 3 }, mark: "searched",
             outcomes: {
-              great: { text: "부서진 배 사이에서 {name}은 하몬의 모자를 건져 올렸다. 뱃전에는 이빨 자국 말고도 낯선 쇠작살 촉 하나가 깊이 박혀 있었다. 누군가 먼저 바다왕류를 찔렀던 것이다.", effects: { health: -2, trust: 6, skill: 4 }, mark: "found_hook" },
+              great: { text: "부서진 배 사이에서 {name}은 하몬의 모자를 건져 올렸다. 이빨 자국 틈에는 부러진 쇠작살 촉 하나가 박혀 있었다. 바다왕류의 이빨 사이에 끼어 있던 것 같았다. 누군가 먼저 바다왕류를 찔렀던 것이다.", effects: { health: -2, trust: 6, skill: 4 }, mark: "found_hook" },
               good: { text: "해 질 녘까지 노를 저어 하몬의 그물 조각을 찾아냈다. 손바닥은 다 까졌지만 장례에 올릴 것이 생겼다.", effects: { health: -3, trust: 6, friendBond: 2 } },
-              bad: { text: "검은 그림자가 조각배 밑을 지나갔다. 물결 한 번에 배가 뒤집혔고, {name}은 다른 어부의 그물에 걸려서야 겨우 살아 돌아왔다.", effects: { health: -10, bond: -2 }, mark: "saw_shadow" }
+              bad: { text: "검은 그림자가 조각배 밑을 지나갔다. 물결 한 번에 배가 뒤집혔고, 소용돌이에 휩쓸려 한참을 떠밀려 다니던 {name}은 다른 어부의 그물에 걸려서야 돌아왔다.", effects: { health: -10, bond: -2 }, mark: "saw_shadow" }
             } },
           { id: "mio", label: "남겨진 손주 미오 곁을 지킨다", hint: "울음을 멈출 수 있을까",
             check: { stat: "friendBond", against: 35 }, personality: { empathy: 7 }, mark: "with_mio",
@@ -301,7 +301,7 @@ export default [
           { id: "tell", label: "조합 어른들에게 알린다", hint: "믿어 줄지 모른다",
             check: { stat: "trust", against: 45 }, personality: { caution: 4, loyalty: 4 }, mark: "told_town",
             outcomes: {
-              great: { text: "조합장은 {name}이 가져온 작살 촉과 해도를 나란히 놓고 오래 들여다보았다. 다음 날 어부들이 배를 몰고 후미 입구를 막아섰고, 밀렵꾼들은 꼼짝없이 갇혔다.", effects: { trust: 10, bond: 2 } },
+              great: { text: "조합장은 {name}의 이야기를 듣고 북쪽 암초 쪽 해도를 오래 들여다보았다. 다음 날 어부들이 배를 몰고 후미 입구를 막아섰고, 밀렵꾼들은 꼼짝없이 갇혔다.", effects: { trust: 10, bond: 2 } },
               good: { text: "어른들은 반신반의하며 후미를 지켜보기로 했다. 밀렵꾼들은 눈치를 채고 경비를 두 배로 늘렸다.", effects: { trust: 5 } },
               bad: { text: "밀렵꾼이 먼저 조합장을 찾아가 술과 돈을 건넸다. 어른들은 아이가 괜한 소란을 피운다며 {name}에게 후미 근처에 얼씬도 말라고 했다.", effects: { trust: -6, bond: -3 }, mark: "bribed_elder" }
             } },
@@ -365,7 +365,7 @@ export default [
         ] },
 
       { step: 3, id: "mother", age: 18, art: "dangerSeaKing", title: "어미의 바다", requires: ["freed_pup", "knew_route", "told_town", "cut_net", "bargained", "reef_check"],
-        body: "베른의 배가 남은 새끼를 싣고 몰래 닻을 올리던 밤, {home} 앞바다가 끓어올랐다. 하몬의 배를 삼킨 바로 그 바다왕류였다. 어미는 새끼의 울음을 따라 부두 바로 앞까지 들어와 있었다.",
+        body: "북쪽 암초 뒤에 숨어 있던 밀렵꾼 갈고리 베른의 배가 붙잡아 둔 새끼를 싣고 몰래 닻을 올리던 밤, {home} 앞바다가 끓어올랐다. 하몬의 배를 삼킨 바로 그 바다왕류였다. 어미는 새끼의 울음을 따라 부두 바로 앞까지 들어와 있었다.",
         choices: [
           { id: "return", label: "조각배로 새끼 우리를 끌어낸다", hint: "어미 앞으로 가야 한다",
             check: { stat: "health", against: 55 }, personality: { empathy: 6, freedom: 3 }, mark: "returned_pup",
@@ -411,7 +411,7 @@ export default [
             outcomes: {
               great: { text: "뒤집힌 배에서 떨어진 미오를 {name}이 붙잡아 올렸다. 그 순간 바다왕류가 바로 옆을 스쳤지만 둘을 해치지 않았다. 미오는 그날 처음으로 소리 내어 울었다.", effects: { friendBond: 12, health: -2 } },
               good: { text: "미오를 건졌지만 {name}은 부서진 뱃전에 깊게 베였다. 사냥은 실패했고 둘은 살았다.", effects: { friendBond: 8, health: -5 } },
-              bad: { text: "뛰어든 {name}이 오히려 물을 먹고 허우적댔다. 결국 미오가 {name}을 끌고 헤엄쳐 나왔고, 그 이야기는 부두에서 오래도록 놀림거리가 되었다.", effects: { health: -6, trust: -3, friendBond: 2 }, mark: "mio_saved_me" }
+              bad: { text: "뛰어든 {name}은 성난 물살에 휘말려 방향을 잃었다. 결국 미오가 {name}을 끌고 헤엄쳐 나왔고, 그 이야기는 부두에서 오래도록 놀림거리가 되었다.", effects: { health: -6, trust: -3, friendBond: 2 }, mark: "mio_saved_me" }
             } }
         ] },
       { step: 3, id: "lure", age: 18, art: "childLantern", title: "바깥 해류로",
@@ -459,7 +459,7 @@ export default [
             } }
         ] },
       { step: 4, id: "tooth", age: 29, art: "childMarket", title: "경매장의 이빨", requires: ["struck", "drove_off", "pup_lost", "hunter", "mio_hurt", "bribed_elder"],
-        body: "어느 항구 경매장에 바다왕류의 이빨 하나가 올라왔다. 출처는 {home} 근해, 판 사람은 갈고리 베른의 옛 부하라고 했다. 이빨 뿌리에는 오래전 {name}이 본 것과 같은 녹슨 작살 자국이 나 있었다.",
+        body: "어느 항구 경매장에 바다왕류의 이빨 하나가 올라왔다. 출처는 {home} 근해, 판 사람은 갈고리 베른의 옛 부하라고 했다. 이빨 뿌리에는 오래된 녹슨 작살 자국이 나 있었다.",
         choices: [
           { id: "buy", label: "값을 불러 이빨을 사들인다", hint: "비싸다",
             check: { stat: "supplies", against: 50 }, personality: { loyalty: 5, empathy: 3 },
@@ -537,7 +537,7 @@ export default [
         ] },
 
       { step: 2, id: "cage_talk", age: 15, art: "childLantern", title: "창살 너머의 이야기", requires: ["met_nuk", "clown_ally"],
-        body: "다음 해 축제에도 곡예단은 돌아왔고, 짐마차 속 누크도 그대로였다. 밤마다 {name}은 창살 곁에 앉아 이야기를 나눴다. 누크는 곡예단이 다음 해 항해 끝에 아이들을 인신매매 시장에 넘긴다고 했다.",
+        body: "다음 해 축제에도 곡예단은 돌아왔다. 짐마차 창살 너머에는 누크라는 또래 아이가 갇혀 있었고, 밤마다 {name}은 창살 곁에 앉아 이야기를 나눴다. 누크는 곡예단이 다음 해 항해 끝에 아이들을 인간 경매장에 넘긴다고 했다.",
         choices: [
           { id: "key", label: "단장의 열쇠를 훔친다", hint: "손이 빨라야 한다",
             check: { stat: "skill", against: 50 }, personality: { freedom: 5, ambition: 3 }, mark: "key",
@@ -613,7 +613,7 @@ export default [
         ] },
 
       { step: 3, id: "breakout", age: 17, art: "dangerPrison", title: "축제의 밤 탈출", requires: ["key_copy", "names_known", "clown_in", "met_nuk", "rotten_bolt", "key", "fed", "promised"],
-        body: "곡예단이 마지막으로 들른 축제의 밤, 단장은 새벽에 떠날 채비를 마쳤다. 우리마다 아이들이 숨을 죽였고, 누크는 창살 너머에서 {name}을 기다렸다. 장터에서는 불꽃놀이가 시작되려 하고 있었다.",
+        body: "곡예단이 마지막으로 들른 축제의 밤, 단장은 새벽에 떠날 채비를 마쳤다. 우리마다 아이들이 숨을 죽였고, 가장 구석 우리의 아이 누크는 창살 너머에서 {name}을 기다렸다. 장터에서는 불꽃놀이가 시작되려 하고 있었다.",
         choices: [
           { id: "open_all", label: "모든 우리를 한꺼번에 연다", hint: "한 명도 남기지 않는다",
             check: { stat: "skill", against: 55 }, personality: { loyalty: 5, empathy: 5 }, mark: "freed_all",
@@ -622,7 +622,7 @@ export default [
               good: { text: "우리 대부분을 열었지만 마지막 하나에서 열쇠가 부러졌다. 그 우리에 남은 아이의 얼굴을 {name}은 오래 잊지 못했다.", effects: { friendBond: 5, trust: 4, health: -2 }, mark: "one_left" },
               bad: { text: "첫 우리를 열기도 전에 경비견들이 몰려왔다. {name}은 개에게 물려 끌려 나왔고 짐마차의 자물쇠는 모두 바뀌었다.", effects: { health: -12, trust: -2 }, mark: "caught" }
             } },
-          { id: "nuk_first", label: "누크부터 데리고 달아난다", hint: "약속한 사람이 먼저",
+          { id: "nuk_first", label: "누크부터 데리고 달아난다", hint: "한 사람이라도 확실히",
             check: { stat: "health", against: 45 }, personality: { loyalty: 7 }, mark: "freed_nuk",
             outcomes: {
               great: { text: "{name}은 누크의 손을 잡고 등대 뒤 비탈길을 달렸다. 누크는 달아나면서도 경비가 바뀌는 때를 정확히 알려 주었고, 둘은 그 틈으로 돌아가 남은 아이들까지 데리고 나왔다.", effects: { friendBond: 10, trust: 6, health: -2 }, mark: "all_free" },
@@ -650,7 +650,7 @@ export default [
           { id: "proof", label: "증거를 들고 무대에 오른다", hint: "목소리가 떨릴 것이다",
             check: { stat: "trust", against: 50 }, personality: { loyalty: 5, empathy: 4 }, mark: "proof",
             outcomes: {
-              great: { text: "{name}이 짐 목록을 큰 소리로 읽어 내려가자 웃음소리가 하나씩 꺼졌다. 마지막 칸이 읽힐 때 항구지기가 무대에 올라 출항 허가를 찢었다. 단장 일당은 그 자리에서 묶였다.", effects: { trust: 12, bond: 2 }, mark: "all_free" },
+              great: { text: "{name}이 모은 증거를 하나씩 내보이자 웃음소리가 하나씩 꺼졌다. 마지막 증거가 나왔을 때 항구지기가 무대에 올라 출항 허가를 찢었다. 단장 일당은 그 자리에서 묶였다.", effects: { trust: 12, bond: 2 }, mark: "all_free" },
               good: { text: "사람들은 반신반의했지만 짐마차를 열어 보자는 데는 동의했다. 아이들은 풀려났고, 그사이 단장은 몰래 빠져나갔다.", effects: { trust: 5, friendBond: 2 }, mark: "fernand_fled" },
               bad: { text: "단장은 {name}의 증거를 웃음거리로 만들었다. 아이가 꾸민 이야기에 박수를 쳐 달라는 말에 관객들은 정말로 박수를 쳤다.", effects: { trust: -8, friendBond: -3 }, mark: "sailed_away" }
             } },
@@ -689,7 +689,7 @@ export default [
         ] },
 
       { step: 4, id: "nuk_meet", age: 26, art: "harbor", title: "낯선 항구의 곡예사", requires: ["all_free", "freed_nuk", "file_worked"],
-        body: "세월이 흐른 뒤 어느 항구의 장터에서 {name}은 외줄 위의 곡예사를 보았다. 발목에 쇠고리 대신 붉은 끈을 맨 곡예사가 줄 위에서 {name}을 알아보고 공중제비를 돌았다. 누크였다.",
+        body: "세월이 흐른 뒤 어느 항구의 장터에서 {name}은 외줄 위의 곡예사를 보았다. 발목에 쇠고리 대신 붉은 끈을 맨 곡예사가 줄 위에서 {name}을 알아보고 공중제비를 돌았다. 어린 날 짐마차에 갇혀 있던 아이, 누크였다.",
         choices: [
           { id: "cheer", label: "앞자리에서 가장 크게 박수 친다", hint: "그날 밤의 빚",
             check: { stat: "friendBond", against: 35 }, personality: { empathy: 5, loyalty: 3 },
@@ -725,7 +725,7 @@ export default [
             } }
         ] },
       { step: 4, id: "thanks", age: 26, art: "legacy", title: "축제 철의 편지",
-        body: "어디에 있든 축제 철이면 {name}은 곡예단 포스터 앞에서 걸음을 멈췄다. 그해에는 {home}의 옛집을 거쳐 온 편지가 한 통 닿았다. 낯선 항구의 소인 아래, 누크라는 서명과 함께 짧은 감사 인사가 적혀 있었다.",
+        body: "어디에 있든 축제 철이면 {name}은 곡예단 포스터 앞에서 걸음을 멈췄다. 그해에는 {home}의 옛집을 거쳐 온 편지가 한 통 닿았다. 낯선 항구의 소인 아래, 짐마차에 갇혀 있던 아이라며 누크라는 서명과 함께 짧은 감사 인사가 적혀 있었다.",
         choices: [
           { id: "reply", label: "답장을 쓴다", hint: "할 말이 너무 많다",
             check: { stat: "friendBond", against: 35 }, personality: { empathy: 5, loyalty: 3 },

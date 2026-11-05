@@ -187,11 +187,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 14) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 15) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -383,12 +383,33 @@ export function advance(life, action = null) {
   if (target) {
     const roll = diceRoll(life, card.id, chosen.id);
     const success = roll >= target;
-    next.lastDice = { roll, target, success };
-    outcome = `주사위 ${roll} (${target} 이상 성공) · ${success ? "성공" : "실패"}. ${(success ? chosen.apply(next, name) : (chosen.fail || failedAttempt)(next)) || ""}`;
+    // Rule 15: a roll far above the target is a great success, and the swing either way is wider.
+    const great = next.creationVersion >= 15 && success && roll >= Math.max(90, target + 40);
+    next.lastDice = { roll, target, success, ...(next.creationVersion >= 15 ? { tier: great ? "great" : success ? "good" : "bad" } : {}) };
+    outcome = `주사위 ${roll} (${target} 이상 성공) · ${great ? "대성공" : success ? "성공" : "실패"}. ${(success ? chosen.apply(next, name) : (chosen.fail || failedAttempt)(next)) || ""}`;
+    if (next.creationVersion >= 15) {
+      for (const stat of STATS) {
+        const change = next[stat.key] - life[stat.key];
+        if (great && change > 0) next[stat.key] = life[stat.key] + Math.round(change * 1.5);
+        if (!success && change < 0) next[stat.key] = life[stat.key] + Math.round(change * 1.3);
+      }
+      if (great) outcome += " 기대 이상으로 일이 풀렸다.";
+    }
   } else outcome = chosen ? chosen.apply(next, name) : card.after?.(next);
   if (next.creationVersion >= 14 && chosen && !target && !card.fate && !chosen.naming) {
     const line = twist(life, next, diceRoll(life, card.id, `${chosen.id}~twist`));
     if (line) outcome = `${outcome || ""} ${line}`.trim();
+  }
+  // A career move that later renames the role (a village job, a liaison post) still keeps the carried rank's title.
+  if (next.carriedRank && (next.homebound || next.canonCrew && next.mode === "original")) {
+    next.rankTier = 0;
+    if (!next.homebound) next.role = "견습 선원";
+    delete next.carriedRank;
+  }
+  if (next.carriedRank) {
+    next.role = next.carriedRank;
+    outcome = `${outcome || ""} 지난 경력을 인정받아 곧 ${next.carriedRank} 자리를 맡았다.`.trim();
+    delete next.carriedRank;
   }
   if (next.creationVersion >= 9 && chosen?.personality && (!target || next.lastDice?.success)) {
     const strongest = PERSONALITY.reduce((best, trait) => life.personality[trait.key] > life.personality[best.key] ? trait : best).key;

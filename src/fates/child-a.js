@@ -14,7 +14,7 @@ export default [
       { step: 1, id: "found", age: 6, art: "childInlet", title: "모래 위의 아이",
         body: "폭풍이 지나간 새벽, {name}은 후미의 모래밭에서 또래만 한 아이를 발견했다. 아이는 정신을 잃은 채 깨진 나침반 문양이 새겨진 은빛 목걸이를 꼭 쥐고 있었다. 수평선 너머로 검은 돛 한 척이 천천히 멀어지고 있었다.",
         choices: [
-          { id: "carry", label: "아이를 업고 집까지 달린다", hint: "작은 등에는 무거운 짐",
+          { id: "carry", label: "아이를 업고 집까지 달린다", hint: "언덕길은 생각보다 길다",
             check: { stat: "health", against: 45 }, personality: { empathy: 6, freedom: 2 },
             outcomes: {
               great: { text: "{name}은 쉬지 않고 언덕길을 올라 집 문을 두드렸다. 따뜻한 수프를 먹고 깨어난 아이는 자기 이름이 리오라는 것만 겨우 말하고, {name}의 소매를 놓지 않았다.", effects: { bond: 5, health: -1, friendBond: 6 }, mark: "kept_child" },
@@ -63,7 +63,7 @@ export default [
             } }
         ] },
       { step: 2, id: "locket", age: 8, art: "childChart", title: "목걸이 속의 지도", requires: ["locket_only"],
-        body: "{name}은 주인 잃은 목걸이를 두 해 동안 베개 밑에 두었다. 어느 날 떨어뜨린 목걸이가 반으로 갈라지며, 안에서 콩알만 한 해도와 낯선 아이의 초상이 나왔다. 같은 주에 장터에 나타난 노파 에델이 깨진 나침반 문양을 본 적 있느냐고 묻고 다녔다.",
+        body: "{name}은 주인 잃은 목걸이를 두 해 동안 베개 밑에 두었다. 어느 날 떨어뜨린 목걸이가 반으로 갈라지며, 안에서 콩알만 한 해도와 낯선 아이의 초상이 나왔다. 그 무렵 장터에 나타난 노파 에델은 깨진 나침반 문양을 본 적 있느냐고 묻고 다녔다.",
         choices: [
           { id: "show_edel", label: "에델에게 목걸이를 보여 준다", hint: "늙은 눈이 반짝였다",
             check: { stat: "trust", against: 40 }, personality: { empathy: 4, caution: -4 },
@@ -84,7 +84,7 @@ export default [
             outcomes: {
               great: { text: "고물상 주인은 목걸이를 보더니 값을 곱절로 쳐주겠다며 오히려 몸을 낮췄다. 이상한 낌새에 {name}은 해도만은 빼 두었고, 그 돈으로 집의 겨울 땔감을 샀다.", effects: { supplies: 8, bond: 2 }, mark: "map_read" },
               good: { text: "목걸이는 생각보다 헐값에 팔렸다. 그래도 그 돈으로 양육자에게 새 그물을 사 주었고, 그날 저녁 밥상은 오래도록 따뜻했다.", effects: { supplies: 4, bond: 2 }, mark: "lost_locket" },
-              bad: { text: "고물상은 목걸이를 받자마자 문을 잠그고 누군가에게 전보벌레를 걸었다. 겁에 질려 돈도 못 받고 도망친 {name}은 한동안 장터 쪽으로 고개도 돌리지 못했다.", effects: { supplies: -2, health: -2, trust: -2 }, mark: "lost_locket" }
+              bad: { text: "고물상은 목걸이를 받자마자 문을 잠그고 누군가에게 전보벌레로 연락했다. 겁에 질려 돈도 못 받고 도망친 {name}은 한동안 장터 쪽으로 고개도 돌리지 못했다.", effects: { supplies: -2, health: -2, trust: -2 }, mark: "lost_locket" }
             } }
         ] },
       { step: 2, id: "hillthief", age: 8, art: "childMarket", title: "언덕의 좀도둑",
@@ -159,7 +159,7 @@ export default [
           { id: "keep", label: "공고 한 장을 몰래 간직한다", hint: "얼굴을 잊지 않기 위해",
             check: { stat: "bond", against: 40 }, personality: { loyalty: 6, caution: 3 },
             outcomes: {
-              great: { text: "{name}은 공고를 접어 양육자에게 보여 주었다. 양육자는 오래 그림을 보다가, 가문의 문장과 배 이름을 꼼꼼히 받아 적는 법을 가르쳐 주었다. 언젠가 쓸 데가 있을 거라고 했다.", effects: { bond: 7, skill: 3 }, mark: "poster_kept" },
+              great: { text: "몰래 간직하던 공고를 어느 날 양육자에게 들켰다. 양육자는 오래 그림을 보다가, 꾸짖는 대신 가문의 문장과 배 이름을 꼼꼼히 받아 적는 법을 가르쳐 주었다. 언젠가 쓸 데가 있을 거라고 했다.", effects: { bond: 7, skill: 3 }, mark: "poster_kept" },
               good: { text: "공고는 서랍 깊숙이 들어갔다. {name}은 가끔 꺼내 보며 리오가 어디쯤 있을지 바다 지도 위에 손가락으로 길을 그렸다.", effects: { skill: 2, friendBond: 2 }, mark: "poster_kept" },
               bad: { text: "어느 날 서랍을 열자 공고는 젖어서 얼굴이 번져 있었다. 리오의 얼굴이 기억 속에서도 함께 흐려지는 것 같아, {name}은 한참을 울었다.", effects: { friendBond: -3, bond: -1 }, mark: "lio_lost" }
             } }
@@ -215,7 +215,7 @@ export default [
           { id: "track", label: "그 깃발의 행방을 쫓는다", hint: "쫓는 사람도 쫓긴다",
             check: { stat: "skill", against: 50 }, personality: { freedom: 6, loyalty: 4 },
             outcomes: {
-              great: { text: "항구 정보상들을 수소문한 끝에 {name}은 이름 없는 섬의 숨은 정박지에 닿았다. 리오가 웃으며 손을 흔들었다. 지키지 못한 날을 사과하자, 리오는 그날 돌아봐 준 얼굴 덕에 버텼다고 말했다.", effects: { friendBond: 10, skill: 2 }, mark: "lio_reunited" },
+              great: { text: "항구 정보상들을 수소문한 끝에 {name}은 이름 없는 섬의 숨은 정박지에 닿았다. 리오가 웃으며 손을 흔들었다. {name}이 그때 아무것도 해 주지 못했다고 사과하자, 리오는 잊지 않고 찾아 준 사람이 있어 버텼다고 말했다.", effects: { friendBond: 10, skill: 2 }, mark: "lio_reunited" },
               good: { text: "정박지에 닿았을 때 배는 이미 떠난 뒤였다. 부두 기둥에는 {name}의 이름과 함께 고맙다는 한마디가 칼로 새겨져 있었다.", effects: { friendBond: 5, health: -1 } },
               bad: { text: "깃발을 수소문하던 {name}은 오히려 해적과 내통한다는 의심을 받아 하룻밤을 감옥에서 보냈다. 철창 너머로 들려오는 노랫소리가 어쩐지 리오가 부르던 자장가 같았다.", effects: { trust: -5, health: -2 } }
             } },
@@ -265,7 +265,7 @@ export default [
       { step: 1, id: "toll", age: 7, art: "childMarket", title: "언덕길의 통행세",
         body: "장날 아침, 양육자의 수레를 따라 언덕길을 넘던 {name}의 앞을 붉은 두건을 쓴 산적들이 막아섰다. 외눈의 두목 바르고는 길에 통나무를 걸쳐 놓고, 오늘부터 이 길을 지나는 짐은 반을 내놓아야 한다고 웃었다. 뒤에 선 이웃들은 아무도 고개를 들지 못했다.",
         choices: [
-          { id: "hide_goods", label: "제일 좋은 물건을 몰래 숨긴다", hint: "작은 손이 빠를 때가 있다",
+          { id: "hide_goods", label: "제일 좋은 물건을 몰래 숨긴다", hint: "어린 손이 빠를 때가 있다",
             check: { stat: "skill", against: 40 }, personality: { caution: 4, ambition: 3 },
             outcomes: {
               great: { text: "산적들이 앞자루를 뒤지는 사이 {name}은 말린 생선 꾸러미를 수레 밑 널빤지 틈에 밀어 넣었다. 반을 빼앗긴 줄 알았던 양육자는 장터에 도착해서야 눈을 동그랗게 떴다.", effects: { supplies: 6, bond: 4 }, mark: "hid_goods" },
@@ -339,7 +339,7 @@ export default [
             } }
         ] },
       { step: 2, id: "ronin", age: 9, art: "harbor", title: "칼을 판다는 나그네",
-        body: "통행세는 해마다 올라 {home}의 장터는 반쯤 문을 닫았다. 그 무렵 부두에 시오네라는 떠돌이 검객이 내려, 돈만 주면 두건단을 쫓아내 주겠다고 했다. 어른들은 망설였고, 아이들은 칼집에 새겨진 상처 자국을 넋을 놓고 바라봤다.",
+        body: "통행세는 해마다 올라 {home}의 장터는 반쯤 문을 닫았다. 그 무렵 부두에 시오네라는 떠돌이 검객이 내려, 돈만 주면 두건단을 쫓아내 주겠다고 했다. 어른들은 망설였고, 아이들은 칼집에 난 흠집을 넋을 놓고 바라봤다.",
         choices: [
           { id: "collect", label: "이웃을 돌며 삯을 모은다", hint: "모두가 조금씩이면 된다",
             check: { stat: "trust", against: 45 }, personality: { loyalty: 5, ambition: 2 },
@@ -359,13 +359,13 @@ export default [
             check: { stat: "skill", against: 45 }, personality: { caution: 7, empathy: -2 },
             outcomes: {
               great: { text: "{name}은 시오네가 밤마다 바르고와 술잔을 기울이는 걸 봤다. 둘이 짜고 마을 돈을 털려던 것이었다. 아이의 증언에 시오네는 쫓겨났고, 어른들은 처음으로 스스로 무기를 들었다.", effects: { skill: 5, trust: 6 }, mark: "spied_camp" },
-              good: { text: "뒤를 밟던 {name}은 검객이 밤마다 혼자 칼을 갈며 우는 걸 봤다. 이유는 묻지 못했지만, 그 칼이 진심이라는 건 알 수 있었다.", effects: { skill: 2, friendBond: 2 }, mark: "hired_sword" },
+              good: { text: "뒤를 밟던 {name}은 검객이 밤마다 혼자 칼을 갈며 우는 걸 봤다. 이유는 묻지 못했고, 그 눈물이 무슨 뜻인지도 알 수 없었다.", effects: { skill: 2, friendBond: 2 }, mark: "hired_sword" },
               bad: { text: "뒤를 밟다 시오네에게 들킨 {name}은 칼등으로 꿀밤을 맞고 돌아왔다. 의심받아 기분이 상한 검객은 삯을 곱절로 불렀다.", effects: { health: -3, supplies: -3 }, mark: "sword_fraud" }
             } }
         ] },
 
       { step: 3, id: "corrupt", age: 11, art: "harbor", title: "한패였던 구원자", requires: ["sent_marines", "hired_sword"],
-        body: "기다리던 칼이 마침내 언덕에 닿은 날, {name}은 숲속 공터에서 믿을 수 없는 장면을 봤다. 구원하러 온 이가 바르고와 마주 앉아 돈 자루를 나누며, 마을 사람들에게는 산적을 쫓아냈다고 말하기로 짜고 있었다.",
+        body: "기다리던 도움이 마침내 언덕에 닿은 날, {name}은 숲속 공터에서 믿을 수 없는 장면을 봤다. 구원하러 온 이가 바르고와 마주 앉아 돈 자루를 나누며, 마을 사람들에게는 산적을 쫓아냈다고 말하기로 짜고 있었다.",
         choices: [
           { id: "expose", label: "축제 날 모두 앞에서 폭로한다", hint: "진실은 크게 말해야 들린다",
             check: { stat: "trust", against: 50 }, personality: { freedom: 6, caution: -5 },
@@ -400,12 +400,12 @@ export default [
               good: { text: "길 중간에서 보초에게 들켜 싸움이 벌어졌다. 여럿이 다쳤지만 결국 두건단은 물러났고 통나무는 불탔다. {name}은 그날 다친 어른들의 이름을 오래 외우고 다녔다.", effects: { trust: 5, health: -3 }, mark: "gate_burned" },
               bad: { text: "길을 잘못 들어 어른들이 늪에 빠진 사이 두건단이 기다리고 있었다. 습격은 실패했고, 마을은 벌로 한 해 치 통행세를 한꺼번에 바쳤다.", effects: { trust: -6, supplies: -4 }, mark: "raid_failed" }
             } },
-          { id: "hostage", label: "토비와 함께 인질부터 구한다", hint: "소리 없이, 빠르게",
+          { id: "hostage", label: "인질이 갇힌 헛간부터 노린다", hint: "소리 없이, 빠르게",
             check: { stat: "friendBond", against: 45 }, personality: { empathy: 7, caution: -2 },
             outcomes: {
-              great: { text: "두건단 막내 토비가 헛간 열쇠를 훔쳐 오고 {name}이 망을 봤다. 둘은 방앗간 집 딸을 데리고 함성이 터지기 전에 빠져나왔고, 토비는 그 자리에서 붉은 두건을 벗어 던졌다.", effects: { friendBond: 8, trust: 4 }, mark: "tobi_turned" },
-              good: { text: "인질은 구했지만 토비가 동료들에게 들켰다. 토비는 {name}과 인질을 먼저 보내고 혼자 남았고, 사흘 뒤 멍투성이로 마을 어귀에 나타났다.", effects: { friendBond: 5, health: -1 }, mark: "tobi_turned" },
-              bad: { text: "헛간 문이 삐걱이는 소리에 모든 게 틀어졌다. 인질은 다른 곳으로 옮겨졌고, 토비는 배신자로 몰려 산 너머로 끌려갔다. 그 뒤로 토비의 소식은 끊겼다.", effects: { friendBond: -7, trust: -2 }, mark: "raid_failed" }
+              great: { text: "헛간 앞에서 마주친 두건단 막내 토비가 망설이다 열쇠를 내밀었다. {name}과 토비는 방앗간 집 딸을 데리고 함성이 터지기 전에 빠져나왔고, 토비는 그 자리에서 붉은 두건을 벗어 던졌다.", effects: { friendBond: 8, trust: 4 }, mark: "tobi_turned" },
+              good: { text: "인질은 구했지만 몰래 문을 열어 준 막내 토비가 동료들에게 들켰다. 토비는 {name}과 인질을 먼저 보내고 혼자 남았고, 사흘 뒤 멍투성이로 마을 어귀에 나타났다.", effects: { friendBond: 5, health: -1 }, mark: "tobi_turned" },
+              bad: { text: "헛간 문이 삐걱이는 소리에 모든 게 틀어졌다. 인질은 다른 곳으로 옮겨졌고, 몰래 열쇠를 내주던 막내 토비는 배신자로 몰려 산 너머로 끌려갔다. 그 뒤로 토비의 소식은 끊겼다.", effects: { friendBond: -7, trust: -2 }, mark: "raid_failed" }
             } },
           { id: "powder", label: "화약 창고에 불을 놓는다", hint: "불은 누구 편도 아니다",
             check: { stat: "skill", against: 50 }, personality: { freedom: 6, caution: -6 },
@@ -524,7 +524,7 @@ export default [
               good: { text: "소란은 먹혔지만 호위병 하나가 수레 옆에 선 {name}의 얼굴을 똑똑히 봤다. 가마는 지나갔고 페토는 무사했지만, 그 눈빛은 오래 따라다녔다.", effects: { friendBond: 4, trust: -1 }, mark: "guard_saw" },
               bad: { text: "소란에 놀란 천룡인이 총을 뽑아 아무 데나 쏘았다. 수레 주인인 부두 인부 브론이 쓰러졌고, 피 냄새 속에서 {name}은 자신이 한 일을 깨달았다.", effects: { health: -3, trust: -5 }, mark: "bron_shot" }
             } },
-          { id: "step_in", label: "앞으로 나가 사과를 대신 줍는다", hint: "작은 몸이 큰 그늘 앞에",
+          { id: "step_in", label: "앞으로 나가 사과를 대신 줍는다", hint: "어린 몸이 큰 그늘 앞에",
             check: { stat: "health", against: 50 }, personality: { empathy: 6, freedom: 5, caution: -7 },
             outcomes: {
               great: { text: "{name}이 사과를 집어 드는 순간, 해군 장교 레안이 앞을 가로막고 아이가 길을 치웠다며 넙죽 엎드렸다. 천룡인은 흥미를 잃고 지나갔고, 레안은 {name}에게 다시는 그러지 말라고 낮게 꾸짖었다.", effects: { health: 1, trust: 4, friendBond: 4 }, mark: "marine_lean" },
@@ -623,7 +623,7 @@ export default [
             check: { stat: "supplies", against: 50 }, personality: { ambition: 4, caution: 3 },
             outcomes: {
               great: { text: "늙은 선원은 돈을 받고도 손을 저었지만, 팽이 이야기를 듣고는 눈시울을 붉혔다. 그날 밤 화물칸 문 하나가 잠기지 않았고, 페토는 짐 자루 속에 숨어 내려왔다.", effects: { supplies: -5, friendBond: 9, trust: 3 }, mark: "peto_freed" },
-              good: { text: "선원은 페토를 빼 주지는 못하고 팽이와 쪽지만 전해 주었다. 다음 날 아침 답장이 돌아왔다. 살아 있다고, 꼭 돌아가겠다고.", effects: { supplies: -5, friendBond: 5 }, mark: "peto_lost" },
+              good: { text: "선원은 페토를 빼 주지는 못하고 쪽지만 전해 주었다. 다음 날 아침 답장이 돌아왔다. 살아 있다고, 꼭 돌아가겠다고.", effects: { supplies: -5, friendBond: 5 }, mark: "peto_lost" },
               bad: { text: "선원은 돈만 챙기고 {name}을 간수에게 일러바쳤다. 겨우 도망쳐 나왔지만 돈도 페토도 잃은 채였다.", effects: { supplies: -8, friendBond: -3 }, mark: "peto_lost" }
             } },
           { id: "crowd", label: "부두 사람들을 모아 길을 막는다", hint: "한 사람은 약해도",
@@ -634,15 +634,15 @@ export default [
               bad: { text: "모인 사람은 몇 되지 않았고, 해군의 총구 앞에서 모두 흩어졌다. {name}은 끌려가 이름이 장부에 적혔고, 배는 그대로 떠났다.", effects: { trust: -4, health: -3 }, mark: "peto_lost" }
             } }
         ] },
-      { step: 3, id: "black_coats", age: 12, art: "dangerPrison", title: "다시 온 검은 옷", requires: ["confessed", "helped_bron", "hid_away", "watched"],
-        body: "세 해 뒤, 검은 옷의 요원들이 다시 {home}에 왔다. 이번에는 천룡인을 모욕하는 불온한 자를 찾는다며 집집마다 장부와 서랍을 뒤졌다. 우두머리의 수첩에는 그날 세렌항의 아이를 찾는다는 메모가 적혀 있었다.",
+      { step: 3, id: "black_coats", age: 12, art: "dangerPrison", title: "들이닥친 검은 옷", requires: ["confessed", "helped_bron", "hid_away", "watched"],
+        body: "검은 옷의 정부 요원들이 {home}에 들이닥쳤다. 이번에는 천룡인을 모욕하는 불온한 자를 찾는다며 집집마다 장부와 서랍을 뒤졌다. 우두머리의 수첩 맨 위에 {name}의 이름이 적혀 있다는 소문이 마을에 돌았다.",
         choices: [
           { id: "witness", label: "마을 사람들 앞에 당당히 선다", hint: "숨지 않는 것도 방패",
             check: { stat: "trust", against: 50 }, personality: { freedom: 6, loyalty: 4, caution: -5 },
             outcomes: {
               great: { text: "{name}이 마을 한가운데 서자, 브론과 어른들이 하나둘 곁에 섰다. 온 마을이 한 아이를 감싸는 모습에 요원들은 귀찮은 일이라 여기고 철수했다.", effects: { trust: 9, bond: 2 }, mark: "kept_village" },
               good: { text: "요원들은 {name}을 하루 동안 심문하고 풀어 주었다. 무서웠지만 끝까지 목소리가 떨리지 않았다는 게 오래 자랑이 되었다.", effects: { trust: 4, health: -2 }, mark: "kept_village" },
-              bad: { text: "요원들은 {name}을 본보기로 삼아 양육자의 가게 문을 닫게 했다. 집안은 크게 기울었고, 닫힌 가게 문 앞에서 오래 서 있었다.", effects: { supplies: -7, bond: -3 }, mark: "agent_grudge" }
+              bad: { text: "요원들은 {name}을 본보기로 삼아 양육자의 가게 문을 닫게 했다. 집안은 크게 기울었고, {name}은 닫힌 가게 문 앞에 오래 서 있었다.", effects: { supplies: -7, bond: -3 }, mark: "agent_grudge" }
             } },
           { id: "decoy", label: "가짜 증거로 요원들을 헛돌게 한다", hint: "장부에도 구멍은 있다",
             check: { stat: "skill", against: 50 }, personality: { ambition: 4, caution: -3 },

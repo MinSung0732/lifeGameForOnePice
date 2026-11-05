@@ -1,5 +1,7 @@
 import { formatBounty, pursuerFor } from "./bounty.js";
 import { yearRoll } from "./world.js";
+import { rollTier } from "./fates.js";
+import { FRUIT_POWER, POWER_CHOICES } from "./power-choices.js";
 
 // Rule 7: loud, comic One Piece-style mishaps plus dangers that can end a life mid-way.
 // Every roll is seeded, so a save replays to the same outcome.
@@ -284,7 +286,7 @@ export function adventureScene(life, age, base) {
       const entry = pick(options, life, age, 0x1d9a4c37);
       return { ...base, id: `life_danger_${entry.id}`, urgent: true, art: entry.art || "lifeStorm", title: entry.title,
         body: typeof entry.body === "function" ? entry.body(life) : entry.body,
-        choices: entry.choices.map((choice) => ({ ...choice,
+        choices: withPower(life, `danger_${entry.id}`, entry.choices).map((choice) => ({ ...choice,
           apply: (state) => { state.lastDangerAge = age; return choice.apply(state); },
           ...(choice.fail ? { fail: (state) => { state.lastDangerAge = age; return choice.fail(state); } } : {}) })) };
     }
@@ -296,7 +298,7 @@ export function adventureScene(life, age, base) {
   if (!options.length) return null;
   const entry = pick(options, life, age, 0x5e2f8a61);
   return { ...base, id: `life_mishap_${entry.id}`, urgent: true, art: entry.art || "deck", title: entry.title,
-    body: typeof entry.body === "function" ? entry.body(life) : entry.body, choices: withTrait(life, entry.choices) };
+    body: typeof entry.body === "function" ? entry.body(life) : entry.body, choices: withTrait(life, withPower(life, `mishap_${entry.id}`, entry.choices)) };
 }
 
 // Rule 9: a strong trait (62+) adds its own way to handle an everyday decision or mishap.
@@ -313,6 +315,23 @@ const TRAIT_CHOICES = {
   freedom: { label: "[자유로움] 아무도 생각 못 한 길로 간다", risk: "결과는 알 수 없음", personality: { freedom: 4 },
     apply: (life) => { if (lucky(life, 0x9e01, 55)) { life.supplies += 15; life.skill += 5; return "다들 말렸지만 엉뚱한 길이 오히려 지름길이었다."; } life.health -= 5; return "엉뚱한 길은 정말 엉뚱한 곳으로 이어졌다. 그래도 웃으며 돌아왔다."; } }
 };
+
+// Rule 15: who you are changes what you can try. A fruit user, a haki user and someone without a fruit
+// each get their own bold way through a danger or mishap; the power level raises the odds.
+export function withPower(life, key, choices) {
+  const set = life.creationVersion >= 15 && POWER_CHOICES[key];
+  if (!set) return choices;
+  const haki = Math.max(life.haki.observation, life.haki.armament, life.haki.conqueror);
+  const extra = [
+    life.devilFruit && set.fruit && ["fruit", set.fruit, 12 * Math.max(1, life.fruitMastery)],
+    haki && set.haki && ["haki", set.haki, 12 * haki],
+    !life.devilFruit && set.nonuser && ["nonuser", set.nonuser, 0]
+  ].filter(Boolean);
+  const power = FRUIT_POWER[life.devilFruit] || "열매의 힘을 끌어내";
+  return [...choices, ...extra.map(([kind, choice, bonus]) => ({ id: `power_${kind}`, label: choice.label, personality: choice.personality,
+    risk: `${choice.hint} · 크게 얻거나 크게 잃음`,
+    apply: (state) => rollTier(state, `${key}:${kind}`, choice, bonus).text.replaceAll("{power}", power) }))];
+}
 
 export function withTrait(life, choices) {
   if (life.creationVersion < 9) return choices;
@@ -332,7 +351,7 @@ export function eraAdventure(life, slot, base) {
       const entry = pick(options, life, slot + 5000, 0x1d9a4c37);
       return { ...base, id: `life_danger_${entry.id}`, urgent: true, art: entry.art || "lifeStorm", title: entry.title,
         body: typeof entry.body === "function" ? entry.body(life) : entry.body,
-        choices: entry.choices.map((choice) => ({ ...choice,
+        choices: withPower(life, `danger_${entry.id}`, entry.choices).map((choice) => ({ ...choice,
           apply: (state) => { state.lastDangerSlot = slot; return choice.apply(state); },
           ...(choice.fail ? { fail: (state) => { state.lastDangerSlot = slot; return choice.fail(state); } } : {}) })) };
     }
@@ -341,7 +360,7 @@ export function eraAdventure(life, slot, base) {
   if (!options.length) return null;
   const entry = pick(options, life, slot + 5000, 0x5e2f8a61);
   return { ...base, id: `life_mishap_${entry.id}`, urgent: true, art: entry.art || "deck", title: entry.title,
-    body: typeof entry.body === "function" ? entry.body(life) : entry.body, choices: withTrait(life, entry.choices) };
+    body: typeof entry.body === "function" ? entry.body(life) : entry.body, choices: withTrait(life, withPower(life, `mishap_${entry.id}`, entry.choices)) };
 }
 
 export const adventureCounts = { mishaps: MISHAPS.length, dangers: DANGERS.length };

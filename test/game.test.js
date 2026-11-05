@@ -105,7 +105,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 15 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 16 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -804,7 +804,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 14);
+  assert.equal(createGame("original", 0).creationVersion, 15);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1126,4 +1126,57 @@ test("규칙 14의 생애는 뽑힌 운명의 갈래를 따라가고, 같은 선
   const lines = (before) => Array.from({ length: 100 }, (_, index) => twist(before, { ...before, skill: before.skill + 10 }, index + 1));
   assert.ok(lines(strong).some((line) => line.startsWith("뜻밖의 행운")) && !lines(strong).some((line) => line.startsWith("뜻밖의 차질")));
   assert.ok(lines(weak).some((line) => line.startsWith("뜻밖의 차질")) && !lines(weak).some((line) => line.startsWith("뜻밖의 행운")));
+});
+
+test("규칙 15: 소속을 옮기면 직급에 비례해 강등되고, 이름난 해적단은 접점이 있어야 부르며, 원작 동료 이름을 보여 준다", async () => {
+  const { crewFor } = await import("../src/crew.js");
+  const { crewTie } = await import("../src/canon-crews.js");
+  const { canonCrew } = await import("../src/world.js");
+  const { setCareer } = await import("../src/life-story.js");
+  // A vice admiral who turns pirate keeps about half the relative rank; a pirate captain who enlists starts mid-rank.
+  const admiral = { ...createGame("original", 3, { species: "인간" }), path: "marine", rankTier: 5, role: "중장" };
+  setCareer(admiral, "pirate");
+  assert.deepEqual([admiral.rankTier, admiral.role, admiral.carriedRank], [2, "간부", "간부"]);
+  const captain = { ...createGame("original", 3, { species: "인간" }), path: "pirate", independent: true, rankTier: 3, role: "선장" };
+  setCareer(captain, "marine");
+  assert.deepEqual([captain.rankTier, captain.role], [3, "소령"]);
+  const older = { ...createGame("original", 3, { species: "인간" }, 3, 14), path: "marine", rankTier: 5 };
+  setCareer(older, "pirate");
+  assert.equal(older.rankTier, 0, "규칙 14 이전 생애는 처음부터 다시 시작한다");
+  // Without any tie a named crew stays closed; one meeting opens it.
+  const base = createGame("original", 11, { species: "인간" });
+  const era = { ...base, age: base.birth.yearsBeforeCurrent - 10, people: {} };
+  assert.equal(canonCrew(era), null);
+  const tied = { ...era, people: { crewTies: { "흰 수염 해적단": 1, "빅 맘 해적단": 1, "백수 해적단": 1, "붉은 머리 해적단": 1 } } };
+  assert.ok(crewTie(tied, canonCrew(tied)) > 0);
+  // Joined crews and the marines list canon people of the era.
+  const whitebeard = { ...era, path: "pirate", canonCrew: "흰 수염 해적단", affiliation: "흰 수염 해적단", leftHome: true };
+  assert.ok(crewFor(whitebeard).some((member) => member.name === "에드워드 뉴게이트"));
+  assert.ok(!crewFor(whitebeard).some((member) => member.name === "포트거스 D. 에이스"), "에이스는 아직 흰 수염 해적단에 없다");
+  const marine = { ...era, path: "marine", affiliation: "해군", rankTier: 4, leftHome: true };
+  assert.ok(crewFor(marine).some((member) => member.name === "센고쿠"));
+});
+
+test("규칙 15: 열매·패기·비능력자마다 다른 선택지가 붙고, 주사위는 대성공을 따로 가른다", async () => {
+  const { withPower } = await import("../src/adventures.js");
+  const life = createGame("original", 5, { species: "인간" });
+  const ids = (state) => withPower(state, "danger_sea_king", []).map((choice) => choice.id);
+  assert.deepEqual(ids(life), ["power_nonuser"]);
+  assert.deepEqual(ids({ ...life, devilFruit: "고무고무 열매", fruitMastery: 1, haki: { observation: 1, armament: 0, conqueror: 0 } }), ["power_fruit", "power_haki"]);
+  assert.deepEqual(ids({ ...life, creationVersion: 14 }), [], "규칙 14 이전 생애에는 붙지 않는다");
+  const fruit = withPower({ ...life, devilFruit: "고무고무 열매", fruitMastery: 2 }, "danger_sea_king", [])[0];
+  const text = fruit.apply(structuredClone({ ...life, devilFruit: "고무고무 열매", fruitMastery: 2 }));
+  assert.doesNotMatch(text, /\{power\}/);
+  // A rolled choice far above its target is a great success; the popup gets its tier.
+  const tiers = new Set();
+  for (let seed = 0; seed < 80 && tiers.size < 3; seed += 1) {
+    let state = createGame("original", seed, { species: "인간" });
+    for (let step = 0; step < 300 && !state.finished; step += 1) {
+      const scene = getScene(state);
+      const rolled = scene.choices.find((choice) => choice.dice && !choice.disabled);
+      state = advance(state, (rolled || scene.choices.find((choice) => !choice.disabled))?.id ?? null);
+      if (state.lastDice?.tier) tiers.add(state.lastDice.tier);
+    }
+  }
+  assert.deepEqual([...tiers].sort(), ["bad", "good", "great"]);
 });

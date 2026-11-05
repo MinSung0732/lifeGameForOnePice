@@ -1,4 +1,5 @@
 import { yearRoll } from "./world.js";
+import { rosterFor } from "./canon-crews.js";
 
 // Display-only roster of the people around the protagonist. It is derived from the life's
 // seed, affiliation, rank and bounty, so it needs no saved state and old saves show it too.
@@ -25,6 +26,14 @@ export function crewFor(life) {
   if (mate?.together && mate.fate === "곁") members.push({ name: mate.name, role: "어릴 적 친구" });
   if (!life.path) return members;
   if (life.homebound) { add("이웃", 0x11); add("작업 동료", 0x12); return members; }
+  // Rule 15: a named crew or organization shows its canon people of the era instead of stand-ins.
+  const canon = life.creationVersion >= 15 ? rosterFor(life, life.canonCrew === "밀짚모자 일당" ? 10 : 2 + Math.min(2, life.rankTier)) : [];
+  if (canon.length && (life.canonCrew || life.affiliation === "혁명군")) {
+    members.push(...canon.map((person) => ({ name: person.name, role: person.role })));
+    if (life.canonCrew !== "밀짚모자 일당") add(life.path === "pirate" ? pick(life, 0x22, PIRATE_ROLES) : "현장 요원", 0x31);
+    return members;
+  }
+  if (canon.length && life.path === "marine") members.push(...canon.map((person) => ({ name: person.name, role: person.role })));
   if (life.path === "pirate") {
     if (life.independent) {
       const size = life.bounty >= 100_000_000 ? 4 : life.bounty >= 10_000_000 ? 3 : 2;

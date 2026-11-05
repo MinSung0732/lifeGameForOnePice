@@ -1,3 +1,5 @@
+import { crewTie } from "./canon-crews.js";
+
 const CHARACTERS = {
   luffy: { name: "몽키 D. 루피", display: "루피", group: "밀짚모자 일당", captureable: true },
   zoro: { name: "롤로노아 조로", display: "조로", group: "밀짚모자 일당", captureable: true },
@@ -214,8 +216,30 @@ export function attachCanonContact(life, beatId, index, age, scene) {
   return { ...scene, manual: false, choices: [...baseChoices, ...interactionChoices(life, contact, beatId, index, age)] };
 }
 
+// Rule 15: once Luffy's crew trusts someone outside the marines, Luffy asks them aboard (free mode only).
+function strawHatInvite(life) {
+  if (life.creationVersion < 15 || life.path === "marine" || life.canonCrew === "밀짚모자 일당" || life.seen.includes("canon_strawhat_invite")
+    || !crewTie(life, "밀짚모자 일당") || life.birth.yearsBeforeCurrent - life.age > 2) return null;
+  return { id: "canon_strawhat_invite", age: life.age, act: 3, yearly: true, urgent: true, art: "mishapFeast", title: "밀짚모자의 권유",
+    timeLabel: `IF 세계선 · ${life.location}`,
+    body: `연회가 한창일 때 루피가 고기를 든 채 ${life.birth.name} 앞에 섰다. 너 재밌는 녀석이라며, 우리 배에 타라고 했다. 뒤에서 나미는 한숨을 쉬었고 조로는 술잔을 든 채 웃었다.`,
+    choices: [
+      { id: "join", label: "밀짚모자 일당의 동료가 된다", risk: "원작과 다른 세계선 · 지금의 소속을 떠남", personality: { freedom: 9, loyalty: 6 },
+        apply: (state) => {
+          Object.assign(state, { path: "pirate", job: "해적", affiliation: "밀짚모자 일당", canonCrew: "밀짚모자 일당", role: "동료",
+            independent: false, rankTier: 0, leftHome: true, homebound: false });
+          state.careerStartAge ??= state.age + 1;
+          return "그날 밤 사우전드 써니호의 갑판에 이름이 하나 더 새겨졌다. 원작에 없던 동료가 탄 배는 같은 바다를 조금 다르게 달리기 시작했다.";
+        } },
+      { id: "decline", label: "웃으며 고개를 젓는다", risk: "관계는 그대로 · 친구와의 유대 +5", personality: { loyalty: 5, caution: 3 },
+        apply: (state) => { state.friendBond += 5; return "루피는 아쉬운 얼굴도 잠깐, 그럼 다음에 또 보자며 고기를 한 입 크게 베어 물었다."; } }
+    ] };
+}
+
 export function pendingCanonContactScene(life) {
   if (!enabled(life)) return null;
+  const invite = strawHatInvite(life);
+  if (invite) return invite;
   const pending = life.people?.pendingCanonContact;
   const contact = pending && CHARACTERS[pending.key];
   if (!pending || !contact) return null;

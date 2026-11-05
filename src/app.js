@@ -431,7 +431,7 @@ function burst(row, target, delta) {
 }
 
 // A dice check gets its own beat: the die tumbles through numbers, lands on the roll, then shows the verdict.
-async function playDice({ roll, target, success }) {
+async function playDice({ roll, target, success, tier }) {
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const overlay = document.createElement("div");
   overlay.className = "fx-overlay dice-overlay";
@@ -461,13 +461,26 @@ async function playDice({ roll, target, success }) {
       await pause(delay);
     }
   }
+  // Three verdicts look and feel different: a gold burst, a green pulse, or a red shake.
+  const kind = tier === "great" ? "great" : success ? "success" : "fail";
   die.classList.remove("rolling");
-  die.classList.add(success ? "success" : "fail");
+  die.classList.add(kind);
   die.textContent = String(roll);
-  verdict.className = `dice-verdict ${success ? "success" : "fail"}`;
-  verdict.textContent = success ? "성공!" : "실패";
+  verdict.className = `dice-verdict ${kind}`;
+  verdict.textContent = { great: "대성공!", success: "성공", fail: "실패" }[kind];
+  card.classList.add(`verdict-${kind}`);
+  if (kind === "great" && !reduced) {
+    for (let index = 0; index < 18; index += 1) {
+      const spark = document.createElement("span");
+      spark.className = "dice-spark";
+      const angle = (index / 18) * Math.PI * 2;
+      spark.style.setProperty("--dx", `${Math.cos(angle) * (90 + (index % 3) * 30)}px`);
+      spark.style.setProperty("--dy", `${Math.sin(angle) * (90 + (index % 3) * 30)}px`);
+      card.append(spark);
+    }
+  }
   skipped = false;
-  await pause(1100);
+  await pause(kind === "great" ? 1600 : 1100);
   overlay.classList.add("leaving");
   await pause(reduced ? 0 : 240);
   overlay.remove();

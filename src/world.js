@@ -1,4 +1,5 @@
 // Named stops follow places shown in the original story; the exact voyage is this game's fiction.
+import { crewTie } from "./canon-crews.js";
 const BLUE_ROUTE = ["리버스 마운틴", "쌍둥이 언덕", "위스키 피크", "리틀 가든", "드럼섬", "알라바스타 · 나노하나", "자야 · 모크 타운", "롱 링 롱 랜드", "워터 세븐", "샤본디 제도", "어인섬", "드레스로자", "그린 비트", "조", "스핑크스 섬", "엘바프"];
 const GRAND_ROUTE = BLUE_ROUTE.slice(6);
 const NEW_ROUTE = ["스핑크스 섬", "드레스로자", "그린 비트", "조", "엘바프", "하치노스 근해", "와노국 외해", "홀케이크 아일랜드 외해"];
@@ -70,13 +71,21 @@ const CANON_CREWS = [
   { name: "빅 맘 해적단", from: 60, to: 1 },
   { name: "백수 해적단", from: 30, to: 1 },
   { name: "붉은 머리 해적단", from: 20, to: 0 },
-  { name: "태양 해적단", from: 15, to: 12, species: "어인" }
+  { name: "태양 해적단", from: 15, to: 12, species: "어인" },
+  // Rule 15 only: the Straw Hats take someone in only in free mode, after Luffy and his crew came to trust them.
+  { name: "밀짚모자 일당", from: 2, to: 0, rule: 15, freeOnly: true }
 ];
 
-export function canonCrew(life, age = life.age) {
+export function openCanonCrews(life, age = life.age) {
   const before = life.birth.yearsBeforeCurrent - age;
-  const open = CANON_CREWS.filter((crew) => before <= crew.from && before >= crew.to && (!crew.species || crew.species === life.birth.species));
-  return open.length ? open[yearRoll(life.seed ^ 0x2c1b3c6d, age) % open.length].name : null;
+  return CANON_CREWS.filter((crew) => before <= crew.from && before >= crew.to && (!crew.species || crew.species === life.birth.species)
+    && (!crew.rule || life.creationVersion >= crew.rule) && (!crew.freeOnly || life.mode === "free")).map((crew) => crew.name);
+}
+
+export function canonCrew(life, age = life.age) {
+  // Rule 15: a named crew makes an offer only to someone its people already know.
+  const open = openCanonCrews(life, age).filter((name) => !(life.creationVersion >= 15) || crewTie(life, name) > 0);
+  return open.length ? open[yearRoll(life.seed ^ 0x2c1b3c6d, age) % open.length] : null;
 }
 
 export function routeFor(life) {

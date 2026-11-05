@@ -210,6 +210,20 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
 .dice-verdict { min-height: 28px; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: .02em; }
 .dice-verdict.success { color: #2f8f4e; }
 .dice-verdict.fail { color: #c0392b; }
+.dice-card { position: relative; }
+.dice-face.great { border-color: #c8961e; color: #b07d10; background: #fff6d8; box-shadow: 0 0 0 6px rgba(232, 182, 60, .25), 0 0 34px rgba(232, 182, 60, .7); animation: dice-great .6s ease-out; }
+.dice-verdict.great { color: #b07d10; font-size: 28px; text-shadow: 0 0 12px rgba(232, 182, 60, .6); }
+.dice-card.verdict-great { animation: dice-glow 1.4s ease-in-out; }
+.dice-card.verdict-success .dice-face { box-shadow: 0 0 0 0 rgba(47, 143, 78, .45); animation: dice-land .4s ease-out, dice-pulse 1s ease-out .2s; }
+.dice-card.verdict-fail { animation: dice-shake .45s ease-in-out; }
+.dice-card.verdict-fail .dice-face { background: repeating-linear-gradient(135deg, transparent 0 9px, rgba(192, 57, 43, .12) 9px 11px); }
+.dice-spark { position: absolute; left: 50%; top: 45%; width: 8px; height: 8px; border-radius: 50%; background: #e8b63c; pointer-events: none;
+  box-shadow: 0 0 8px #f5d27a; animation: dice-spark .9s ease-out forwards; }
+@keyframes dice-great { 0% { transform: scale(1.7) rotate(-12deg); } 55% { transform: scale(.9) rotate(4deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes dice-glow { 0%, 100% { box-shadow: 0 10px 40px rgba(0, 0, 0, .25); } 40% { box-shadow: 0 0 60px rgba(232, 182, 60, .75); } }
+@keyframes dice-pulse { 0% { box-shadow: 0 0 0 0 rgba(47, 143, 78, .45); } 100% { box-shadow: 0 0 0 22px rgba(47, 143, 78, 0); } }
+@keyframes dice-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-10px) rotate(-1deg); } 40% { transform: translateX(9px) rotate(1deg); } 60% { transform: translateX(-6px); } 80% { transform: translateX(4px); } }
+@keyframes dice-spark { 0% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.2); opacity: 0; } }
 .stat.fx-hit, #life-power.fx-hit { animation: fx-hit .7s ease-out; }
 @keyframes fx-hit { 0% { background: rgba(255, 255, 255, 0); } 30% { background: rgba(255, 236, 190, .55); } 100% { background: rgba(255, 255, 255, 0); } }
 .scene-hint { margin: 8px 0 0; color: var(--muted); font-size: 12px; }

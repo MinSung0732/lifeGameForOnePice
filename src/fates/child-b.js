@@ -15,7 +15,7 @@ export default [
           { id: "hide", label: "지도를 집 마루 밑에 숨긴다", hint: "아무도 모르게", check: { stat: "skill", against: 30 },
             personality: { caution: 6, ambition: 3 }, mark: "kept_map",
             outcomes: {
-              great: { text: "숨기기 전에 등불에 비춰 보다가 양피지 뒷면에 레몬즙으로 쓴 글씨가 떠오르는 걸 발견했다. 바위 셋과 갈매기 하나, 뜻 모를 그림이었지만 {name}은 밤새 그것을 외웠다.", effects: { skill: 8, supplies: 2 }, mark: "read_map" },
+              great: { text: "숨기기 전에 등불에 쬐어 보다가 양피지 뒷면에 레몬즙으로 쓴 글씨가 떠오르는 걸 발견했다. 바위 셋과 갈매기 하나, 뜻 모를 그림이었지만 {name}은 밤새 그것을 외웠다.", effects: { skill: 8, supplies: 2 }, mark: "read_map" },
               good: { text: "마루 밑 판자를 들어 지도를 넣고 못을 다시 박았다. 손가락을 찧어 한동안 숟가락을 왼손으로 들었지만, 지도는 무사했다.", effects: { skill: 4, health: -1 } },
               bad: { text: "숨기는 내내 콧노래를 불렀더니 지나가던 드락이 창문 너머로 다 보았다. 다음 날부터 드락은 {name}에게 유난히 친절하게 사탕을 내밀었다.", effects: { trust: -4, health: -2 }, mark: "drak_saw" }
             } },
@@ -30,8 +30,8 @@ export default [
             personality: { ambition: 7, loyalty: -3 }, mark: "sold_map",
             outcomes: {
               great: { text: "드락이 내민 동전을 받기 전에 {name}은 지도를 한참 들여다보는 척하며 모든 선을 외워 두었다. 돈도 받고 길도 남긴 셈이었다.", effects: { supplies: 7, skill: 3 }, mark: "read_map" },
-              good: { text: "드락은 동전 몇 닢을 던져 주고 지도를 낚아챘다. 생각보다 무거운 동전이었지만, 주머니가 무거워질수록 마음 한쪽이 이상하게 가벼워졌다.", effects: { supplies: 5, trust: -2 } },
-              bad: { text: "드락은 지도를 받아 들고 녹슨 사탕 하나를 내밀었다. 따지려 하자 고물상 개가 짖었고, {name}은 사탕을 문 채 울면서 도망쳤다.", effects: { supplies: -3, trust: -3, health: -2 } }
+              good: { text: "드락은 동전 몇 닢을 던져 주고 지도를 낚아챘다. 생각보다 무거운 동전이었지만, 주머니가 무거워질수록 마음 한쪽은 이상하게 허전해졌다.", effects: { supplies: 5, trust: -2 } },
+              bad: { text: "드락은 지도를 받아 들고 눅눅한 사탕 하나를 내밀었다. 따지려 하자 고물상 개가 짖었고, {name}은 사탕을 문 채 울면서 도망쳤다.", effects: { supplies: -3, trust: -3, health: -2 } }
             } }
         ] },
 
@@ -66,7 +66,7 @@ export default [
           { id: "stop_boro", label: "쪽배를 붙잡고 같이 가자고 조른다", hint: "늙은이의 고집", check: { stat: "health", against: 35 },
             personality: { empathy: 5, freedom: 4 },
             outcomes: {
-              great: { text: "밧줄을 붙든 채 버티자 보로가 결국 웃음을 터뜨렸다. 쪽배 대신 등대지기 창고에 숨어 겨울을 나기로 했고, 보로는 창고에서 {name}에게 매듭과 별 읽는 법을 가르쳤다.", effects: { skill: 7, trust: 3 }, mark: "boro_saved" },
+              great: { text: "밧줄을 붙든 채 버티자 보로가 결국 웃음을 터뜨렸다. 보로는 쪽배 대신 등대지기 창고에 숨어 겨울을 나기로 했고, 그곳에서 {name}에게 매듭과 별 읽는 법을 가르쳤다.", effects: { skill: 7, trust: 3 }, mark: "boro_saved" },
               good: { text: "보로는 끝내 떠났지만 손때 묻은 나침반을 던져 주었다. 바늘이 북쪽이 아니라 언덕 아래 동굴 쪽을 가리켰다.", effects: { skill: 4, supplies: 2 } },
               bad: { text: "쪽배가 기우뚱하는 바람에 {name}은 차가운 바다에 처박혔다. 보로가 건져 올려 부두에 내려놓고는 미안하다는 말도 없이 노를 저어 갔다.", effects: { health: -8, bond: -2 } }
             } },
@@ -107,7 +107,7 @@ export default [
       { step: 3, id: "cave_drak", age: 11, art: "dangerPrison", requires: ["drak_angry", "drak_saw"], title: "동굴 입구의 그림자",
         body: "썰물이 가장 깊어진 밤, {name}은 언덕 아래 바다동굴로 내려갔다. 바위 셋이 만나는 자리에서 쇠상자 모서리가 드러났을 때, 등 뒤에서 등불이 켜졌다. 드락이 부두 건달 둘을 데리고 동굴 입구를 막아서 있었다.",
         choices: [
-          { id: "trap_drak", label: "보로가 말한 덫 쪽으로 유인한다", hint: "동굴은 주인을 가린다", check: { stat: "skill", against: 40 },
+          { id: "trap_drak", label: "동굴 속 해적의 덫 쪽으로 유인한다", hint: "동굴은 주인을 가린다", check: { stat: "skill", against: 40 },
             personality: { ambition: 4, freedom: 4 },
             outcomes: {
               great: { text: "가짜 상자를 걷어차는 척 물러서자 드락이 달려들었고, 해적들이 깔아 둔 썩은 판자가 꺼졌다. 드락과 건달들은 밀물 웅덩이에 갇혀 아침까지 울었고, 순찰 나온 해군이 그 꼴을 보고 장부를 펼쳤다.", effects: { skill: 8, trust: 6 }, mark: "drak_jailed" },
@@ -121,11 +121,11 @@ export default [
               good: { text: "몇몇 어부가 그물을 든 채 내려왔다. 드락은 물러갔지만, 그 틈에 상자 안의 금화 절반이 건달들 주머니로 사라졌다.", effects: { trust: 4, supplies: 2 }, mark: "treasure_found" },
               bad: { text: "메아리는 파도 소리에 묻혔다. 건달 하나가 {name}의 입을 막았고, 상자를 빼앗긴 채 동굴 밖 모래밭에 내동댕이쳐졌다.", effects: { health: -6, trust: -3 } }
             } },
-          { id: "give_box", label: "상자를 내주고 지도 뒷면만 지킨다", hint: "진짜 보물은 따로", check: { stat: "supplies", against: 35 },
+          { id: "give_box", label: "상자를 내주고 지도만은 지킨다", hint: "진짜 보물은 따로", check: { stat: "supplies", against: 35 },
             personality: { caution: 7 },
             outcomes: {
-              great: { text: "드락은 상자를 안고 신이 나서 떠났지만, 안에는 돌멩이와 낡은 해적기뿐이었다. 지도 뒷면의 글씨가 가리킨 진짜 자리에서 {name}은 이튿날 작은 금화 주머니를 꺼냈다.", effects: { supplies: 9, skill: 3 }, mark: "treasure_found" },
-              good: { text: "상자는 빼앗겼지만 지도 뒷면은 지켰다. 언젠가 읽을 수 있을 거라 믿으며 {name}은 양피지를 가슴에 품고 집으로 돌아왔다.", effects: { supplies: 2, skill: 3 } },
+              great: { text: "드락은 상자를 안고 신이 나서 떠났지만, 안에는 돌멩이와 낡은 해적기뿐이었다. 지도를 다시 들여다보다 찾아낸 진짜 자리에서 {name}은 이튿날 작은 금화 주머니를 꺼냈다.", effects: { supplies: 9, skill: 3 }, mark: "treasure_found" },
+              good: { text: "상자는 빼앗겼지만 지도만은 지켰다. 언젠가 읽을 수 있을 거라 믿으며 {name}은 양피지를 가슴에 품고 집으로 돌아왔다.", effects: { supplies: 2, skill: 3 } },
               bad: { text: "드락은 상자와 지도를 모두 빼앗고 {name}의 등을 떠밀었다. 바위에 부딪친 이마에서 피가 났고, 그날 밤 양육자는 아무것도 묻지 않고 상처만 닦아 주었다.", effects: { health: -6, supplies: -3, bond: 2 }, mark: "lost_map" }
             } }
         ] },
@@ -135,7 +135,7 @@ export default [
           { id: "pull_up", label: "밧줄을 내려 미주부터 끌어올린다", hint: "보물은 그다음", check: { stat: "health", against: 38 },
             personality: { empathy: 7, loyalty: 4 }, mark: "saved_miju",
             outcomes: {
-              great: { text: "미주를 끌어올리고 보니 미주는 굴 바닥에서 쇠상자를 끌어안고 있었다. 둘은 물이 무릎까지 찬 동굴을 웃으며 빠져나왔고, 상자 안에는 금화와 낡은 항해일지가 들어 있었다.", effects: { friendBond: 8, supplies: 6 }, mark: "treasure_found" },
+              great: { text: "끌어올리고 보니 미주의 품에 굴 바닥의 쇠상자가 안겨 있었다. 둘은 물이 무릎까지 찬 동굴을 웃으며 빠져나왔고, 상자 안에는 금화와 낡은 항해일지가 들어 있었다.", effects: { friendBond: 8, supplies: 6 }, mark: "treasure_found" },
               good: { text: "미주는 무사히 올라왔지만 상자는 밀물에 휩쓸려 굴 깊숙이 사라졌다. 젖은 채 모래밭에 드러누운 둘은 보물 대신 서로의 숨소리를 들었다.", effects: { friendBond: 6, health: -2 } },
               bad: { text: "밧줄이 바위에 쓸려 끊어지며 {name}도 굴로 떨어졌다. 둘은 물이 목까지 차는 동안 서로 붙들고 버텼고, 새벽에 어부들이 횃불을 들고 찾아왔다.", effects: { health: -9, friendBond: 4, bond: -2 } }
             } },
@@ -167,7 +167,7 @@ export default [
         ] },
 
       { step: 4, id: "echo_miju", age: 26, art: "legacy", requires: ["saved_miju"], title: "미주의 편지",
-        body: "어느 항구에서 {name}에게 낡은 봉투가 전해졌다. 돛 수선공이 된 미주가 그 동굴의 항해일지를 끝까지 해독했다는 편지였다. 일지에 적힌 섬이 실제로 있고, 반쪽씩 다시 들고 가 보자고 적혀 있었다.",
+        body: "어느 항구에서 {name}에게 낡은 봉투가 전해졌다. 돛 수선공이 된 미주가 할아버지의 낡은 항해일지를 끝까지 해독했다는 편지였다. 일지에 적힌 섬이 실제로 있으니 반쪽씩 다시 들고 가 보자고 적혀 있었다.",
         choices: [
           { id: "reply_go", label: "답장을 보내 약속 날짜를 정한다", hint: "다시 반쪽이 되어", check: { stat: "friendBond", against: 35 },
             personality: { freedom: 6, loyalty: 4 },
@@ -185,14 +185,14 @@ export default [
             } }
         ] },
       { step: 4, id: "echo_drak", age: 26, art: "dangerPrison", requires: ["drak_jailed", "drak_angry"], title: "늙은 고물상의 현상금",
-        body: "낯선 항구의 게시판에 낡은 수배서가 붙어 있었다. 얼굴은 늙었지만 틀림없는 드락이었다. 섬을 쫓겨난 뒤 아이들을 꾀어 보물을 캐게 하는 작은 해적단을 꾸렸다고 했다. 바로 그날 밤, 선술집 구석에서 드락의 웃음소리가 들렸다.",
+        body: "낯선 항구의 게시판에 낡은 수배서가 붙어 있었다. 얼굴은 늙었지만 틀림없는 드락이었다. 그 섬을 떠난 뒤 아이들을 꾀어 보물을 캐게 하는 작은 해적단을 꾸렸다고 했다. 바로 그날 밤, 선술집 구석에서 드락의 웃음소리가 들렸다.",
         choices: [
           { id: "confront", label: "드락 앞에 앉아 옛날 동굴 이야기를 꺼낸다", hint: "기억은 칼보다 무겁다", check: { stat: "trust", against: 40 },
             personality: { loyalty: 4, ambition: 4 },
             outcomes: {
               great: { text: "{name}을 알아본 드락의 얼굴이 하얗게 질렸다. 그 사이 선술집 사람들이 수배서를 들고 하나둘 일어섰고, 드락이 데리고 있던 아이들은 그날 밤 각자의 집으로 돌아갔다.", effects: { trust: 9, skill: 3 } },
               good: { text: "드락은 억지로 웃으며 동전 주머니를 밀어 놓고 달아났다. 잡지는 못했지만, 그 항구에서 드락에게 일하는 아이는 다시 보이지 않았다.", effects: { trust: 4, supplies: 2 } },
-              bad: { text: "드락은 큰 소리로 {name}이 어린 시절 지도를 판 이야기부터 떠벌렸다. 선술집이 웃음바다가 된 틈에 드락은 뒷문으로 사라졌다.", effects: { trust: -5, health: -2 } }
+              bad: { text: "드락은 큰 소리로 {name}의 어린 시절 이야기를 우스꽝스럽게 떠벌렸다. 선술집이 웃음바다가 된 틈에 드락은 뒷문으로 사라졌다.", effects: { trust: -5, health: -2 } }
             } },
           { id: "free_kids", label: "드락의 배에 남은 아이들부터 빼낸다", hint: "그 동굴의 아이처럼", check: { stat: "skill", against: 38 },
             personality: { empathy: 7, freedom: 3 },
@@ -246,7 +246,7 @@ export default [
           { id: "put_back", label: "아무것도 못 본 척 제자리에 둔다", hint: "말하지 않는 것도 사랑", check: { stat: "skill", against: 30 },
             personality: { caution: 6, loyalty: 3 }, mark: "kept_quiet",
             outcomes: {
-              great: { text: "상자를 닫기 전, 수배서 밑에 깔린 편지 한 장이 눈에 들어왔다. 언젠가 빚을 갚으러 가겠다는 카스텔이라는 이름의 서명이었다. {name}은 그 이름을 마음속 깊이 넣어 두었다.", effects: { skill: 6, bond: 2 }, mark: "found_letter" },
+              great: { text: "상자를 닫기 전, 수배서 밑에 깔린 편지 한 장이 눈에 들어왔다. 언젠가 빚을 갚으러 가겠다는 글 끝에 카스텔이라는 서명이 있었다. {name}은 그 이름을 마음속 깊이 넣어 두었다.", effects: { skill: 6, bond: 2 }, mark: "found_letter" },
               good: { text: "기름종이를 원래대로 접고 마루를 닫았다. 저녁을 먹는 동안 양육자의 얼굴을 몰래 보며, 그 얼굴 뒤에 다른 얼굴이 있다는 걸 혼자 알았다.", effects: { skill: 3, bond: 1 } },
               bad: { text: "서두르다 상자 걸쇠를 부러뜨렸다. 다음 날 양육자는 마루 밑을 한참 들여다보았고, 그 뒤로 집 안에 자물쇠가 하나 늘었다.", effects: { bond: -4, skill: 1 } }
             } },
@@ -260,7 +260,7 @@ export default [
         ] },
 
       { step: 2, id: "hunter", age: 9, art: "harbor", requires: ["rumor", "poster_burned"], title: "현상금 사냥꾼",
-        body: "장터 소문을 따라 현상금 사냥꾼 오르덴이 {home}의 부두에 내렸다. 회색 외투에 낡은 수배서 뭉치를 든 오르덴은 아이들에게 사탕을 나눠 주며 이런 얼굴을 본 적 있냐고 물었다. 그 뭉치 맨 위에 젊은 양육자의 얼굴이 있었다.",
+        body: "어디서 냄새를 맡았는지 현상금 사냥꾼 오르덴이 {home}의 부두에 내렸다. 회색 외투에 낡은 수배서 뭉치를 든 오르덴은 아이들에게 사탕을 나눠 주며 이런 얼굴을 본 적 있냐고 물었다. 그 뭉치 맨 위에 젊은 양육자의 얼굴이 있었다.",
         choices: [
           { id: "lie", label: "눈 하나 깜빡이지 않고 거짓말한다", hint: "어른을 속이려면", check: { stat: "skill", against: 40 },
             personality: { loyalty: 7, caution: 2 }, mark: "sided_guardian",
@@ -290,7 +290,7 @@ export default [
           { id: "sabotage", label: "카스텔의 배 밧줄을 몰래 풀어 둔다", hint: "떠나는 배가 없으면", check: { stat: "skill", against: 38 },
             personality: { freedom: 5, loyalty: 4 }, mark: "sided_guardian",
             outcomes: {
-              great: { text: "밧줄이 풀린 범선이 썰물에 떠내려가 등대 앞 모래톱에 걸렸다. 카스텔은 배를 빼내느라 한 달을 고생했고, 그동안 양육자의 마음은 끝내 돌아서지 않았다.", effects: { skill: 7, bond: 3 }, mark: "met_castel" },
+              great: { text: "밧줄이 풀린 범선이 썰물에 떠내려가 등대 앞 모래톱에 걸렸다. 카스텔은 배를 빼내느라 한 달을 고생했고, 그동안 양육자의 마음은 끝내 흔들리지 않았다.", effects: { skill: 7, bond: 3 }, mark: "met_castel" },
               good: { text: "배는 반쯤 떠내려갔다가 어부들 손에 돌아왔다. 카스텔은 범인을 눈치챈 듯 {name}에게 윙크를 하고 혼자 바다로 나갔다.", effects: { skill: 4, trust: -1 }, mark: "met_castel" },
               bad: { text: "밧줄을 푸는 순간 카스텔의 손이 {name}의 뒷덜미를 잡았다. 그대로 양육자 앞에 끌려가자, 양육자는 웃지도 화내지도 못한 얼굴로 한숨만 쉬었다.", effects: { bond: -3, health: -3, trust: -2 }, mark: "met_castel" }
             } }
@@ -334,7 +334,7 @@ export default [
           { id: "stand_up", label: "장터 한가운데서 양육자의 옛일을 외친다", hint: "진실이 방패가 되도록", check: { stat: "trust", against: 42 },
             personality: { empathy: 5, freedom: 5 }, mark: "chose_truth",
             outcomes: {
-              great: { text: "노예선 사람들이 보낸 편지를 읽어 내려가자 장터가 조용해졌다. 생선 장수가 먼저 그런 사람 이 섬엔 없다고 말했고, 하나둘 그 말을 따라 했다. 해군 대위는 빈손으로 닻을 올렸다.", effects: { trust: 10, bond: 4 }, mark: "town_shielded" },
+              great: { text: "{name}이 양육자가 노예선 사람들을 풀어 준 해적이었다고 외치자 장터가 조용해졌다. 생선 장수가 먼저 그런 사람 이 섬엔 없다고 말했고, 하나둘 그 말을 따라 했다. 해군 대위는 빈손으로 닻을 올렸다.", effects: { trust: 10, bond: 4 }, mark: "town_shielded" },
               good: { text: "몇몇은 고개를 끄덕였고 몇몇은 등을 돌렸다. 해군은 결국 증인을 찾지 못하고 떠났지만, {home}의 인사 몇 개는 그날 이후 사라졌다.", effects: { trust: 3, bond: 4 }, mark: "town_shielded" },
               bad: { text: "외치는 소리가 해군 대위의 귀에 가장 먼저 닿았다. 아이가 증언했다는 기록이 남았고, 양육자는 손목에 해루석 수갑을 찬 채 {name}을 보며 괜찮다고 웃었다.", effects: { trust: -4, bond: -2, health: -3 }, mark: "guardian_taken" }
             } },
@@ -361,16 +361,16 @@ export default [
             outcomes: {
               great: { text: "종소리에 횃불을 든 이웃들이 몰려왔다. 가면은 수십 개의 눈 앞에서 아무 말도 하지 못하고 달아났고, 다음 날 아무도 그 일을 묻지 않았다. 그게 이 섬의 대답이었다.", effects: { trust: 9, bond: 3 }, mark: "town_shielded" },
               good: { text: "몇몇 이웃이 달려와 가면은 달아났다. 하지만 왜 그런 자가 찾아왔는지 묻는 눈길이 한동안 양육자를 따라다녔다.", effects: { trust: 3, bond: 2 } },
-              bad: { text: "종을 치기도 전에 가면이 {name}을 붙잡았다. 양육자는 아이를 돌려받는 대가로 상자 속 감사 편지 묶음까지 모두 내주어야 했다.", effects: { health: -5, bond: -2, supplies: -4 } }
+              bad: { text: "종을 치기도 전에 가면이 {name}을 붙잡았다. 양육자는 아이를 돌려받는 대가로 상자 속에 간직하던 편지 묶음까지 모두 내주어야 했다.", effects: { health: -5, bond: -2, supplies: -4 } }
             } }
         ] },
       { step: 3, id: "silence", age: 12, art: "childMarket", title: "말하지 않은 해",
-        body: "수배서 일을 아무도 입 밖에 내지 않은 채 해가 바뀌었다. 그해 겨울, 장터 게시판에 새 수배서가 붙었다. 얼굴은 낯설었지만 같은 해적단 이름이 적혀 있었고, 그 아래 리안이라는 이름이 동료 명단에 작게 적혀 있었다. 양육자는 그 게시판 앞을 매일 지나갔다.",
+        body: "수배서 일을 아무도 입 밖에 내지 않은 채 해가 바뀌었다. 그해 겨울, 장터 게시판에 새 수배서가 붙었다. 얼굴은 낯설었지만 같은 해적단의 이름 아래, 동료 명단 끝에 리안이라는 이름이 작게 적혀 있었다. 양육자는 그 게시판 앞을 매일 지나갔다.",
         choices: [
           { id: "finally_ask", label: "이번에는 정면으로 묻는다", hint: "늦어도 묻는 게 낫다", check: { stat: "bond", against: 38 },
             personality: { freedom: 4, empathy: 4 }, mark: "chose_truth",
             outcomes: {
-              great: { text: "양육자는 마침내 모든 걸 말했다. 다 듣고 난 {name}이 그래도 내 양육자라고 하자, 양육자는 처음으로 자신의 옛 이름을 소리 내어 웃으며 불렀다.", effects: { bond: 10, skill: 1 } },
+              great: { text: "양육자는 마침내 모든 걸 말했다. 다 듣고 난 {name}이 그래도 내 양육자라고 하자, 양육자는 처음으로 웃으며 자신의 옛 이름을 소리 내어 불렀다.", effects: { bond: 10, skill: 1 } },
               good: { text: "양육자는 절반만 말했다. 나머지 절반은 네가 어른이 되면 하겠다고. {name}은 그 약속이 수배서보다 무겁다는 걸 알았다.", effects: { bond: 5 } },
               bad: { text: "양육자는 대답 대신 짐을 쌌다가 다시 풀었다. 그 밤 이후 집에는 웃음이 줄었고, {name}은 묻지 말았어야 했나 오래 생각했다.", effects: { bond: -5, health: -2 } }
             } },
@@ -384,7 +384,7 @@ export default [
         ] },
 
       { step: 4, id: "echo_far", age: 30, art: "legacy", requires: ["guardian_fled", "guardian_taken"], title: "수평선 너머의 소식",
-        body: "어느 항구 신문 귀퉁이에 리안이라는 이름이 실렸다. 오래전 수감되었거나 사라졌던 해적단 일원이 먼 바다의 작은 섬에서 노예선 생존자들과 함께 살고 있다는 짧은 기사였다. 기사 끝에 그 섬으로 가는 우편선 이름이 적혀 있었다.",
+        body: "어느 항구 신문 귀퉁이에 리안이라는 이름이 실렸다. 오래전 잡혀갔다고도, 바다로 사라졌다고도 하던 해적단 일원이 먼 바다의 작은 섬에서 노예선 생존자들과 함께 살고 있다는 짧은 기사였다. 기사 끝에 그 섬으로 가는 우편선 이름이 적혀 있었다.",
         choices: [
           { id: "write", label: "우편선에 편지를 실어 보낸다", hint: "닿기만 한다면", check: { stat: "bond", against: 35 },
             personality: { loyalty: 6, empathy: 3 },
@@ -451,7 +451,7 @@ export default [
     },
     chapters: [
       { step: 1, id: "cough", age: 8, art: "childClinic", title: "회색 기침",
-        body: "그해 겨울 {home}에 회색 기침이 번졌다. 해군은 섬 출입을 막았고, 약재상 고르반은 약값을 하루마다 올렸다. 양육자마저 밤새 기침을 하던 새벽, {name}은 어른들이 수군대던 세 가지 이름을 떠올렸다. 등대 아래 쫓겨난 의사, 밤의 밀수꾼, 그리고 고르반의 창고.",
+        body: "그해 겨울 {home}에 회색 기침이 번졌다. 해군은 섬 출입을 막았고, 약재상 고르반은 약값을 날마다 올렸다. 양육자마저 밤새 기침을 하던 새벽, {name}은 어른들이 수군대던 세 가지 이름을 떠올렸다. 등대 아래 쫓겨난 의사, 밤의 밀수꾼, 그리고 고르반의 창고.",
         choices: [
           { id: "doctor", label: "등대 아래 쫓겨난 의사를 찾아간다", hint: "모두가 피하는 집", check: { stat: "health", against: 32 },
             personality: { empathy: 5, freedom: 4 }, mark: "met_doctor",
@@ -571,14 +571,14 @@ export default [
             } }
         ] },
       { step: 3, id: "trial", age: 11, art: "dangerPrison", requires: ["caught_marine", "line_crossed", "doctor_trust"], title: "의사를 위한 재판",
-        body: "기침이 다시 돌던 이듬해, 마을 원로들은 하넬을 해군에 넘기기로 했다. 봉쇄선 너머 묘지를 들쑤셔 병을 불렀다는 이유였다. 장터에 차려진 임시 재판석에서 해군 대위는 증인을 불렀고, 하넬은 묶인 손으로 {name}을 보며 고개를 저었다. 나서지 말라는 뜻이었다.",
+        body: "기침이 다시 돌던 이듬해, 마을 원로들은 쫓겨난 의사 하넬을 해군에 넘기기로 했다. 봉쇄선 너머 묘지를 들쑤셔 병을 불렀다는 이유였다. 장터에 차려진 임시 재판석에서 해군 대위는 증인을 불렀고, 하넬은 묶인 손으로 군중을 둘러보며 고개를 저었다. 아무도 나서지 말라는 뜻이었다.",
         choices: [
-          { id: "testify", label: "묘지에 간 건 나였다고 증언한다", hint: "진실은 비싸다", check: { stat: "trust", against: 42 },
+          { id: "testify", label: "하넬은 죄가 없다고 증언한다", hint: "진실은 비싸다", check: { stat: "trust", against: 42 },
             personality: { loyalty: 6, freedom: 4 }, mark: "doctor_freed",
             outcomes: {
-              great: { text: "{name}은 뿌리를 캔 밤과 그 약으로 나은 집들의 이름을 하나씩 댔다. 이름이 불린 집 사람들이 차례로 일어섰고, 해군 대위는 결국 하넬의 밧줄을 풀라고 명령했다.", effects: { trust: 11, bond: 2 } },
+              great: { text: "{name}은 하넬의 약으로 기침이 멎은 집들의 이름을 하나씩 댔다. 이름이 불린 집 사람들이 차례로 일어섰고, 해군 대위는 결국 하넬의 밧줄을 풀라고 명령했다.", effects: { trust: 11, bond: 2 } },
               good: { text: "증언 덕에 하넬은 풀려났지만 섬을 떠나라는 판결을 받았다. 떠나는 배에서 하넬은 {name}에게 손으로 쓴 약초 책을 던져 주었다.", effects: { trust: 5, skill: 4 } },
-              bad: { text: "아이가 겁도 없이 봉쇄선을 넘었다는 사실만 남았다. 하넬은 끌려갔고, {name}의 양육자는 벌금을 물고 한동안 장터에 얼굴을 들지 못했다.", effects: { trust: -6, bond: -4 }, mark: "doctor_exiled" }
+              bad: { text: "아이의 증언을 귀담아듣는 사람은 없었다. 하넬은 끌려갔고, {name}의 양육자는 아이 단속을 못 했다며 벌금을 물고 한동안 장터에 얼굴을 들지 못했다.", effects: { trust: -6, bond: -4 }, mark: "doctor_exiled" }
             } },
           { id: "patients", label: "하넬이 살린 사람들을 데리고 온다", hint: "말보다 얼굴", check: { stat: "friendBond", against: 38 },
             personality: { empathy: 6, loyalty: 3 },
@@ -615,7 +615,7 @@ export default [
         ] },
 
       { step: 4, id: "echo_doctor", age: 28, art: "childClinic", requires: ["doctor_freed", "doctor_exiled"], title: "약초 책의 여백",
-        body: "어느 항구 약방에서 {name}은 손때 묻은 약초 책을 보았다. 하넬의 글씨였다. 회색 기침을 멎게 하는 처방이 적힌 쪽 여백에 작은 글씨로 {home}의 아이 덕분에 알아낸 약이라고 적혀 있었다. 약방 주인은 그 처방으로 이 항구의 겨울을 넘겼다고 했다.",
+        body: "어느 항구 약방에서 {name}은 손때 묻은 약초 책을 보았다. 하넬의 글씨였다. 회색 기침을 멎게 하는 처방이 적힌 쪽 여백에 작은 글씨로 {home}에서 보낸 겨울과 그곳 아이들의 이야기가 적혀 있었다. 약방 주인은 그 처방으로 이 항구의 겨울을 넘겼다고 했다.",
         choices: [
           { id: "find_hanel", label: "하넬의 행방을 수소문한다", hint: "그 겨울의 빚", check: { stat: "trust", against: 36 },
             personality: { loyalty: 6, empathy: 3 },
@@ -633,12 +633,12 @@ export default [
             } }
         ] },
       { step: 4, id: "echo_gorban", age: 28, art: "legacy", requires: ["spared_gorban", "fair_share"], title: "약재상의 마지막 편지",
-        body: "늙은 고르반에게서 편지가 왔다. 그 겨울 횃불 앞에 서 있던 아이를 잊지 못했다고, 남은 재산으로 {home}에 치료실을 짓고 싶은데 누구 손에 맡길지 정해 달라고 했다. 봉투 안에는 약재상 창고 열쇠가 들어 있었다.",
+        body: "늙은 고르반에게서 편지가 왔다. 그 겨울 자기 앞에 섰던 아이를 잊지 못했다고, 남은 재산으로 {home}에 치료실을 짓고 싶은데 누구 손에 맡길지 정해 달라고 했다. 봉투 안에는 약재상 창고 열쇠가 들어 있었다.",
         choices: [
           { id: "accept", label: "열쇠를 받고 치료실을 맡을 사람을 고른다", hint: "공평한 눈으로", check: { stat: "trust", against: 38 },
             personality: { loyalty: 5, caution: 3 },
             outcomes: {
-              great: { text: "{name}은 그 겨울 명부를 함께 썼던 누리에게 치료실을 맡겼다. 문 위 현판에는 고르반의 이름 대신 기침이 번진 겨울이라는 글씨가 새겨졌다.", effects: { trust: 10, friendBond: 3 } },
+              great: { text: "{name}은 그 겨울 가장 오래 앓았던 집의 아이, 이제는 의원이 된 이웃에게 치료실을 맡겼다. 문 위 현판에는 고르반의 이름 대신 기침이 번진 겨울이라는 글씨가 새겨졌다.", effects: { trust: 10, friendBond: 3 } },
               good: { text: "치료실은 지어졌지만 누가 맡을지를 두고 섬 사람들이 한동안 다퉜다. 결국 순번을 정하는 명부가 다시 만들어졌다.", effects: { trust: 5, supplies: -1 } },
               bad: { text: "열쇠를 둘러싸고 고르반의 친척들이 소송을 걸었다. 치료실은 몇 해 늦어졌고, {name}은 바다 건너에서 편지로만 다툼을 지켜보았다.", effects: { trust: -4, supplies: -3 } }
             } },
@@ -651,7 +651,7 @@ export default [
             } }
         ] },
       { step: 4, id: "echo_port", age: 28, art: "harbor", title: "낯선 항구의 기침 소리",
-        body: "{name}이 머물던 항구에 회색 기침이 번지기 시작했다. 약방 앞에 줄이 늘어섰고, 어느 상인이 약값을 하루마다 올리고 있었다. 기침 소리와 닫힌 창고 문, 아이들의 붉게 언 손. 어린 시절의 겨울이 그대로 눈앞에 있었다.",
+        body: "{name}이 머물던 항구에 회색 기침이 번지기 시작했다. 약방 앞에 줄이 늘어섰고, 어느 상인이 약값을 날마다 올리고 있었다. 기침 소리와 닫힌 창고 문, 아이들의 붉게 언 손. 어린 시절의 겨울이 그대로 눈앞에 있었다.",
         choices: [
           { id: "organize", label: "그 겨울에 배운 대로 명부를 만든다", hint: "아픈 사람부터", check: { stat: "trust", against: 40 },
             personality: { loyalty: 4, empathy: 5 },
@@ -660,7 +660,7 @@ export default [
               good: { text: "몇몇 집은 따랐고 몇몇은 무시했다. 그래도 줄이 조금 공평해졌고, 겨울 끝에 인사를 건네는 얼굴이 늘었다.", effects: { trust: 5 } },
               bad: { text: "외지인이 끼어든다며 항구 사람들이 등을 돌렸다. 명부는 바람에 날아갔고, {name}은 그 겨울 기침을 얻어 배에 올랐다.", effects: { trust: -4, health: -5 } }
             } },
-          { id: "leave_port", label: "옮기 전에 항구를 떠난다", hint: "살아남는 것도 선택", check: { stat: "supplies", against: 32 },
+          { id: "leave_port", label: "병이 옮기 전에 항구를 떠난다", hint: "살아남는 것도 선택", check: { stat: "supplies", against: 32 },
             personality: { caution: 7, freedom: 2 },
             outcomes: {
               great: { text: "떠나는 배에서 {name}은 남은 약을 부두의 아이 하나에게 쥐여 주었다. 몇 달 뒤 그 항구를 다시 지났을 때, 그 아이가 약방 앞에서 손을 흔들었다.", effects: { health: 3, trust: 4 } },

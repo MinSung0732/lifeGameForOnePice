@@ -1,4 +1,4 @@
-import { canonCrew, encounterAt, encounterScene, moveTo, routeFor, standing, travelScene, yearRoll } from "./world.js";
+import { canonCrew, openCanonCrews, encounterAt, encounterScene, moveTo, routeFor, standing, travelScene, yearRoll } from "./world.js";
 import { personalBeat } from "./people.js";
 import { adventureScene, withTrait } from "./adventures.js";
 import { takenText } from "./canon-timeline.js";
@@ -6,6 +6,8 @@ import { islandEvent } from "./islands.js";
 import { fruitFor } from "./fruits.js";
 import { bountyScene } from "./bounty.js";
 import { fateScene } from "./fates.js";
+import { crewContactScene } from "./canon-crews.js";
+import { RECRUIT_VARIANTS } from "./recruit-variants.js";
 import { childhoodArt, childhoodQuiet } from "./childhood.js";
 import { giantAdultDecisions, giantGrowingDecisions, giantGrowingYears, giantHomeYears, giantLaterYears, giantWorkingYears } from "./giant-years.js";
 
@@ -42,8 +44,9 @@ const journeys = {
   거인족: "몸집에 맞는 큰 배와 넉넉한 식량을 마련한 뒤에야 섬 밖으로 나섰다."
 };
 
-function setCareer(life, path) {
+export function setCareer(life, path) {
   const firstCareer = !life.path;
+  const previous = { path: life.path, tier: life.independent ? RANK_ROLES.pirate.length : life.rankTier };
   life.path = path;
   const career = {
     pirate: ["선원", "독립 해적단", "견습 선원", "자유로운 항로"],
@@ -58,6 +61,12 @@ function setCareer(life, path) {
     life.independent = false;
     life.rankTier = 0;
     life.careerStartAge = life.age + 1;
+  }
+  // Rule 15: a move keeps part of the old standing: about half the relative rank, two thirds within the same path.
+  if (life.creationVersion >= 15 && !firstCareer && previous.tier > 0) {
+    const share = previous.tier / RANK_ROLES[previous.path].length * (previous.path === path ? 0.67 : 0.5);
+    const tier = Math.min(RANK_ROLES[path].length, Math.round(share * RANK_ROLES[path].length));
+    if (tier > 0) { life.rankTier = tier; life.role = RANK_ROLES[path][tier - 1]; life.carriedRank = life.role; }
   }
 }
 
@@ -74,18 +83,18 @@ function joinCanonCrew(life, crew) {
   life.canonCrew = crew;
 }
 
-const canonCrewChoice = (id, record, after, firstCareer = false) => ({ id, label: (life) => `${canonCrew(life)}의 말단 선원이 된다`,
-  when: (life) => life.creationVersion >= 3 && Boolean(canonCrew(life)), needs: { skill: 35, health: 50 },
+const canonCrewChoice = (id, record, after, firstCareer = false, fixed = null) => ({ id, label: (life) => `${fixed || canonCrew(life)}의 말단 선원이 된다`,
+  when: (life) => life.creationVersion >= 3 && Boolean(fixed || canonCrew(life)), needs: { skill: 35, health: 50 },
   risk: "기술 35 · 건강 50 필요 · 이름난 선장 아래에서 갑판 청소부터", failRisk: firstCareer ? "건강 -15 · 작은 해적단으로 감" : "건강 -15 · 지원 실패",
   personality: { ambition: 8, freedom: 6 },
   fail: (life) => {
-    const crew = canonCrew(life);
+    const crew = fixed || canonCrew(life);
     life.health -= 15; record?.(life);
     // A first career must still start somewhere, or the rest of the life has no path.
     if (firstCareer) { setCareer(life, "pirate"); return `${crew}의 갑판장은 고개를 저었다. 대신 항구의 작은 해적단에 견습 자리를 얻었다.`; }
     return `${crew}의 갑판장은 한 번 훑어보고 고개를 저었다.`;
   },
-  apply: (life) => { const crew = canonCrew(life); joinCanonCrew(life, crew); record?.(life); after?.(life); return `${crew}의 깃발 아래에서 가장 낮은 자리부터 일을 시작했다. 이름난 선장의 얼굴은 멀리서만 보였다.`; } });
+  apply: (life) => { const crew = fixed || canonCrew(life); joinCanonCrew(life, crew); record?.(life); after?.(life); return `${crew}의 깃발 아래에서 가장 낮은 자리부터 일을 시작했다. 이름난 선장의 얼굴은 멀리서만 보였다.`; } });
 
 function depart(life) {
   if (life.leftHome && !life.homebound) return;
@@ -657,6 +666,7 @@ function rankOpportunity(life, age, base) {
   const rankGap = life.creationVersion >= 3 && !life.rankDeclined && life.lastRankOfferAge >= life.careerStartAge ? giant(life) ? 12 : 6 : giant(life) ? 20 : 12;
   // In original mode a canon crew's officer seats are taken by canon characters, so the player stays a deckhand.
   if (life.canonCrew && life.mode === "original" && tier >= 1) return null;
+  if (life.canonCrew === "밀짚모자 일당") return null;
   if (tier >= RANK_ROLES[life.path].length || age - life.careerStartAge < 3 || age - life.lastRankOfferAge < rankGap
     || life.skill < requirements[tier].skill || standing(life) < requirements[tier].trust
     || life.creationVersion < 11 && !life.seen.includes("life_orders")) return null;
@@ -813,7 +823,10 @@ function offerFor(path, life, age, base) {
       ] }
   };
   const offer = offers[path];
-  return { ...base, id: `life_recruit_${path}_${age}`, urgent: true, art: offer.art, title: offer.title, body: offer.body, choices: offer.choices };
+  // Rule 15 tells the same offer through one of several situations, so lives stop meeting the same captain.
+  const told = life.creationVersion >= 15 ? [offer, ...RECRUIT_VARIANTS[path]][yearRoll(life.seed ^ 0x5151e0a3, age) % (RECRUIT_VARIANTS[path].length + 1)] : offer;
+  const body = told.body.replaceAll("{memory}", memory).replaceAll("{name}", name);
+  return { ...base, id: `life_recruit_${path}_${age}`, urgent: true, art: told.art || offer.art, title: told.title, body, choices: offer.choices };
 }
 
 // Rule 11: late-life scenes follow age and health, so lives that end in their fifties still see them.
@@ -969,6 +982,16 @@ function sceneForAge(life) {
 
   const encounter = life.creationVersion >= 2 ? encounterAt({ ...life, age }) : null;
   if (encounter) return { ...encounterScene({ ...life, age, pendingEncounter: encounter }), urgent: true };
+  // Rule 15: a crew whose people took a real liking (tie 2+) sends its own invitation.
+  const invited = life.creationVersion >= 15 && life.leftHome && life.path !== "marine" && !life.canonCrew
+    && openCanonCrews(life, age).find((crew) => (life.people.crewTies?.[crew] || 0) >= 2 && !life.seen.includes(`life_crew_invite_${crew}`));
+  if (invited) return { ...base, id: `life_crew_invite_${invited}`, urgent: true, art: "deck", title: `${invited}의 부름`,
+    body: `${invited}의 배에서 온 선원이 ${life.birth.name}을 찾아왔다. 지난번 일을 기억하는 사람이 있다며, 갑판에 빈자리가 하나 있다고 했다. 배는 다음 물때에 떠날 예정이었다.`,
+    choices: [canonCrewChoice("canon_crew", null, depart, !life.path, invited),
+      { id: "decline", label: "지금의 길을 지킨다", risk: "제안을 거절함 · 인연은 남음", personality: { loyalty: 5, caution: 3 },
+        apply: () => `${invited}의 선원은 아쉽다는 듯 어깨를 으쓱하고 돌아갔다.` }] };
+  const contact = crewContactScene(life, age, base, openCanonCrews(life, age));
+  if (contact) return contact;
   const isle = islandEvent(life, age, base);
   if (isle) return isle;
   const beat = personalBeat(life, age, base);

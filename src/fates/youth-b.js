@@ -54,7 +54,7 @@ export default [
               good: { text: "해스커는 한참 말이 없더니 생각할 시간을 달라고 했다. 그 밤 술집에서는 해스커의 노래가 유난히 길게 들렸다.", effects: { trust: 3 } },
               bad: { text: "해스커는 편지를 빼앗아 품에 넣고는 이건 어른 일이라고 잘라 말했다. 다음 날 미로가 숨은 동굴 앞에 해스커의 발자국이 찍혀 있었다.", effects: { trust: -5, friendBond: -4 }, mark: "captured" }
             } },
-          { id: "sell", label: "그래도 돈은 돈이다", hint: "주머니가 무거워진다",
+          { id: "sell", label: "미로의 위치를 해스커에게 넘긴다", hint: "주머니가 무거워진다",
             check: { stat: "supplies", against: 30 }, personality: { ambition: 8, empathy: -6 }, mark: "sold_miro",
             outcomes: {
               great: { text: "{name}은 편지를 몰래 챙긴 채 미로의 위치를 넘겼다. 몫은 두둑했고, 편지는 언젠가 쓸모가 있을 것 같아 서랍 깊숙이 넣었다.", effects: { supplies: 10 }, mark: "captured" },
@@ -75,7 +75,7 @@ export default [
           { id: "let_slip", label: "일부러 길을 비켜 준다", hint: "눈빛 하나면 충분하다",
             check: { stat: "skill", against: 40 }, personality: { empathy: 7, freedom: 4 }, mark: "spared",
             outcomes: {
-              great: { text: "{name}은 넘어지는 척하며 미로에게 등대 쪽 샛길을 손짓했다. 해스커는 투덜대며 {name}을 일으켜 세웠고, 아무것도 몰랐다.", effects: { friendBond: 6, skill: 4 }, mark: "let_go" },
+              great: { text: "{name}은 넘어지는 척하며 미로에게 등대 쪽 샛길을 손짓했다. 해스커는 투덜대며 {name}을 일으켜 세웠고, 아무것도 눈치채지 못했다.", effects: { friendBond: 6, skill: 4 }, mark: "let_go" },
               good: { text: "미로는 빠져나갔지만 해스커의 눈썹이 한쪽만 올라갔다. 그날 밤 해스커는 아무 말 없이 {name}의 몫을 절반으로 깎았다.", effects: { friendBond: 4, supplies: -2 }, mark: "let_go" },
               bad: { text: "너무 티 나게 비켜선 탓에 해스커가 모든 걸 봤다. 미로는 도망쳤고, 해스커는 처음으로 {name}을 차가운 눈으로 바라보았다.", effects: { trust: -6, friendBond: -2 }, mark: "suspected" }
             } },
@@ -89,7 +89,7 @@ export default [
         ] },
 
       { step: 3, id: "payout", age: 18, art: "dangerPrison", requires: ["captured"], title: "피 묻은 몫",
-        body: "미로를 넘긴 날, 몫을 받으러 간 창고에서 귀족의 사병들이 문을 잠갔다. 귀족은 웃으며 증인은 적을수록 좋다고 했다. 해스커가 {name}을 등 뒤로 밀며 칼집 끈을 풀었고, 창고 구석 쇠창살 안에서 미로가 이쪽을 보고 있었다.",
+        body: "미로가 넘겨지고 두 해가 지나서야 귀족은 몫을 치르겠다며 해스커와 {name}을 창고로 불렀다. 들어서자마자 귀족의 사병들이 문을 잠갔다. 귀족은 웃으며 증인은 적을수록 좋다고 했다. 해스커가 {name}을 등 뒤로 밀며 칼집 끈을 풀었고, 창고 구석 쇠창살 안에서 야윈 미로가 이쪽을 보고 있었다.",
         choices: [
           { id: "stand", label: "해스커 곁에서 버틴다", hint: "오래 맞게 될지도 모른다",
             check: { stat: "health", against: 50 }, personality: { loyalty: 8 }, mark: "stood_hasker",
@@ -119,7 +119,7 @@ export default [
           { id: "boat", label: "미로를 밤배에 태운다", hint: "물때와 등불을 읽어야 한다",
             check: { stat: "skill", against: 50 }, personality: { empathy: 6, freedom: 5 }, mark: "miro_escaped",
             outcomes: {
-              great: { text: "{name}은 등대 그림자를 따라 고깃배를 밀었다. 미로는 배 위에서 편지를 {name}에게 돌려주며 언젠가 이걸 세상에 보여 달라고 했다. 갈고리단은 빈 부두에 대고 고함만 질렀다.", effects: { skill: 7, friendBond: 6 }, mark: "kept_letter" },
+              great: { text: "{name}은 등대 그림자를 따라 고깃배를 밀었다. 미로는 배 위에서 품에 지녀 온 편지를 {name}에게 건네며 언젠가 이걸 세상에 보여 달라고 했다. 갈고리단은 빈 부두에 대고 고함만 질렀다.", effects: { skill: 7, friendBond: 6 }, mark: "kept_letter" },
               good: { text: "배는 떠났지만 갈고리단의 화살 하나가 {name}의 어깨를 스쳤다. 상처는 남았고, 미로가 탄 배의 불빛은 수평선 너머로 무사히 사라졌다.", effects: { health: -4, friendBond: 8 } },
               bad: { text: "배는 떠났지만 {name}은 부두에서 붙잡혔다. 갈고리단은 밤새 미로의 행방을 물었고, {name}은 끝까지 엉뚱한 섬 이름만 댔다.", effects: { health: -12, trust: 4 } }
             } },
@@ -139,7 +139,7 @@ export default [
             } }
         ] },
       { step: 3, id: "betrayal", age: 18, art: "lifeStorm", title: "팔려 간 이름",
-        body: "해스커가 편지를 쥐고 고민하는 사이, 귀족 쪽에서 먼저 손을 썼다. 해스커가 빚 때문에 편지를 본 아이의 이름을 귀족에게 팔았다는 소문이 돌았고, 그날 밤부터 {name}의 집 앞에 낯선 사내들이 서성거렸다. 술집 구석의 해스커는 눈을 마주치지 않았다.",
+        body: "해스커가 머뭇거리는 사이, 귀족 쪽에서 먼저 손을 썼다. 해스커가 빚 때문에 미로와 엮인 아이의 이름을 귀족에게 팔았다는 소문이 돌았고, 그날 밤부터 {name}의 집 앞에 낯선 사내들이 서성거렸다. 술집 구석의 해스커는 눈을 마주치지 않았다.",
         choices: [
           { id: "confront", label: "술집으로 가서 따진다", hint: "멱살을 잡을 수도 있다",
             check: { stat: "friendBond", against: 45 }, personality: { loyalty: 5, freedom: 4 },
@@ -155,12 +155,12 @@ export default [
               good: { text: "한 달을 집 안에서 보냈다. 지루함에 몸부림치던 {name}은 그동안 양육자에게 그물 깁는 법을 제대로 배웠다.", effects: { bond: 5, supplies: -2 } },
               bad: { text: "사내들이 창문에 돌을 던졌고, 양육자가 깨진 유리에 손을 다쳤다. {name}은 그 붕대를 볼 때마다 해스커의 이름을 씹었다.", effects: { bond: -4, health: -4, trust: -3 } }
             } },
-          { id: "paper", label: "편지를 신문사 새에게 맡긴다", hint: "세상에 퍼지면 되돌릴 수 없다",
+          { id: "paper", label: "아는 것을 적어 신문사 새에게 맡긴다", hint: "세상에 퍼지면 되돌릴 수 없다",
             check: { stat: "trust", against: 50 }, personality: { empathy: 5, freedom: 5 }, mark: "testified",
             outcomes: {
-              great: { text: "{name}은 편지 사본을 신문 배달 새의 가방에 찔러 넣었다. 열흘 뒤 귀족의 이름이 신문 한 귀퉁이에 실렸고, 미로의 수배서는 벽에서 하나둘 떼어졌다.", effects: { trust: 10, friendBond: 3 }, mark: "miro_escaped" },
+              great: { text: "{name}은 아는 것을 모두 적어 신문 배달 새의 가방에 찔러 넣었다. 열흘 뒤 귀족의 이름이 신문 한 귀퉁이에 실렸고, 미로의 수배서는 벽에서 하나둘 떼어졌다.", effects: { trust: 10, friendBond: 3 }, mark: "miro_escaped" },
               good: { text: "기사는 아주 작게 실렸다. 그래도 사내들은 더 이상 대놓고 서성거리지 못했다.", effects: { trust: 5 } },
-              bad: { text: "편지는 엉뚱한 섬 신문에 실렸고, 그 섬의 생선 가게 주인이 누명을 썼다. {name}은 사과 편지를 쓰느라 한 철을 보냈다.", effects: { trust: -5, supplies: -3 } }
+              bad: { text: "글은 엉뚱한 섬 신문에 실렸고, 그 섬의 생선 가게 주인이 누명을 썼다. {name}은 사과 편지를 쓰느라 한 철을 보냈다.", effects: { trust: -5, supplies: -3 } }
             } }
         ] },
 
@@ -183,7 +183,7 @@ export default [
             } }
         ] },
       { step: 4, id: "old_cuffs", age: 29, art: "harbor", requires: ["saved_hasker", "forgave_hasker", "stood_hasker"], title: "낡은 수갑",
-        body: "낯선 항구의 국숫집에서 누군가 {name}의 이름을 불렀다. 머리가 하얗게 센 해스커였다. 사냥은 그만두었다며 허리춤의 녹슨 수갑을 풀어 탁자에 올려놓았고, 마지막으로 하나만 부탁하자고 했다. 예전에 놓친 진짜 악당 하나가 이 항구에 있다는 것이었다.",
+        body: "낯선 항구의 국숫집에서 누군가 {name}의 이름을 불렀다. 머리가 하얗게 센 해스커였다. 사냥은 그만두었다며 허리춤의 녹슨 수갑을 풀어 탁자에 올려놓았고, 마지막으로 하나만 부탁하겠다고 했다. 예전에 놓친 진짜 악당 하나가 이 항구에 있다는 것이었다.",
         choices: [
           { id: "help", label: "마지막 사냥을 돕는다", hint: "옛날 실력이 남아 있을까",
             check: { stat: "skill", against: 55 }, personality: { loyalty: 7, freedom: 3 },
@@ -201,12 +201,12 @@ export default [
             } }
         ] },
       { step: 4, id: "poster", age: 28, art: "fruit", title: "자란 얼굴의 수배서",
-        body: "어느 항구 게시판에 낯익은 얼굴이 붙어 있었다. 수배서 속의 미로는 더 이상 겁먹은 하인이 아니었다. 해적이 되어 귀족들의 배만 노린다는 소문과 함께, 현상금은 그날의 몇 배로 불어나 있었다. 누구도 손을 내밀지 않은 사람은 결국 이렇게 자란다는 걸 {name}은 알았다.",
+        body: "어느 항구 게시판에 낯익은 얼굴이 붙어 있었다. 수배서 속의 미로는 더 이상 겁먹은 하인이 아니었다. 해적이 되어 귀족들의 배만 노린다는 소문과 함께, 현상금은 그날의 몇 배로 불어나 있었다. 세상이 등을 돌린 사람이 어떻게 자라는지를 {name}은 그 얼굴에서 보았다.",
         choices: [
           { id: "tear", label: "수배서를 떼어 품에 넣는다", hint: "누군가 보고 있을지도",
             check: { stat: "trust", against: 40 }, personality: { empathy: 6, loyalty: 3 },
             outcomes: {
-              great: { text: "그날 밤 숙소 문틈으로 쪽지 하나가 들어왔다. 그때 일은 원망하지 않는다, 지붕 위에서 돌아본 건 너 하나뿐이었다는 미로의 글씨였다.", effects: { friendBond: 8, trust: 3 } },
+              great: { text: "그날 밤 숙소 문틈으로 쪽지 하나가 들어왔다. 그때 일은 원망하지 않는다, 그 섬에서 자기 얼굴을 기억해 준 건 너 하나뿐이었다는 미로의 글씨였다.", effects: { friendBond: 8, trust: 3 } },
               good: { text: "수배서는 오래 짐 속에 있었다. 볼 때마다 다음에는 다르게 하겠다고 다짐했다.", effects: { friendBond: 3, trust: 2 } },
               bad: { text: "게시판 관리인에게 들켜 벌금을 물었다. 수배서 한 장 값치고는 비쌌다.", effects: { supplies: -6, trust: -2 } }
             } },
@@ -215,7 +215,7 @@ export default [
             outcomes: {
               great: { text: "지나친 줄 알았는데 발이 멈췄다. {name}은 항구 술집에서 미로가 노리는 귀족들의 이름을 들으며, 그 이름들이 하나도 억울하지 않다는 데 이상한 안도감을 느꼈다.", effects: { health: 4, trust: 4 } },
               good: { text: "그 얼굴은 며칠 동안 꿈에 나왔다. 그러다 조금씩 흐려졌다.", effects: { health: 2, friendBond: 1 } },
-              bad: { text: "외면한 얼굴은 오히려 더 선명해졌다. 그 해 내내 {name}은 지붕 위의 눈빛에 쫓겼다.", effects: { health: -5, friendBond: -3 } }
+              bad: { text: "외면한 얼굴은 오히려 더 선명해졌다. 그해 내내 {name}은 그 눈빛에 쫓겼다.", effects: { health: -5, friendBond: -3 } }
             } }
         ] }
     ]
@@ -259,7 +259,7 @@ export default [
         ] },
 
       { step: 2, id: "sail_storm", age: 16, art: "storm", requires: ["carved"], title: "폭풍 속의 쪽배",
-        body: "폭풍이 온다는 경보가 울린 저녁, 노아의 쪽배가 부두에서 사라졌다. 난간에 새긴 이름 옆에 쪽지 하나가 꽂혀 있었다. 폭풍을 이겨 내면 어른들도 보내 줄 거라는, 노아다운 무모한 글씨였다. 등대지기는 앓아누워 있었고 등불은 아직 켜지지 않았다.",
+        body: "폭풍이 온다는 경보가 울린 저녁, 노아의 쪽배가 부두에서 사라졌다. 등대 난간에 쪽지 하나가 꽂혀 있었다. 폭풍을 이겨 내면 어른들도 보내 줄 거라는, 노아다운 무모한 글씨였다. 등대지기는 앓아누워 있었고 등불은 아직 켜지지 않았다.",
         choices: [
           { id: "lamp", label: "등대에 올라 불을 켠다", hint: "불빛이 길이 될 수 있다",
             check: { stat: "skill", against: 45 }, personality: { loyalty: 6, caution: 3 }, mark: "lit_lamp",
@@ -310,7 +310,7 @@ export default [
         ] },
 
       { step: 3, id: "grudge", age: 18, art: "harbor", requires: ["told_adults", "parted_cold"], title: "엇갈린 출항",
-        body: "열여덟 해 여름, 노아는 상선 견습 자리를 얻었다. 그런데 출항 전날 밤 부두에서 마주친 노아의 눈빛은 차가웠다. 그때 어른들에게 말한 일, 늘 바다를 비웃던 일, 너는 한 번도 내 편이었던 적이 없다고 노아가 말했다.",
+        body: "열여덟 살 되던 여름, 노아는 상선 견습 자리를 얻었다. 그런데 출항 전날 밤 부두에서 마주친 노아의 눈빛은 차가웠다. 노아는 지난 일들을 하나하나 꺼내며, 너는 한 번도 내 편이었던 적이 없다고 말했다.",
         choices: [
           { id: "sorry", label: "변명 없이 사과한다", hint: "자존심을 접어야 한다",
             check: { stat: "friendBond", against: 45 }, personality: { empathy: 7, loyalty: 3 },
@@ -329,13 +329,13 @@ export default [
           { id: "silent", label: "아무 말 없이 보낸다", hint: "침묵도 대답이다",
             check: { stat: "health", against: 40 }, personality: { caution: 6, freedom: 3 }, mark: "let_go",
             outcomes: {
-              great: { text: "출항하는 배를 따라 {name}은 등대까지 달렸다. 말 대신 등불을 세 번 깜빡였고, 멀어지는 갑판 위에서 작은 손전등 하나가 세 번 대답했다.", effects: { friendBond: 7, health: 2 } },
+              great: { text: "출항하는 배를 따라 {name}은 등대까지 달렸다. 말 대신 등불을 세 번 깜빡였고, 멀어지는 갑판 위에서 작은 등불 하나가 세 번 대답했다.", effects: { friendBond: 7, health: 2 } },
               good: { text: "배는 떠났다. {name}은 그 뒤로도 해 질 녘이면 습관처럼 등대 쪽을 보았다.", effects: { health: 2, friendBond: -1 } },
-              bad: { text: "말하지 않은 것들이 목에 걸렸다. 그 해 겨울 {name}은 한 달을 앓았고, 열에 들뜬 밤마다 노아의 이름을 불렀다.", effects: { health: -8, bond: 2 }, mark: "parted_cold" }
+              bad: { text: "말하지 않은 것들이 목에 걸렸다. 그해 겨울 {name}은 한 달을 앓았고, 열에 들뜬 밤마다 노아의 이름을 불렀다.", effects: { health: -8, bond: 2 }, mark: "parted_cold" }
             } }
         ] },
       { step: 3, id: "berth", age: 19, art: "deck", requires: ["hero_night", "lit_lamp", "rowed_out"], title: "선장의 제안",
-        body: "폭풍의 밤에 살아 돌아간 상선의 선장이 다시 섬을 찾아왔다. 노아에게 항해사 견습 자리를 주겠다고 했고, 원한다면 한 자리가 더 있다며 {name}을 바라보았다. 노아는 아무 말 없이 {name}의 대답만 기다렸다.",
+        body: "폭풍의 밤 이야기를 전해 들은 상선 선장이 섬을 찾아왔다. 노아에게 항해사 견습 자리를 주겠다고 했고, 원한다면 한 자리가 더 있다며 {name}을 바라보았다. 노아는 아무 말 없이 {name}의 대답만 기다렸다.",
         choices: [
           { id: "season", label: "한 철 항해에 함께 오른다", hint: "돌아올 길을 남겨 둔다",
             check: { stat: "skill", against: 45 }, personality: { freedom: 7, loyalty: 4 }, mark: "sailed_season",
@@ -381,7 +381,7 @@ export default [
             outcomes: {
               great: { text: "출항 날 아침, 문 앞에 노아의 모형 배가 놓여 있었다. 돛에 서툰 글씨로 돌아올게라고 적혀 있었다.", effects: { friendBond: 6, health: 2 } },
               good: { text: "배는 떠났다. {name}은 그날 일부러 바다와 반대쪽 언덕에서 하루를 보냈다.", effects: { health: 2, friendBond: -2 } },
-              bad: { text: "쏘아붙인 말이 노아의 마지막 기억이 되었다. {name}은 그 해 내내 자다가도 그 말을 되뇌었다.", effects: { friendBond: -7, health: -3 } }
+              bad: { text: "쏘아붙인 말이 노아의 마지막 기억이 되었다. {name}은 그해 내내 자다가도 그 말을 되뇌었다.", effects: { friendBond: -7, health: -3 } }
             } }
         ] },
 
@@ -398,13 +398,13 @@ export default [
           { id: "lighthouse", label: "등대를 보러 돌아가겠다고 쓴다", hint: "약속은 또 하나의 짐이다",
             check: { stat: "supplies", against: 45 }, personality: { loyalty: 6, freedom: -2 },
             outcomes: {
-              great: { text: "몇 해 뒤 {name}이 등대 계단을 올랐을 때, 난간의 이름 두 개는 누군가 해마다 다시 새겨 둔 듯 선명했다. 둘은 밤새 불빛을 함께 돌렸다.", effects: { friendBond: 9, bond: 3 } },
+              great: { text: "몇 해 뒤 {name}이 등대 계단을 올랐을 때, 난간에 새겨진 두 사람의 이름은 누군가 해마다 다시 새겨 둔 듯 선명했다. 둘은 밤새 불빛을 함께 돌렸다.", effects: { friendBond: 9, bond: 3 } },
               good: { text: "돌아가지는 못했지만, 그 약속 하나가 거친 바다에서 {name}을 여러 번 버티게 했다.", effects: { health: 3, friendBond: 2 } },
               bad: { text: "약속은 지켜지지 않았다. 노아는 원망하지 않았지만, {name}이 스스로를 원망했다.", effects: { friendBond: -4, health: -3 } }
             } }
         ] },
       { step: 4, id: "crossed", age: 27, art: "harbor", requires: ["parted_cold"], title: "엇갈린 항구",
-        body: "어느 항구의 선술집에서 익숙한 웃음소리가 들렸다. 돌아보니 노아였다. 햇볕에 그을린 항해사의 얼굴로, 노아는 동료들 사이에서 해도를 펼치고 있었다. 눈이 마주친 순간 둘 다 그 바람 부는 밤을 떠올렸다.",
+        body: "어느 항구의 선술집에서 익숙한 웃음소리가 들렸다. 돌아보니 노아였다. 햇볕에 그을린 항해사의 얼굴로, 노아는 동료들 사이에서 해도를 펼치고 있었다. 눈이 마주친 순간 둘 다 마지막으로 헤어지던 날을 떠올렸다.",
         choices: [
           { id: "apologize", label: "먼저 다가가 사과한다", hint: "세월이 칼날을 무디게 했을까",
             check: { stat: "friendBond", against: 45 }, personality: { empathy: 7, loyalty: 3 },
@@ -416,7 +416,7 @@ export default [
           { id: "walk_past", label: "모른 척 지나친다", hint: "지나간 일은 지나간 대로",
             check: { stat: "health", against: 40 }, personality: { caution: 6 },
             outcomes: {
-              great: { text: "문을 나서려는 {name}의 등 뒤로 노아가 등대 불빛처럼 손전등을 세 번 깜빡였다. {name}도 문간에서 등불을 세 번 들어 보였다. 그것으로 충분했다.", effects: { friendBond: 6, health: 3 } },
+              great: { text: "문을 나서려는 {name}의 등 뒤로 노아가 등대 불빛처럼 탁자 위 등잔을 손으로 세 번 가렸다 열었다. {name}도 문간에서 등불을 세 번 들어 보였다. 그것으로 충분했다.", effects: { friendBond: 6, health: 3 } },
               good: { text: "둘은 끝내 말을 섞지 않았다. 다만 그 항구를 떠나는 날 바다가 유난히 잔잔했다.", effects: { health: 2 } },
               bad: { text: "지나치고 나서야 후회가 밀려왔다. 다시 선술집에 돌아갔을 때 노아의 자리는 비어 있었다.", effects: { friendBond: -5, health: -2 } }
             } }
@@ -431,7 +431,7 @@ export default [
               good: { text: "답장이 닿았는지는 알 수 없었다. 그래도 쓰는 동안만큼은 {name}도 그 섬에 서 있었다.", effects: { friendBond: 4 } },
               bad: { text: "맡긴 편지들이 하나둘 반송되어 돌아왔다. 받는 이가 머무는 곳을 아무도 몰랐다.", effects: { friendBond: -3, supplies: -3 } }
             } },
-          { id: "keep_flower", label: "꽃을 말려 품에 지닌다", hint: "부적이 될지도 모른다",
+          { id: "keep_flower", label: "말린 꽃을 품에 지닌다", hint: "부적이 될지도 모른다",
             check: { stat: "health", against: 40 }, personality: { caution: 4, empathy: 4 },
             outcomes: {
               great: { text: "그 꽃은 거친 날마다 {name}을 붙들었다. 언젠가 이름 붙은 섬에 닿으면, 그때 직접 돌려주겠다고 다짐했다.", effects: { health: 5, friendBond: 4 } },
@@ -454,7 +454,7 @@ export default [
     },
     chapters: [
       { step: 1, id: "night_job", age: 15, art: "workbench", title: "밤의 짐꾼",
-        body: "{home}의 부두에서 퀼 영감이 밤일할 아이를 구했다. 해가 진 뒤 이름 없는 배에서 상자를 내리기만 하면 낮 품삯의 세 곱을 준다고 했다. 사흘째 되던 밤, {name}의 손에서 상자 하나가 미끄러져 깨졌고, 그 안에서 해군 도장이 찍힌 화약통이 굴러 나왔다.",
+        body: "{home}의 부두에서 퀼 영감이 밤일할 아이를 구했다. 해가 진 뒤 이름 없는 배에서 상자를 내리기만 하면 낮 품삯의 세 배를 준다고 했다. 사흘째 되던 밤, {name}의 손에서 상자 하나가 미끄러져 깨졌고, 그 안에서 해군 도장이 찍힌 화약통과 금화 몇 닢이 굴러 나왔다.",
         choices: [
           { id: "peek", label: "깨진 상자 안을 살핀다", hint: "보면 모르던 때로 못 간다",
             check: { stat: "skill", against: 40 }, personality: { freedom: 5, empathy: 3 }, mark: "peeked",
@@ -536,14 +536,14 @@ export default [
           { id: "run", label: "후미의 고깃배로 도망친다", hint: "돌아올 수 있을까",
             check: { stat: "health", against: 50 }, personality: { freedom: 8, caution: 3 }, mark: "ran",
             outcomes: {
-              great: { text: "늙은 어부가 아무것도 묻지 않고 그물 밑에 {name}을 숨겼다. 이웃 섬에 닿은 {name}은 장부 사본을 그 섬 신문사에 맡겼고, 몇 주 뒤 {home}에 해군 감찰선이 들어왔다.", effects: { health: 3, trust: 6 }, mark: "exposed" },
+              great: { text: "늙은 어부가 아무것도 묻지 않고 그물 밑에 {name}을 숨겼다. 이웃 섬에 닿은 {name}은 그동안 보고 들은 것을 적어 그 섬 신문사에 맡겼고, 몇 주 뒤 {home}에 해군 감찰선이 들어왔다.", effects: { health: 3, trust: 6 }, mark: "exposed" },
               good: { text: "배는 떠났고 {name}은 살았다. 다만 한 철 동안 집에 돌아가지 못했고, 양육자의 편지는 늘 괜찮다는 말로 끝났다.", effects: { bond: -3, health: 2, skill: 3 } },
-              bad: { text: "고깃배까지 가는 길에 미끄러져 바위에 부딪혔다. 피투성이로 배에 기어올랐을 때 장부 사본은 바닷물에 녹아 있었다.", effects: { health: -10, supplies: -3 } }
+              bad: { text: "고깃배까지 가는 길에 미끄러져 바위에 부딪혔다. 피투성이로 배에 기어올랐을 때 품에 지닌 것은 모두 바닷물에 젖어 있었다.", effects: { health: -10, supplies: -3 } }
             } },
           { id: "quill_help", label: "퀼 영감에게 도움을 청한다", hint: "적의 적은 친구일까",
             check: { stat: "trust", against: 45 }, personality: { loyalty: 5, empathy: 4 }, mark: "quill_saved",
             outcomes: {
-              great: { text: "퀼 영감은 레녹스의 부하들에게 밀수품은 여기 다 있다며 창고 문을 열어 주었다. 그 대신 자신이 모든 죄를 뒤집어썼다. 끌려가며 영감은 {name}에게 장부를 끝까지 지키라고 눈짓했다.", effects: { trust: 7, friendBond: 4 } },
+              great: { text: "퀼 영감은 레녹스의 부하들에게 밀수품은 여기 다 있다며 창고 문을 열어 주었다. 그 대신 자신이 모든 죄를 뒤집어썼다. 끌려가며 영감은 {name}에게 끝까지 살아남으라고 눈짓했다.", effects: { trust: 7, friendBond: 4 } },
               good: { text: "영감은 {name}을 창고 지하에 열흘 숨겨 주었다. 대가로 그 열흘 동안 상자 밑창을 새로 짜야 했다.", effects: { skill: 4, supplies: -2 } },
               bad: { text: "영감은 이미 레녹스에게 겁을 먹고 있었다. 문을 열어 주지 않았고, {name}은 빗속 골목에서 밤을 새웠다.", effects: { health: -7, friendBond: -3 } }
             } },
@@ -568,7 +568,7 @@ export default [
           { id: "blackmail", label: "브로반에게 쪽지를 보낸다", hint: "약점은 돈이 된다",
             check: { stat: "supplies", against: 45 }, personality: { ambition: 8, empathy: -4 }, mark: "blackmailed",
             outcomes: {
-              great: { text: "브로반은 사색이 되어 돈을 보냈고, {name}은 그 돈 절반을 장터 과부들에게 익명으로 돌렸다. 그 해 섬의 세금이 이유 없이 내려갔다.", effects: { supplies: 8, trust: 4 } },
+              great: { text: "브로반은 사색이 되어 돈을 보냈고, {name}은 그 돈 절반을 장터 과부들에게 익명으로 돌렸다. 그해 섬의 세금이 이유 없이 내려갔다.", effects: { supplies: 8, trust: 4 } },
               good: { text: "돈은 들어왔다. 대신 브로반은 매번 다음 쪽지를 기다리는 사람의 얼굴로 {name}을 보았다.", effects: { supplies: 7, health: -2 } },
               bad: { text: "브로반은 돈 대신 레녹스를 보냈다. {name}은 장부를 지키느라 골목에서 실컷 얻어맞았고, 그 뒤로 둘은 서로의 목줄을 쥔 채 살아야 했다.", effects: { health: -9, supplies: 2 }, mark: "suspected" }
             } },
@@ -648,8 +648,8 @@ export default [
           { id: "open", label: "꾸러미를 풀어 본다", hint: "옛 셈이 아직 남았을까",
             check: { stat: "trust", against: 45 }, personality: { freedom: 5, empathy: 4 },
             outcomes: {
-              great: { text: "꾸러미 안에는 영감이 몇십 년 몰래 적어 온 진짜 장부와, 이건 네가 정하라는 쪽지가 있었다. {name}은 그 장부를 섬의 새 조합에 보냈고, 그 해 {home}에 처음으로 공정한 세금표가 붙었다.", effects: { trust: 10, bond: 3 } },
-              good: { text: "안에는 낡은 품삯 봉투 하나와 고맙다는 한 줄이 들어 있었다. 열다섯 살 첫 주에 깎였던 바로 그 품삯이었다.", effects: { friendBond: 4, supplies: 3 } },
+              great: { text: "꾸러미 안에는 영감이 몇십 년 몰래 적어 온 진짜 장부와, 이건 네가 정하라는 쪽지가 있었다. {name}은 그 장부를 섬의 새 조합에 보냈고, 그해 {home}에 처음으로 공정한 세금표가 붙었다.", effects: { trust: 10, bond: 3 } },
+              good: { text: "안에는 열다섯 살의 {name}에게 처음 건넸던 것과 똑같은 품삯 봉투 하나와 고맙다는 한 줄이 들어 있었다.", effects: { friendBond: 4, supplies: 3 } },
               bad: { text: "꾸러미는 바닷물에 젖어 글자가 다 번져 있었다. 영감이 남기려던 말은 끝내 알 수 없었다.", effects: { health: -3, friendBond: -3 } }
             } },
           { id: "sea", label: "열지 않고 바다에 띄운다", hint: "어떤 셈은 덮어 둔다",
