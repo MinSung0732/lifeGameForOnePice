@@ -208,7 +208,7 @@ const DANGERS = [
       { id: "antidote", label: "가진 물자를 털어 해독제를 산다", cost: 30, risk: "물자 -30 · 확실한 치료", personality: { caution: 7 },
         apply: (life) => { life.supplies -= 30; life.health -= 10; return "의원의 문을 두드려 해독제를 받았다. 사흘을 앓은 뒤 겨우 일어났다."; } },
       { id: "carry", label: "동료에게 의원을 업어 달라고 한다", risk: "건강 -20 · 친구와의 유대 +10", personality: { loyalty: 5 },
-        apply: (life) => { life.friendBond += 10; return wound(life, 20, "독살") ? "의원의 집 앞에서 숨이 멎었다. 동료는 그 문을 오래 두드렸다." : "동료가 밤길을 달려 의원을 깨웠다. 쓴 약을 먹고 열흘 만에 일어났다."; } },
+        apply: (life) => { life.friendBond += 10; return wound(life, life.creationVersion >= 11 ? 12 : 20, "독살") ? "의원의 집 앞에서 숨이 멎었다. 동료는 그 문을 오래 두드렸다." : "동료가 밤길을 달려 의원을 깨웠다. 쓴 약을 먹고 열흘 만에 일어났다."; } },
       { id: "endure", label: "몸 하나로 버틴다", needs: { health: 65 }, risk: "건강 65 필요 · 실패하면 목숨이 위험", failRisk: "건강 -35",
         personality: { ambition: 5, caution: -6 },
         apply: (life) => { life.health -= 10; return "열이 끓는 사흘 밤을 버텼다. 아침에 일어나자 동료들이 울면서 웃었다."; },
@@ -318,6 +318,30 @@ export function withTrait(life, choices) {
   if (life.creationVersion < 9) return choices;
   const [key, value] = Object.entries(life.personality).sort((a, b) => b[1] - a[1])[0];
   return value >= 62 && TRAIT_CHOICES[key] ? [...choices, { id: `trait_${key}`, ...TRAIT_CHOICES[key] }] : choices;
+}
+
+// Rule 11: the canon era spans many scenes inside one game year, so its daily slots draw mishaps and
+// dangers by slot index instead of by age.
+export function eraAdventure(life, slot, base) {
+  if (life.creationVersion < 11 || life.ending || !life.path) return null;
+  const fresh = (entry, prefix) => !life.seen.includes(`${prefix}${entry.id}`) && entry.when(life, life.age);
+  // The era is short in years, so dangers stay rare there: one per long stretch of days.
+  if (slot - (life.lastDangerSlot ?? -99) >= 45 && yearRoll(life.seed ^ 0x7c3e91b5, slot + 5000) % 6 === 0) {
+    const options = DANGERS.filter((entry) => fresh(entry, "life_danger_"));
+    if (options.length) {
+      const entry = pick(options, life, slot + 5000, 0x1d9a4c37);
+      return { ...base, id: `life_danger_${entry.id}`, urgent: true, art: entry.art || "lifeStorm", title: entry.title,
+        body: typeof entry.body === "function" ? entry.body(life) : entry.body,
+        choices: entry.choices.map((choice) => ({ ...choice,
+          apply: (state) => { state.lastDangerSlot = slot; return choice.apply(state); },
+          ...(choice.fail ? { fail: (state) => { state.lastDangerSlot = slot; return choice.fail(state); } } : {}) })) };
+    }
+  }
+  const options = MISHAPS.filter((entry) => fresh(entry, "life_mishap_"));
+  if (!options.length) return null;
+  const entry = pick(options, life, slot + 5000, 0x5e2f8a61);
+  return { ...base, id: `life_mishap_${entry.id}`, urgent: true, art: entry.art || "deck", title: entry.title,
+    body: typeof entry.body === "function" ? entry.body(life) : entry.body, choices: withTrait(life, entry.choices) };
 }
 
 export const adventureCounts = { mishaps: MISHAPS.length, dangers: DANGERS.length };

@@ -1,5 +1,5 @@
 import { CANON_CHAPTER, scenes } from "./story.js";
-import { FLEX_IDS, FLEX_IDS_V5, V9_DEFERRED, branchScene, marinefordNews, yearlyScene } from "./life-story.js";
+import { FLEX_IDS, FLEX_IDS_V5, V9_DEFERRED, V11_DEFERRED, branchScene, marinefordNews, yearlyScene } from "./life-story.js";
 import { encounterScene, yearRoll } from "./world.js";
 import { canonIfAfter, canonScene } from "./canon-events.js";
 import { preCanonCount, preCanonScene } from "./canon-before.js";
@@ -142,6 +142,7 @@ function nextEligibleIndex(life, from) {
     const card = scenes[index];
     const childhoodLesson = life.creationVersion >= 6 && (card.id === "life_school" || card.id === "life_training");
     if (life.creationVersion >= 9 && V9_DEFERRED.has(card.id)) continue;
+    if (life.creationVersion >= 11 && V11_DEFERRED.has(card.id)) continue;
     if (life.creationVersion >= 5 && FLEX_IDS_V5.has(card.id) && !childhoodLesson
       || life.creationVersion === 4 && FLEX_IDS.has(card.id)) continue;
     if (life.creationVersion >= 4 && (typeof card.age === "function" ? card.age(life) : card.age) < life.age) continue;
@@ -182,11 +183,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 10) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 11) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -284,7 +285,9 @@ function sceneCard(life) {
 function diceTarget(choice, life) {
   if (life.creationVersion < 3 || !choice.needs) return 0;
   const shortfall = Object.entries(choice.needs).reduce((sum, [key, need]) => sum + Math.max(0, need - life[key]), 0);
-  return shortfall ? Math.min(95, 20 + shortfall * 2) : 0;
+  // Rule 11: a risky action still rolls when the ability is there, so a strong hand fails about one time in ten.
+  if (!shortfall) return life.creationVersion >= 11 ? 10 : 0;
+  return Math.min(95, 20 + shortfall * 2);
 }
 
 function diceRoll(life, sceneId, choiceId) {
@@ -320,7 +323,7 @@ export function getScene(life) {
         const shown = life.supplies < cost && !risk.includes(`물자 ${cost} 필요`) ? `${risk} · 물자 ${cost} 필요` : risk;
         return { id: choice.id, label: typeof choice.label === "function" ? choice.label(life) : choice.label,
           risk: target ? `${shown} · 조건 부족: 주사위 1~100에서 ${target} 이상이면 성공, 실패하면 ${choice.failRisk || "건강 -15"}` : shown,
-          condition: shown, dice: target || null, failRisk: target ? choice.failRisk || "건강 -15" : null,
+          condition: shown, dice: target || null, diceShort: target > 10 || life.creationVersion < 11, failRisk: target ? choice.failRisk || "건강 -15" : null,
           naming: Boolean(choice.naming), disabled: !canChoose(choice, life) };
       })
   };

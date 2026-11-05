@@ -1,4 +1,6 @@
 import { travelScene, yearRoll } from "./world.js";
+import { eraAdventure } from "./adventures.js";
+import { personalBeat } from "./people.js";
 
 const DAYS = ["이틀 뒤", "사흘 뒤", "며칠 뒤", "나흘 뒤", "한 주쯤 뒤"];
 const MOMENTS = [
@@ -35,6 +37,32 @@ const MOMENTS = [
   { title: "지도 바깥의 길", art: "deck", body: "오래된 해도에 없는 얕은 물길이 보였다. 누구도 바로 배를 밀어 넣지 않았다. 낯선 길을 발견한 하루와 그 길을 쓰는 하루는 달랐다." }
 ];
 
+
+// Rule 11 adds dailies with their own small choices, so long stretches of the canon era are not all reading.
+const MOMENTS_V11 = [
+  { title: "갈매기가 떨어뜨린 신문", art: "deck", body: "뉴스 쿠가 떨어뜨린 신문 사이로 새 수배서 몇 장이 미끄러져 나왔다. 처음 보는 얼굴과 낯익은 얼굴이 섞여 있었다.",
+    choices: [{ id: "pin", label: "수배서를 부두 게시판에 붙인다", risk: "지역의 신뢰가 오를 수 있음", personality: { loyalty: 3 }, apply: (s) => { s.trust += 5; return "사람들이 게시판 앞에 모여 이름을 하나씩 읽었다."; } },
+      { id: "keep", label: "몰래 한 장 챙겨 둔다", risk: "언젠가 쓸모가 있을지 모름", personality: { freedom: 3 }, apply: (s) => { s.skill += 3; return "접어 넣은 수배서의 얼굴을 밤마다 한 번씩 떠올렸다."; } }] },
+  { title: "비싸진 기록지침", art: "workbench", body: "위대한 항로로 가려는 신참 해적이 늘면서 기록지침 값이 두 배로 뛰었다. 상인은 다음 배가 언제 올지 모른다고 했다.",
+    choices: [{ id: "buy", label: "여분 하나를 미리 사 둔다", cost: 10, risk: "물자가 든다", personality: { caution: 4 }, apply: (s) => { s.supplies -= 10; s.skill += 5; return "바늘이 둘이면 길을 잃을 걱정도 반이 됐다."; } },
+      { id: "haggle", label: "값을 깎아 본다", risk: "결과는 알 수 없음", personality: { ambition: 3 }, apply: (s) => { if (yearRoll(s.seed ^ 0x51, s.canonDailyIndex) % 2) { s.supplies += 5; return "상인이 졌다는 듯 웃으며 덤까지 얹어 주었다."; } return "상인은 끝까지 버텼다. 오늘은 빈손으로 돌아섰다."; } }] },
+  { title: "밀짚모자를 흉내 내는 아이들", art: "deck", body: "부두의 아이들이 낡은 밀짚모자를 돌려 쓰며 해적 놀이를 했다. 서로 자기가 선장이라며 다투는 중이었다.",
+    choices: [{ id: "play", label: "해군 역할을 맡아 준다", risk: "친구와의 유대가 오를 수 있음", personality: { empathy: 4 }, apply: (s) => { s.friendBond += 5; return "한참을 쫓겨 다닌 끝에 아이들에게 붙잡혔다. 모두 숨이 차도록 웃었다."; } },
+      { id: "story", label: "진짜 바다 이야기를 들려준다", risk: "아이들이 귀를 기울임", personality: { loyalty: 3 }, apply: (s) => { s.trust += 5; return "아이들은 이야기가 끝나자 언젠가 바다로 나가겠다고 약속했다."; } }] },
+  { title: "항구에 들른 낯선 군함", art: "deck", body: "평소 보지 못한 깃발의 군함이 물을 채우러 들렀다. 수병들은 말을 아꼈고 장교 하나가 부두의 배들을 오래 바라보았다.",
+    choices: [{ id: "trade", label: "물과 식량을 팔아 준다", risk: "물자가 늘 수 있음", personality: { ambition: 3 }, apply: (s) => { s.supplies += 10; return "장교는 값을 깎지 않았다. 떠나면서 다음 항로의 날씨를 귀띔해 주었다."; } },
+      { id: "avoid", label: "배를 뒤쪽 부두로 옮긴다", risk: "눈에 띄지 않음", personality: { caution: 4 }, apply: (s) => { s.health += 3; return "군함이 떠날 때까지 조용히 그물을 손질했다."; } }] },
+  { title: "주점의 무용담", art: "workbench", body: "주점 한쪽에서 누군가 밀짚모자와 같은 배를 탔었다고 떠들었다. 듣는 사람마다 표정이 달랐다.",
+    choices: [{ id: "buy", label: "술 한 잔 사고 끝까지 듣는다", cost: 5, risk: "이야기가 진짜일지는 모름", personality: { freedom: 3 }, apply: (s) => { s.supplies -= 5; s.skill += 3; return "절반은 거짓말 같았지만 바다 이야기 하나는 진짜였다."; } },
+      { id: "doubt", label: "허풍이라며 웃어넘긴다", risk: "주점 분위기가 식을 수 있음", personality: { caution: 3 }, apply: () => "사내는 머쓱하게 잔을 비웠다. 그래도 이야기는 다음 테이블로 옮겨 갔다." }] },
+  { title: "폭풍이 지나간 해변", art: "deck", body: "밤새 폭풍이 지나간 해변에 부서진 상자와 밧줄이 잔뜩 떠밀려 왔다. 어느 배의 것인지는 알 수 없었다.",
+    choices: [{ id: "collect", label: "쓸 만한 것을 줍는다", risk: "물자가 늘 수 있음", personality: { ambition: 3 }, apply: (s) => { s.supplies += 8; return "멀쩡한 밧줄 두 타래와 젖은 통조림 몇 개를 건졌다."; } },
+      { id: "search", label: "조난자가 없는지 먼저 살핀다", risk: "시간이 걸림", personality: { empathy: 5 }, apply: (s) => { s.trust += 6; return "바위 틈에서 지친 선원 하나를 찾아 마을로 업고 왔다."; } }] },
+  { title: "새 현상금 소식에 술렁인 부두", art: "workbench", body: "새로 나온 수배서 금액을 두고 부두가 술렁였다. 누군가는 겁을 먹었고, 누군가는 언젠가 저 금액을 넘기겠다고 했다.",
+    choices: [{ id: "dream", label: "언젠가의 자기 금액을 상상한다", risk: "야망이 자람", personality: { ambition: 5 }, apply: () => "수배서 속 숫자 옆에 자기 얼굴을 대 보았다. 동료가 등을 툭 쳤다." },
+      { id: "worry", label: "가족에게 조심하라는 편지를 쓴다", risk: "양육자와의 유대가 오를 수 있음", personality: { caution: 4 }, apply: (s) => { s.bond += 5; return "답장에는 오히려 이쪽 걱정이 가득했다."; } }] }
+];
+
 // Some arcs follow closely; others leave space for several ordinary scenes.
 export function canonGapFor(life, phase, step) {
   const salt = phase === "before" ? 0x31b7c5a9 : 0x7da4e26f;
@@ -55,14 +83,27 @@ export function canonInterludeScene(life) {
         { id: "stay", label: "이번 물때는 여기서 지낸다", risk: "지역의 신뢰 +5 · 현재 섬에 머묾",
           personality: { caution: 3 }, apply: (state) => { state.trust += 5; return "다음 바늘이 움직일 때까지 이곳 사람들의 일을 도왔다."; } }] };
   }
+  const v11 = life.creationVersion >= 11;
+  if (v11) {
+    // Every few slots the era lets a mishap, danger or a recurring person's scene through.
+    const roll = yearRoll(life.seed ^ 0x2d4f81b3, life.canonDailyIndex) % 5;
+    const slotBase = { age: life.age, act: 3, species: "all", yearly: true, canonDaily: true, timeLabel: `${time} · ${life.location}` };
+    const event = roll === 0 ? eraAdventure(life, life.canonDailyIndex, slotBase) : roll === 1 ? personalBeat(life, life.age, slotBase) : null;
+    if (event) return { ...event, canonDaily: true, timeLabel: `${time} · ${life.location}` };
+  }
   const recent = life.journal.slice(-10).map((entry) => entry.title);
-  let index = yearRoll(life.seed ^ 0x5cd98e41, life.canonDailyIndex) % MOMENTS.length;
-  while (recent.includes(MOMENTS[index].title)) index = (index + 1) % MOMENTS.length;
-  const moment = MOMENTS[index];
-  const decision = yearRoll(life.seed ^ 0x4629fb10, life.canonDailyIndex) % 7 === 0;
+  const pool = v11 ? [...MOMENTS, ...MOMENTS_V11] : MOMENTS;
+  // Rule 11 also avoids any daily already seen in this life until the pool runs out.
+  const seenTitles = v11 ? new Set(life.journal.map((entry) => entry.title)) : new Set();
+  let index = yearRoll(life.seed ^ 0x5cd98e41, life.canonDailyIndex) % pool.length;
+  for (let tries = 0; tries < pool.length && (seenTitles.has(pool[index].title) || recent.includes(pool[index].title)); tries += 1) index = (index + 1) % pool.length;
+  while (recent.includes(pool[index].title)) index = (index + 1) % pool.length;
+  const moment = pool[index];
+  const decision = !moment.choices && yearRoll(life.seed ^ 0x4629fb10, life.canonDailyIndex) % (v11 ? 3 : 7) === 0;
   return { id: `life_canon_daily_${life.canonDailyIndex}`, age: life.age, act: 3, species: "all",
     yearly: true, urgent: true, canonDaily: true, art: moment.art, title: moment.title,
     timeLabel: `${time} · ${life.location}`, body: moment.body,
+    ...(moment.choices ? { choices: moment.choices } : {}),
     ...(decision ? { choices: [
       { id: "listen", label: "곁의 사람과 오늘 일을 함께 정한다", risk: "친구와의 유대 +5", personality: { empathy: 3, loyalty: 3 },
         apply: (state) => { state.friendBond += 5; return "서로 듣지 못했던 사정을 나누고 내일의 순서를 정했다."; } },

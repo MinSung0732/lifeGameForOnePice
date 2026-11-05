@@ -105,7 +105,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 11 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 12 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -804,7 +804,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 10);
+  assert.equal(createGame("original", 0).creationVersion, 11);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -960,7 +960,7 @@ test("규칙 8은 원작 편의 섬에 있으면 날짜별 장면에 휘말리�
   const { crewFor } = await import("../src/crew.js");
   assert.ok(ARC_COUNT >= 17 && ARC_SCENE_COUNT >= 29);
   let involved = 0; let lured = 0;
-  for (let seed = 0; seed < 80 && involved < 3; seed += 1) {
+  for (let seed = 0; seed < 160 && (involved < 3 || lured === 0); seed += 1) {
     let life = createGame("free", seed * 7919 + 13, { species: "인간" });
     let steps = 0;
     while (!life.finished && steps++ < 700) {

@@ -127,7 +127,33 @@ function powerSummary() {
     haki.armament && `무장색 ${haki.armament}`,
     haki.conqueror && `패왕색 ${haki.conqueror}`
   ].filter(Boolean);
-  return [life.devilFruit ? "열매 능력자" : "비능력자", ...learned].join(" · ");
+  return [life.devilFruit || "비능력자", ...learned].join(" · ");
+}
+
+// Moments worth keeping on the ending record: careers, promotions, powers, dangers, canon brushes and people.
+const KEY_MOMENT = /^(life_recruit_|life_career$|life_.*_invitation_|life_crew_offer_|life_rank_|life_free_rank$|life_branch_aftermath$|life_fruit_(find|payment|practice)$|life_haki_|life_conqueror_sign$|life_danger_|life_meet_|life_people_(mate_meet|mate_crisis|rival_clash|ward_meet|ward_return)$|life_retire_choice$|life_isle_|canon_arc_.*_0$)/;
+const POWER_MOMENT = /^(life_haki_training|life_haki_practice|life_conqueror_sign|life_fruit_find|life_fruit_payment|life_fruit_practice)$/;
+
+function lastPower() {
+  const entry = [...life.journal].reverse().find((item) => POWER_MOMENT.test(item.id) && item.choice
+    && /견문색|무장색|기세|다스리|먹|연습|힘/.test(item.choice));
+  return entry ? `${entry.choice.replace(/[을를]? ?(배운다|수련한다|연습한다|먹는다)$/, (_, verb) => ({ 배운다: " 습득", 수련한다: " 수련", 연습한다: " 연습", 먹는다: " 섭취" })[verb])} · ${entry.age}세` : "특별한 힘 없이 살았다";
+}
+
+function renderTimeline() {
+  const list = byId("ending-timeline");
+  list.replaceChildren();
+  const moments = life.journal.filter((entry) => KEY_MOMENT.test(entry.id));
+  const last = life.journal.at(-1);
+  for (const entry of [...moments.slice(-11), ...(last && !moments.includes(last) ? [last] : [])]) {
+    const item = document.createElement("li");
+    const when = document.createElement("b");
+    when.textContent = `${entry.age}세`;
+    const what = document.createElement("span");
+    what.textContent = entry.choice ? `${entry.title} — ${entry.choice}` : entry.title;
+    item.append(when, what);
+    list.append(item);
+  }
 }
 
 function statLabel(stat) {
@@ -297,7 +323,7 @@ function renderGame(focusTitle = false) {
       const goal = document.createElement("b");
       goal.textContent = `주사위 ${choice.dice} 이상`;
       const rule = document.createElement("small");
-      rule.textContent = "조건 부족 · 1~100 굴림";
+      rule.textContent = choice.diceShort ? "조건 부족 · 1~100 굴림" : "조건 충족 · 1~100 굴림";
       const fail = document.createElement("small");
       fail.textContent = `실패하면 ${failHint(choice.failRisk)}`;
       dice.append(goal, rule, fail);
@@ -364,8 +390,10 @@ let playingChanges = false;
 // After a choice the screen dims and a card lists what changed. Each row then bursts into round particles
 // in its meter's color that fly into that stat or trait; bounty particles go to the role line.
 function changeTarget(key) {
-  if (key === "bounty") return byId("life-power");
-  return document.querySelector(key.startsWith("personality.") ? `.trait-${key.slice(12)}` : `.stat-${key}`);
+  const target = key === "bounty" ? byId("life-power")
+    : document.querySelector(key.startsWith("personality.") ? `.trait-${key.slice(12)}` : `.stat-${key}`);
+  // On phones the panels may be folded; particles then fly into the toggle instead.
+  return target && target.getClientRects().length ? target : byId("growth-toggle");
 }
 
 function burst(row, target, delta) {
@@ -540,7 +568,13 @@ function renderEnding() {
   }
   byId("ending-birth").textContent = `${life.birth.species} · ${life.birth.gender} · ${life.birth.home}`;
   byId("ending-mode").textContent = modeName(life.mode);
-  byId("ending-work").textContent = `${life.job} · ${life.affiliation} · ${life.role} · ${powerSummary()}`;
+  byId("ending-work").textContent = `${life.affiliation} · ${life.role}`;
+  byId("ending-fruit").textContent = life.devilFruit ? `${life.devilFruit} · 숙련 ${life.fruitMastery}` : "비능력자";
+  const haki = life.haki || {};
+  byId("ending-haki").textContent = [haki.observation && `견문색 ${haki.observation}단계`, haki.armament && `무장색 ${haki.armament}단계`,
+    haki.conqueror && `패왕색 ${haki.conqueror}단계`].filter(Boolean).join(" · ") || "익히지 못함";
+  byId("ending-last-power").textContent = lastPower();
+  renderTimeline();
   byId("ending-goal").textContent = completeLife ? life.goal : `${life.goal} · ${life.ending === "death" ? "미완" : life.ending === "retire" ? "책임 승계" : "진행 중"}`;
   byId("ending-personality").textContent = personalitySummary(life.personality);
   const route = (life.travelHistory || [life.birth.home]).filter((place, index, all) => place !== all[index - 1]);
@@ -659,6 +693,12 @@ function selectedProfile() {
   return profile;
 }
 
+byId("growth-toggle").addEventListener("click", () => {
+  const open = byId("growth-toggle").getAttribute("aria-expanded") !== "true";
+  byId("growth-toggle").setAttribute("aria-expanded", String(open));
+  byId("growth-toggle").textContent = open ? "능력·성격 접기" : "능력·성격 펼치기";
+  byId("growth-panels").classList.toggle("open", open);
+});
 byId("profile-name-mode").addEventListener("change", updateNameInput);
 byId("profile-species").addEventListener("change", updateHomeOptions);
 byId("all-random").addEventListener("click", () => {

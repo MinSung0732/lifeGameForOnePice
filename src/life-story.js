@@ -336,7 +336,7 @@ const scenes = [
     } },
     { id: "stay", label: "현장에서 계속 일한다", risk: "기술 +10 · 현재 직책 유지", apply: (life) => { life.skill += 10; return "직책보다 익숙한 현장에 남았다."; } }
   ] },
-  { id: "life_conqueror_sign", age: at(55, 264), art: "lifeStorm", title: "말보다 먼저 온 기세", when: (life) => life.seed % 37 === 0 && life.trust >= 60, body: "거친 충돌을 멈추려는 순간, 주위의 사람들이 한 걸음 물러났다. 곁에 있던 노련한 이는 드문 패왕색의 기질이 깨어난 것 같다고 말했다. 다루지 못하면 동료도 놀랄 수 있었다.", choices: [
+  { id: "life_conqueror_sign", age: at(55, 264), art: "lifeStorm", title: "말보다 먼저 온 기세", when: (life) => (life.seed % 37 === 0 || life.creationVersion >= 11 && (life.seed % 9 === 0 || life.personality.ambition >= 72)) && life.trust >= (life.creationVersion >= 11 ? 50 : 60), body: "거친 충돌을 멈추려는 순간, 주위의 사람들이 한 걸음 물러났다. 곁에 있던 노련한 이는 드문 패왕색의 기질이 깨어난 것 같다고 말했다. 다루지 못하면 동료도 놀랄 수 있었다.", choices: [
     { id: "train", label: "동료와 거리를 두고 다스리는 법을 배운다", risk: "패왕색 1단계 · 건강 -10", apply: (life) => { life.haki.conqueror = 1; life.health -= 10; return "힘을 쏟는 대신 멈추는 법부터 배웠다. 동료들이 다시 가까이 다가왔다."; } },
     { id: "hold", label: "우선 일터와 사람을 진정시킨다", risk: "지역의 신뢰 +10 · 패왕색은 잠재", apply: (life) => { life.trust += 10; return "낯선 힘을 앞세우지 않았다. 동료들이 다친 사람이 없는지부터 살폈다."; } }
   ] },
@@ -419,9 +419,11 @@ function flexibleIncident(life, age) {
   const eligible = life.creationVersion >= 9 ? new Set([...FLEX_IDS_V5, ...V9_FLEX]) : life.creationVersion >= 5 ? FLEX_IDS_V5 : FLEX_IDS;
   const options = scenes.filter((card) => {
     if (!eligible.has(card.id) || life.seen.includes(card.id) || card.when && !card.when(life)) return false;
+    if (life.creationVersion >= 11 && V11_DEFERRED.has(card.id)) return false;
     if (life.creationVersion >= 6 && (card.id === "life_school" || card.id === "life_training")) return false;
     if (life.creationVersion >= 5 && card.id === "life_haki_practice" && !life.haki.observation && !life.haki.armament) return false;
-    const center = typeof card.age === "function" ? card.age(life) : card.age;
+    const center = life.creationVersion >= 11 && card.id === "life_conqueror_sign" ? giant(life) ? 160 : 32
+      : typeof card.age === "function" ? card.age(life) : card.age;
     const window = life.creationVersion >= 5 && center < (giant(life) ? 112 : 19) ? giant(life) ? 12 : 3
       : life.creationVersion >= 9 ? giant(life) ? 36 : 11 : giant(life) ? 24 : 7;
     return age >= center - window && age <= center + window;
@@ -646,16 +648,18 @@ function careerOpportunity(life, age, base) {
 function rankOpportunity(life, age, base) {
   if (life.creationVersion < 2 || !life.path || life.homebound || life.independent || life.retired) return null;
   const tier = life.rankTier;
-  const requirements = [{ skill: 45, trust: 40 }, { skill: 65, trust: 50 }, { skill: 80, trust: 60 },
-    { skill: 85, trust: 70 }, { skill: 90, trust: 80 }];
+  const requirements = life.creationVersion >= 11
+    ? [{ skill: 35, trust: 35 }, { skill: 45, trust: 42 }, { skill: 55, trust: 48 }, { skill: 62, trust: 54 }, { skill: 68, trust: 60 }]
+    : [{ skill: 45, trust: 40 }, { skill: 65, trust: 50 }, { skill: 80, trust: 60 }, { skill: 85, trust: 70 }, { skill: 90, trust: 80 }];
   // Rule 3 offers the next rank sooner after an accepted promotion; a declined offer waits the old interval.
   const rankGap = life.creationVersion >= 3 && !life.rankDeclined && life.lastRankOfferAge >= life.careerStartAge ? giant(life) ? 12 : 6 : giant(life) ? 20 : 12;
   // In original mode a canon crew's officer seats are taken by canon characters, so the player stays a deckhand.
   if (life.canonCrew && life.mode === "original" && tier >= 1) return null;
   if (tier >= RANK_ROLES[life.path].length || age - life.careerStartAge < 3 || age - life.lastRankOfferAge < rankGap
     || life.skill < requirements[tier].skill || standing(life) < requirements[tier].trust
-    || !life.seen.includes("life_orders")) return null;
+    || life.creationVersion < 11 && !life.seen.includes("life_orders")) return null;
   const nextRole = RANK_ROLES[life.path][tier];
+  if (life.creationVersion >= 11 && life.journal.slice(-10).some((entry) => entry.title === `${nextRole}의 제안`)) return null;
   return { ...base, id: `life_rank_${tier + 1}_${age}`, urgent: true, art: "workbench", title: `${nextRole}의 제안`,
     body: `${life.affiliation}에서 ${life.birth.name}이 남긴 일과 동료의 평판을 살폈다. 더 많은 사람을 맡을 자리가 비었지만 받아들일지는 본인이 정해야 했다.`, choices: [
       { id: "remain", label: "지금의 직책에서 더 배운다", risk: "현재 직책 유지 · 기술 +10", personality: { caution: 4 },
@@ -686,7 +690,9 @@ function suddenEnd(life, age, base) {
   if (life.creationVersion < 10 || age < 2) return null;
   const scale = giant(life) ? 5 : 1;
   const years = age / scale;
-  const rate = (years <= 5 ? 6 : years <= 15 ? 2 : 3 + (life.health < 35 ? 8 : 0)) / (giant(life) ? 3 : 1);
+  // Old, worn-out bodies are left to the natural end; sudden accidents stay rare at any age in rule 11.
+  const adult = life.creationVersion >= 11 ? 1 + (life.health < 35 ? 2 : 0) : 3 + (life.health < 35 ? 8 : 0);
+  const rate = (years <= 5 ? 6 : years <= 15 ? 2 : adult) / (giant(life) ? 3 : 1);
   if (yearRoll(life.seed ^ 0x77a1c3e9, age) % 1000 >= rate) return null;
   const name = life.birth.name;
   const end = years <= 5
@@ -808,6 +814,20 @@ function offerFor(path, life, age, base) {
   return { ...base, id: `life_recruit_${path}_${age}`, urgent: true, art: offer.art, title: offer.title, body: offer.body, choices: offer.choices };
 }
 
+// Rule 11: late-life scenes follow age and health, so lives that end in their fifties still see them.
+const LATE_LIFE = ["life_homecoming", "life_old_friend", "life_late_work", "life_last_student", "life_memory"];
+export const V11_DEFERRED = new Set(["life_retire_choice", ...LATE_LIFE]);
+
+function lateLife(life, age, base) {
+  if (life.creationVersion < 11 || !life.path) return null;
+  const [old, settled] = giant(life) ? [240, 290] : [52, 66];
+  if (age < old) return null;
+  if (!life.retired && !life.seen.includes("life_retire_choice") && (life.health < 55 || age >= settled)) return asYearly(cardById("life_retire_choice"), age);
+  if (yearRoll(life.seed ^ 0x3311a7c5, age) % 3) return null;
+  const next = LATE_LIFE.find((id) => { const card = cardById(id); return !life.seen.includes(id) && (!card.when || card.when(life)); });
+  return next ? asYearly(cardById(next), age) : null;
+}
+
 function careerStart(life, age, base) {
   if (life.creationVersion < 9) return null;
   if (life.path) {
@@ -848,7 +868,7 @@ function sceneForAge(life) {
   // Rule 3 opens the IF to mid-rank careers and the revolutionary army, so the free mode's "what if" is actually reachable.
   const ifReady = life.creationVersion === 1 ? true : life.creationVersion === 2
     ? life.path === "pirate" ? life.independent && life.role === "선장" : life.rankTier >= 5
-    : standing(life) >= 50 && (life.path === "pirate" ? life.independent || life.rankTier >= 2 : life.rankTier >= (life.path === "marine" ? 3 : 2));
+    : standing(life) >= (life.creationVersion >= 11 ? 45 : 50) && (life.path === "pirate" ? life.independent || life.rankTier >= 2 : life.rankTier >= (life.path === "marine" ? 3 : 2));
   if ((age === life.birth.yearsBeforeCurrent - 1 || life.creationVersion >= 4 && age === life.birth.yearsBeforeCurrent)
     && life.mode === "free" && !life.retired
     && (life.creationVersion >= 3 ? ["pirate", "marine", "liberator"] : ["pirate", "marine"]).includes(life.path) && ifReady) {
@@ -865,14 +885,14 @@ function sceneForAge(life) {
           personality: { loyalty: 6, caution: 4 }, apply: (state) => { state.trust += 10; return "지휘부의 자리 대신 손이 닿는 사람들 곁에 남았다."; } }
       ] };
     const pirate = life.path === "pirate";
-    const need = life.creationVersion === 3 ? { skill: 70, trust: 60, health: 30 } : { skill: 80, trust: 80, health: 40 };
+    const need = life.creationVersion >= 11 ? { skill: 58, trust: 50, health: 30 } : life.creationVersion === 3 ? { skill: 70, trust: 60, health: 30 } : { skill: 80, trust: 80, health: 40 };
     return { ...base, id: "life_free_rank", urgent: true, art: "deck", title: pirate ? "와노국 이후의 새 자리" : "전쟁 뒤 바뀐 지휘부",
       canon: pirate ? "https://one-piece.com/story/land_of_wano/index.html" : "https://one-piece.com/character/Aramaki/index.html",
       body: (state) => `${state.birth.name}이 쌓아 온 경력과 동료의 신뢰가 세계의 재편과 맞물렸다. 이 선택은 원작과 다른 세계선을 연다. 그 자리에 나설지는 아직 정해지지 않았다.`,
       choices: [
         { id: "attempt", label: pirate ? "사황의 자리를 노린다" : "대장의 자리를 노린다",
           available: (state) => state.skill >= need.skill && state.trust >= need.trust && state.health >= need.health,
-          ...(life.creationVersion === 3 ? { needs: { skill: need.skill, health: need.health }, failRisk: "건강 -20 · 지역의 신뢰 -20", fail: (state) => { state.health -= 20; state.trust -= 20; return "자리를 노린 시도는 실패로 끝났다. 세상은 원작대로 흘렀고, 무리한 이름만 소문으로 남았다."; } } : {}),
+          ...(life.creationVersion === 3 || life.creationVersion >= 11 ? { needs: { skill: need.skill, health: need.health }, failRisk: "건강 -20 · 지역의 신뢰 -20", fail: (state) => { state.health -= 20; state.trust -= 20; return "자리를 노린 시도는 실패로 끝났다. 세상은 원작대로 흘렀고, 무리한 이름만 소문으로 남았다."; } } : {}),
           risk: `기술 ${need.skill} · 신뢰 ${need.trust} · 건강 ${need.health} 필요`, personality: { ambition: 10, loyalty: 5 },
           apply: (state) => { state.role = pirate ? "사황" : "해군 대장"; state.worldBranch = pirate ? "emperor" : "admiral"; state.pendingBranch = true; state.people.branchAge = age; state.trust += 10;
             if (pirate && state.creationVersion >= 4) state.bounty = Math.max(state.bounty, 3_000_000_000);
@@ -929,6 +949,11 @@ function sceneForAge(life) {
   if (start) return start;
   const follow = life.creationVersion >= 9 ? followUp(life) : null;
   if (follow) return follow;
+  const late = lateLife(life, age, base);
+  if (late) return late;
+  // Rule 11 checks promotions before the busy event generators, which otherwise took every year's slot.
+  const promotion = life.creationVersion >= 11 ? rankOpportunity(life, age, base) : null;
+  if (promotion) return promotion;
   const wanted = bountyScene(life, age, base);
   if (wanted) return wanted;
   const adventure = adventureScene(life, age, base);
