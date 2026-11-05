@@ -1,8 +1,8 @@
 import { CANON_CHAPTER, scenes } from "./story.js";
 import { FLEX_IDS, FLEX_IDS_V5, V9_DEFERRED, branchScene, marinefordNews, yearlyScene } from "./life-story.js";
 import { encounterScene, yearRoll } from "./world.js";
-import { CANON_IF_AFTER, canonScene } from "./canon-events.js";
-import { PRE_CANON_BEAT_COUNT, preCanonScene } from "./canon-before.js";
+import { canonIfAfter, canonScene } from "./canon-events.js";
+import { preCanonCount, preCanonScene } from "./canon-before.js";
 import { canonGapFor, canonInterludeScene } from "./canon-interludes.js";
 import { childhoodScene } from "./childhood.js";
 
@@ -182,11 +182,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 9) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 10) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -259,11 +259,11 @@ function sceneCard(life) {
     if (interlude) return interlude;
     const beforeWar = preCanonScene(life);
     if (beforeWar) return beforeWar;
-    if (life.preCanonStep === PRE_CANON_BEAT_COUNT && !life.seen.includes("life_marineford_news")
+    if (life.preCanonStep === preCanonCount(life) && !life.seen.includes("life_marineford_news")
       && life.age >= life.birth.yearsBeforeCurrent - 2) return marinefordNews(life);
   }
   if (life.creationVersion >= 4) {
-    if (life.canonStep === CANON_IF_AFTER && !life.seen.includes("life_free_rank")) {
+    if (life.canonStep === canonIfAfter(life) && !life.seen.includes("life_free_rank")) {
       const rank = yearlyScene({ ...life, age: life.birth.yearsBeforeCurrent - 1 });
       if (rank.id === "life_free_rank") return rank;
     }
@@ -272,7 +272,7 @@ function sceneCard(life) {
     if (milestone) return milestone;
   }
   if (age === life.age) return authored;
-  const quietLimit = life.creationVersion >= 5 && life.preCanonStep < PRE_CANON_BEAT_COUNT
+  const quietLimit = life.creationVersion >= 5 && life.preCanonStep < preCanonCount(life)
     ? Math.min(authored ? age - 1 : Infinity, life.birth.yearsBeforeCurrent - 4)
     : authored ? age - 1 : Infinity;
   const yearly = yearlyScene(life, quietLimit);
@@ -388,6 +388,19 @@ export function advance(life, action = null) {
     }
     if (scaled) outcome = `${outcome || ""} ${factor > 1 ? "성격에 맞는 일이라 평소보다 잘 해냈다." : "마음이 내키지 않아 절반만 해냈다."}`.trim();
   }
+  if (next.creationVersion >= 10) {
+    for (const stat of STATS) {
+      const gain = next[stat.key] - life[stat.key];
+      if (gain > 0) next[stat.key] = life[stat.key] + Math.max(1, Math.round(gain * Math.max(0.2, (100 - life[stat.key]) / 70)));
+    }
+    // The body wears down with age: a little from the mid-40s, faster from the mid-60s (giants age far later).
+    const years = view.age - life.age;
+    if (years > 0) {
+      const [slow, fast] = life.birth.species === "거인족" ? [200, 300] : [45, 65];
+      const rate = view.age >= fast ? 2 : view.age >= slow ? 1 : 0;
+      next.health -= rate * years;
+    }
+  }
   if (next.creationVersion >= 4 && chosen?.bounty) {
     next.bounty += typeof chosen.bounty === "function" ? chosen.bounty(life) : chosen.bounty;
   }
@@ -397,7 +410,13 @@ export function advance(life, action = null) {
   }
   if (next.rules === 3 && chosen?.personality) {
     for (const { key } of PERSONALITY) {
-      next.personality[key] = Math.max(0, Math.min(100, next.personality[key] + (chosen.personality[key] || 0)));
+      const push = chosen.personality[key] || 0;
+      const value = next.personality[key];
+      const delta = next.creationVersion < 10 ? push
+        : push > 0 ? Math.max(1, Math.round(push * (100 - value) / 50))
+          : push < 0 ? Math.min(-1, Math.round(push * value / 50))
+            : value > 52 ? -1 : value < 48 ? 1 : 0;
+      next.personality[key] = Math.max(0, Math.min(100, value + delta));
     }
   }
   const changes = STATS.filter((stat) => next[stat.key] !== life[stat.key])

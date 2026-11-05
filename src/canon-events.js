@@ -1,4 +1,5 @@
 import { arcScene } from "./canon-arcs.js";
+import { EXTRA_AFTER } from "./canon-timeline.js";
 // Rule-4 canon milestones. Relative time labels avoid claiming an unpublished manga calendar.
 const BEATS = [
   { id: "war_after", offset: -2, time: "정상전쟁 뒤 · 얼마 지나지 않아", title: "전쟁이 남긴 빈자리",
@@ -59,9 +60,15 @@ const BEATS = [
 
 export const CANON_IF_AFTER = BEATS.findIndex((beat) => beat.id === "egghead");
 
+const BEATS_V10 = BEATS.flatMap((beat) => [beat, ...(EXTRA_AFTER[beat.id] || []).map((extra) => ({
+  offset: beat.offset, art: beat.art, canon: beat.canon, ...extra }))]);
+const beatsFor = (life) => life.creationVersion >= 10 ? BEATS_V10 : BEATS;
+export const canonCount = (life) => beatsFor(life).length;
+export const canonIfAfter = (life) => beatsFor(life).findIndex((beat) => beat.id === "egghead");
+
 export function canonScene(life) {
   if (life.creationVersion < 4 || !life.seen.includes("life_marineford_news")) return null;
-  const beat = BEATS[life.canonStep];
+  const beat = beatsFor(life)[life.canonStep];
   if (!beat) return null;
   const arc = arcScene(life, beat, life.birth.yearsBeforeCurrent + beat.offset);
   if (arc) return arc;
@@ -82,8 +89,9 @@ export function canonScene(life) {
 }
 
 export function canonStatus(life) {
-  const beat = BEATS[Math.min(life.canonStep, BEATS.length - 1)];
-  return life.canonStep >= BEATS.length ? "원작은 엘바프에서 계속된다. 그 이후는 아직 공개되지 않았다."
+  const beats = beatsFor(life);
+  const beat = beats[Math.min(life.canonStep, beats.length - 1)];
+  return life.canonStep >= beats.length ? "원작은 엘바프에서 계속된다. 그 이후는 아직 공개되지 않았다."
     : beat ? `같은 시기 원작 · ${beat.title}` : "";
 }
 

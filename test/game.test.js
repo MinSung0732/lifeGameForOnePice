@@ -105,7 +105,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 10 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 11 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -633,7 +633,7 @@ test("새 생애에는 원작에 등장한 열매만 나오고 이전 생애는 
 
 test("마린포드 이후 원작의 주요 사건은 짧은 시간 간격으로 수동 진행된다", () => {
   assert.equal(getScene(reach(0, "life_roger_news", {}, { species: "인간" }, 4)).manual, true);
-  const distant = createGame("original", 0, { species: "인간" });
+  const distant = createGame("original", 0, { species: "인간" }, 3, 9);
   distant.seen.push("life_marineford_news");
   distant.canonStep = 3;
   distant.path = "pirate";
@@ -804,13 +804,13 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 9);
+  assert.equal(createGame("original", 0).creationVersion, 10);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
   const arts = new Set();
   for (let seed = 0; seed < 16; seed += 1) {
-    let life = createGame("original", seed, { species: "인간" });
+    let life = createGame("original", seed, { species: "인간" }, 3, 9);
     const beats = [];
     while (!life.finished && getScene(life).id !== "life_after_storm") {
       const scene = getScene(life);
@@ -899,7 +899,7 @@ test("출항부터 정상전쟁까지 원작 사건과 일상을 가변 간격�
     "원작 장면과 일상 장면이 고정 패턴으로 반복되면 안 된다");
   assert.deepEqual(replay(saveRecord(life)), life);
 
-  const local = createGame("original", 1, { species: "인간" });
+  const local = createGame("original", 1, { species: "인간" }, 3, 9);
   local.age = local.birth.yearsBeforeCurrent - 3;
   local.preCanonStep = 11;
   local.location = "위대한 항로 · 알라바스타 나노하나";
@@ -993,7 +993,7 @@ test("규칙 8은 원작 편의 섬에 있으면 날짜별 장면에 휘말리�
 test("규칙 9는 소속을 상황별 제안으로 하나씩 주고, 고정 나이 장면을 섞고, 성격을 선택과 결과에 반영한다", () => {
   const firstAges = new Map();
   for (let seed = 0; seed < 30; seed += 1) {
-    let life = createGame("original", seed * 31 + 5, { species: "인간" });
+    let life = createGame("original", seed * 31 + 5, { species: "인간" }, 3, 9);
     const offered = [];
     while (!life.finished && life.age < 30) {
       const scene = getScene(life);
@@ -1017,7 +1017,7 @@ test("규칙 9는 소속을 상황별 제안으로 하나씩 주고, 고정 나�
   }
   assert.ok([...firstAges.values()].some((ages) => ages.size > 2), "예전에 고정됐던 장면이 여러 나이에 나온다");
 
-  const bold = createGame("original", 3, { species: "인간" });
+  const bold = createGame("original", 3, { species: "인간" }, 3, 9);
   bold.personality = { empathy: 80, ambition: 40, loyalty: 40, caution: 40, freedom: 40 };
   bold.age = 29;
   Object.assign(bold, { path: "civilian", careerStartAge: 20, leftHome: true, seen: [...bold.seen, "life_leave_home", "life_first_station"] });
@@ -1029,4 +1029,31 @@ test("규칙 9는 소속을 상황별 제안으로 하나씩 주고, 고정 나�
   const fitting = advance(bold, "trait_empathy");
   assert.match(fitting.lastOutcome, /성격에 맞는 일이라/);
   assert.equal(fitting.trust - bold.trust, Math.min(15, 100 - bold.trust), "성격에 맞는 선택은 오르는 수치가 1.5배");
+});
+
+test("규칙 10은 루피 일당과 겹치는 원작 연표를 훨씬 촘촘하게 나눈다", async () => {
+  const { preCanonCount } = await import("../src/canon-before.js");
+  const { canonCount } = await import("../src/canon-events.js");
+  const life10 = createGame("original", 0, { species: "인간" });
+  const life9 = createGame("original", 0, { species: "인간" }, 3, 9);
+  assert.ok(preCanonCount(life10) >= PRE_CANON_BEAT_COUNT + 20, "정상전쟁 전 원작 소식이 크게 늘어난다");
+  assert.ok(canonCount(life10) >= CANON_BEAT_COUNT + 12, "정상전쟁 뒤 원작 소식이 크게 늘어난다");
+  assert.equal(preCanonCount(life9), PRE_CANON_BEAT_COUNT, "규칙 9 기록은 예전 연표를 그대로 쓴다");
+  let life = createGame("original", 4, { species: "인간" });
+  life.birth.yearsBeforeCurrent = Math.max(life.birth.yearsBeforeCurrent, 60);
+  let steps = 0;
+  const before = [];
+  const titles = new Set();
+  while (!life.finished && steps++ < 900) {
+    const scene = getScene(life);
+    if (scene.id.startsWith("canon_before_")) before.push(scene.id);
+    if (scene.id.startsWith("canon_")) { assert.ok(!titles.has(scene.title), `원작 장면 제목이 겹치지 않는다: ${scene.title}`); titles.add(scene.title); }
+    const usable = scene.choices.filter((choice) => !choice.disabled);
+    const safe = usable.filter((choice) => !choice.dice && !/목숨/.test(choice.risk));
+    life = advance(life, (safe[0] || usable[0])?.id ?? null);
+  }
+  if (life.seen.includes("life_marineford_news")) {
+    assert.equal(before.length, preCanonCount(life));
+    for (const id of ["canon_before_coby", "canon_before_rainbase", "canon_before_bounty_300m", "canon_before_breakout"]) assert.ok(before.includes(id), id);
+  }
 });

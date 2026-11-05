@@ -1,4 +1,5 @@
 import { arcScene } from "./canon-arcs.js";
+import { EXTRA_BEFORE } from "./canon-timeline.js";
 // Rule 5 follows the published arc order without assigning exact days to the voyage.
 const EAST = "https://one-piece.com/story/east_blue/index.html";
 const ALABASTA = "https://one-piece.com/story/alabasta/index.html";
@@ -107,13 +108,19 @@ const BEATS = [
     far: "루피가 임펠 다운에 들어가 에이스를 구하려 했으나 그는 이미 마린포드로 옮겨진 뒤였다. 탈옥한 동료들과 군함을 탄 루피도 전쟁터로 향했다." }
 ];
 
+// Rule 10 inserts the extra beats after the one they follow; they share its places and art unless they name their own.
+const BEATS_V10 = BEATS.flatMap((beat) => [beat, ...(EXTRA_BEFORE[beat.id] || []).map((extra) => ({
+  places: beat.places, art: beat.art, canon: beat.canon, near: extra.far, ...extra }))]);
+const beatsFor = (life) => life.creationVersion >= 10 ? BEATS_V10 : BEATS;
+export const preCanonCount = (life) => beatsFor(life).length;
+
 const presentAt = (life) => life.birth.yearsBeforeCurrent - 2;
 const nearby = (life, beat) => beat.places.some((place) => life.location.includes(place));
 
 export function preCanonScene(life) {
-  if (life.creationVersion < 5 || life.preCanonStep >= BEATS.length || life.age < presentAt(life) - 1
+  if (life.creationVersion < 5 || life.preCanonStep >= beatsFor(life).length || life.age < presentAt(life) - 1
     || life.seen.includes("life_marineford_news")) return null;
-  const beat = BEATS[life.preCanonStep];
+  const beat = beatsFor(life)[life.preCanonStep];
   // Rule 8: scenes on the arc's island come first; the milestone itself closes the arc.
   const arc = arcScene(life, beat, presentAt(life));
   if (arc) return arc;
@@ -128,7 +135,7 @@ export function preCanonScene(life) {
 }
 
 export function preCanonStatus(life) {
-  const beat = BEATS[life.preCanonStep];
+  const beat = beatsFor(life)[life.preCanonStep];
   return beat ? `같은 시기 원작 · ${beat.title}` : "루피와 탈옥한 이들이 마린포드로 향한다.";
 }
 

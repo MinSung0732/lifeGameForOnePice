@@ -2,7 +2,7 @@ import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, createGame, getScene
 import { crewNews } from "./world.js";
 import { peopleSummary } from "./people.js";
 import { crewLine } from "./crew.js";
-import { CANON_BEAT_COUNT, canonStatus } from "./canon-events.js";
+import { canonCount, canonStatus } from "./canon-events.js";
 import { formatBounty } from "./bounty.js";
 import { preCanonStatus } from "./canon-before.js";
 import { createObservation, tickObservation } from "./observation.js";
@@ -255,7 +255,7 @@ function renderGame(focusTitle = false) {
   byId("crew-line").hidden = life.rules !== 3;
   byId("crew-news").textContent = byId("crew-news").title = life.rules === 3
     ? life.creationVersion >= 4 && life.seen.includes("life_marineford_news")
-      && (life.creationVersion >= 5 || life.canonStep < CANON_BEAT_COUNT)
+      && (life.creationVersion >= 5 || life.canonStep < canonCount(life))
       ? canonStatus(life)
       : life.creationVersion >= 5 && !life.seen.includes("life_marineford_news")
         && scene.age >= life.birth.yearsBeforeCurrent - 2

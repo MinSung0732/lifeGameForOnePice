@@ -38,6 +38,7 @@ const MOMENTS = [
 // Some arcs follow closely; others leave space for several ordinary scenes.
 export function canonGapFor(life, phase, step) {
   const salt = phase === "before" ? 0x31b7c5a9 : 0x7da4e26f;
+  if (life.creationVersion >= 10) return [1, 2, 1, 3, 2, 1, 2, 0, 3, 1][yearRoll(life.seed ^ salt, step) % 10];
   if (phase === "before") return [0, 1, 2, 0, 3, 1][yearRoll(life.seed ^ salt, step) % 6];
   const gap = [1, 2, 3, 1, 0, 2, 1, 3][yearRoll(life.seed ^ salt, step) % 8];
   const previousWasZero = step > 0 && yearRoll(life.seed ^ salt, step - 1) % 8 === 4;

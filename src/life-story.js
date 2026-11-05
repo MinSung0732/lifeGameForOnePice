@@ -680,6 +680,28 @@ function lastYear(life, age) {
   return yearRoll(life.seed, age) % 1000 < Math.min(1000, risk);
 }
 
+// Rule 10: a small chance each year that a life ends early, so endings spread from infancy to old age.
+// Rates are per thousand a year; giants live on a slower clock.
+function suddenEnd(life, age, base) {
+  if (life.creationVersion < 10 || age < 2) return null;
+  const scale = giant(life) ? 5 : 1;
+  const years = age / scale;
+  const rate = (years <= 5 ? 6 : years <= 15 ? 2 : 3 + (life.health < 35 ? 8 : 0)) / (giant(life) ? 3 : 1);
+  if (yearRoll(life.seed ^ 0x77a1c3e9, age) % 1000 >= rate) return null;
+  const name = life.birth.name;
+  const end = years <= 5
+    ? { title: "돌림병이 돈 겨울", cause: "어린 날의 돌림병",
+      body: `${name}이 태어나고 몇 해 지나지 않아 마을에 돌림병이 돌았다. 양육자가 밤새 곁을 지키며 젖은 천을 갈아 주었지만, 작은 몸은 그 겨울을 넘기지 못했다.` }
+    : years <= 15 ? { title: "돌아오지 않은 물놀이", cause: "어린 날의 사고",
+      body: `여름 오후, 친구들과 바위 끝에서 뛰어들던 ${name}이 다시 떠오르지 않았다. 어른들이 해가 질 때까지 물가를 찾아다녔다.` }
+      : life.leftHome && !life.homebound ? { title: "예고 없는 풍랑", cause: "항해 중 사고",
+        body: `맑던 바다가 한순간에 뒤집혔다. 돛을 묶으러 갑판에 나섰던 ${name}의 모습이 파도 사이로 사라졌다. 동료들은 밤새 이름을 불렀다.` }
+        : { title: "무너진 작업장", cause: "작업 중 사고",
+          body: `오래된 작업장의 들보가 소리 없이 내려앉았다. 그 아래에서 일하던 ${name}을 이웃들이 꺼냈을 때는 이미 늦었다.` };
+  return { ...base, id: "life_sudden_end", urgent: true, art: years <= 15 ? "legacy" : "lifeStorm", title: end.title, body: end.body,
+    after: (state) => { state.ending = "death"; state.deathCause = end.cause; return "남은 사람들이 짧았던 날들을 오래 이야기했다."; } };
+}
+
 function lastDay(life) {
   if (life.retired) return { title: "조용히 놓은 노", cause: "노년의 쇠약",
     body: `${life.birth.name}은 오래전에 맡은 일을 다음 사람에게 넘겼다. 마지막 아침에는 익숙한 목소리와 항구의 소리를 들으며 눈을 감았다.` };
@@ -864,6 +886,8 @@ function sceneForAge(life) {
     urgent: true, art: "legacy", title: "원작이 멈춘 자리",
     body: (state) => `엘바프에 닿은 밀짚모자 일당의 소식이 바다의 마지막 신문이었다. ${state.birth.name}의 기록도 여기서 펜을 놓는다. 이 뒤의 바다는 아직 아무도 그리지 않았다.`,
     after: (state) => { state.ending = "present"; state.deathCause = "원작의 현재에 닿음"; return "원작이 그린 마지막 시간까지 살아 낸 기록이 남았다."; } };
+  const sudden = suddenEnd(life, age, base);
+  if (sudden) return sudden;
   if (lastYear(life, age)) {
     if (life.creationVersion >= 5) {
       const day = lastDay(life);
