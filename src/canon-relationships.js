@@ -153,6 +153,17 @@ function interactionChoices(life, contact, beatId, index, age) {
         return `${contact.display}의 행적이 해군 기록에 남았다. 그 사람은 다음 만남에서 이 일을 기억할지도 모른다.`;
       }
     }];
+    if (life.creationVersion >= 20) choices.push({
+      id: "canon_contact_aid", label: `${contact.display}에게 필요한 일을 조용히 돕는다`, cost: 5,
+      risk: "물자 -5 · 관계가 달라질 수 있음 · 해군 내부의 평판에 영향",
+      personality: { empathy: 7, loyalty: 3, caution: -2 },
+      apply: (state) => {
+        noteMeeting(state, contact.key, beatId, age, 30, "aid");
+        state.supplies -= 5;
+        state.friendBond += 3;
+        return `${contact.display}가 부탁한 일을 끝까지 마쳤다. 짧은 감사 인사는 다음 만남에도 두 사람 사이에 남았다.`;
+      }
+    });
     if (contact.captureable && !["pending", "held", "transferred"].includes(previous.custody) && previous.captureAttempts < 3) {
       choices.push({
         id: "canon_contact_capture", label: previous.score <= -20 ? `${contact.display}의 경계가 흐트러진 틈을 노린다` : `${contact.display}의 퇴로를 막는다`,
@@ -181,7 +192,7 @@ function interactionChoices(life, contact, beatId, index, age) {
     id: "canon_contact_help", label: previous.score <= -20 ? `${contact.display}에게 지난 충돌의 빚을 갚는다` : `${subject(contact.display)} 처한 곤란에 손을 보탠다`,
     risk: "물자 -5 · 관계가 달라질 수 있음", cost: 5, personality: { empathy: 6, loyalty: 3 },
     apply: (state) => {
-      noteMeeting(state, contact.key, beatId, age, 18, "help");
+      noteMeeting(state, contact.key, beatId, age, life.creationVersion >= 20 ? 30 : 18, "help");
       state.supplies -= 5;
       state.friendBond += 3;
       return `${subject(contact.display)} 도움을 받아들였다. 고마움이 오래갈지, 그날의 일로 끝날지는 아직 알 수 없었다.`;

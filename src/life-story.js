@@ -9,6 +9,7 @@ import { bountyScene } from "./bounty.js";
 import { fateScene } from "./fates.js";
 import { canonIfAfter } from "./canon-events.js";
 import { crewContactScene } from "./canon-crews.js";
+import { canonBondScene } from "./canon-bonds.js";
 import { RECRUIT_VARIANTS } from "./recruit-variants.js";
 import { childhoodArt, childhoodQuiet } from "./childhood.js";
 import { giantAdultDecisions, giantGrowingDecisions, giantGrowingYears, giantHomeYears, giantLaterYears, giantWorkingYears } from "./giant-years.js";
@@ -605,7 +606,9 @@ function careerOpportunity(life, age, base) {
       ] });
   }
   if (life.path === "pirate" && !life.independent && yearsFromCareer >= 3 && life.skill >= 35
-    && life.friendBond >= 40 && age - life.lastCrewOfferAge >= (giant(life) ? 50 : 18) && (life.rival || life.alliance || life.rescued > 0)) {
+    && life.friendBond >= 40 && age - life.lastCrewOfferAge >= (giant(life) ? 50 : 18)
+    // Rule 14 replaced the scenes that made rivals and rescues, so rule 19 lets a crew that trusts you ask without them.
+    && (life.rival || life.alliance || life.rescued > 0 || life.creationVersion >= 19)) {
     opportunities.push({ ...base, id: `life_crew_offer_${age}`, urgent: true, art: "deck", title: "한 척의 배를 맡을 때",
       body: "함께 항해한 사람들이 자기들만의 배를 꾸려 보자고 물었다. 지금의 선장을 떠나면 항로와 식량, 동료의 몫을 직접 책임져야 했다.", choices: [
         { id: "remain", label: "지금의 해적단에 남는다", risk: "현재 직책 유지 · 기술 +10", personality: { loyalty: 5 },
@@ -793,7 +796,8 @@ function offerFor(path, life, age, base) {
           personality: { freedom: 8, ambition: 6 }, fail: (state) => { state.supplies -= 10; state.recruitDeclined = [...(state.recruitDeclined || []), path]; return "짐을 나르다 실수를 연발했다. 선장은 웃으며 다음에 보자고 했다."; },
           apply: (state) => { setCareer(state, "pirate"); depart(state); return "양육자에게 편지를 남기고 해적선의 가장 작은 일부터 맡았다."; } },
         canonCrewChoice("canon_crew", null, depart, true),
-        { id: "captain", label: "친구와 우리만의 배를 띄운다", when: (state) => Boolean(state.people?.mate) && state.personality.ambition >= 55,
+        { id: "captain", label: "친구와 우리만의 배를 띄운다", when: (state) => (Boolean(state.people?.mate) || state.creationVersion >= 19 && state.friendBond >= 50)
+          && state.personality.ambition >= 55,
           available: (state) => state.skill >= 30 && state.supplies >= 40 && state.friendBond >= 40,
           risk: "기술 30 · 물자 40 · 친구와의 유대 40 필요", personality: { freedom: 9, ambition: 8, loyalty: 5 }, naming: true,
           apply: (state, named) => { setCareer(state, "pirate"); state.independent = true; state.rankTier = 3; state.job = "해적단 선장"; state.affiliation = ownCrew(state, named); state.role = "선장"; state.supplies -= 20; depart(state); return "선장의 배를 따라가는 대신, 친구와 고친 작은 배에 우리만의 깃발을 달았다."; } },
@@ -977,6 +981,12 @@ function sceneForAge(life) {
   // Rule 11 checks promotions before the busy event generators, which otherwise took every year's slot.
   const promotion = life.creationVersion >= 11 ? rankOpportunity(life, age, base) : null;
   if (promotion) return promotion;
+  // Rule 19 does the same for career offers (own crew, switching sides), each still limited by its own gap in years.
+  const offered = life.creationVersion >= 19 ? careerOpportunity(life, age, base) : null;
+  if (offered) return offered;
+  // Rule 20: a canon boss or a canon friend who has grown close gets a scene of their own.
+  const bond = canonBondScene(life, age, base);
+  if (bond) return bond;
   const wanted = bountyScene(life, age, base);
   if (wanted) return wanted;
   const adventure = adventureScene(life, age, base);

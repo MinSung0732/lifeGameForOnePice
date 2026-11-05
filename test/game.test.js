@@ -13,6 +13,8 @@ import { CANON_BEAT_COUNT, canonScene } from "../src/canon-events.js";
 import { PRE_CANON_BEAT_COUNT, preCanonScene } from "../src/canon-before.js";
 import { canonGapFor } from "../src/canon-interludes.js";
 import { FLEX_IDS, FLEX_IDS_V5, lifeScenes, yearlyScene } from "../src/life-story.js";
+import { canonBondScene } from "../src/canon-bonds.js";
+import { attachCanonContact } from "../src/canon-relationships.js";
 
 function play(mode, seed, picks = {}, profile = { species: "인간" }, rules = 3, version = 3) {
   let life = createGame(mode, seed, profile, rules, version);
@@ -107,7 +109,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 19 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 21 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -806,7 +808,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 18);
+  assert.equal(createGame("original", 0).creationVersion, 20);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1257,4 +1259,55 @@ test("rule 18 brings old-era canon news to lives born decades before Roger's exe
   for (const id of ["life_old_god_valley", "life_old_pirate_king", "life_old_shiki_marineford"]) assert.ok(shown.includes(id), id);
   // Events that share a year with fixed canon news still arrive in a later free year.
   assert.ok(shown.includes("life_old_whitebeard_fishman"));
+});
+
+test("rule 19 brings back the offer to found your own crew for pirates who never made a rival", () => {
+  const offers = (version) => {
+    let count = 0;
+    for (let seed = 1; seed <= 40; seed += 1) {
+      let life = createGame("original", seed, { species: "인간" }, 3, version);
+      for (let step = 0; step < 400 && !life.finished; step += 1) {
+        const scene = getScene(life);
+        if (scene.id.startsWith("life_crew_offer_")) count += 1;
+        const pick = scene.choices.find((choice) => choice.id === "pirate" && !choice.disabled) ?? scene.choices.find((choice) => !choice.disabled && !choice.naming);
+        life = advance(life, pick?.id ?? null);
+      }
+    }
+    return count;
+  };
+  assert.equal(offers(18), 0, "older lives replay as before");
+  assert.ok(offers(19) >= 5);
+});
+
+test("rule 20 gives low-ranked marines canon supervisor and earned-friend scenes with a three-year cooldown", () => {
+  const marine = createGame("free", 7, { species: "인간" }, 3, 20);
+  marine.path = "marine";
+  marine.affiliation = "해군";
+  marine.age = 24;
+  marine.birth.yearsBeforeCurrent = 0;
+  const boss = canonBondScene(marine, marine.age + 1, { age: marine.age + 1 });
+  assert.equal(boss?.id, "life_boss_garp_senbei");
+  boss.choices[0].apply(marine);
+  assert.equal(marine.people.lastBondAge, marine.age + 1, "the cooldown stores the scene year, not the previous age");
+  assert.equal(canonBondScene({ ...marine, age: marine.age + 1 }, marine.age + 2, { age: marine.age + 2 }), null);
+
+  const friend = createGame("free", 8, { species: "인간" }, 3, 20);
+  friend.path = "marine";
+  friend.affiliation = "해군";
+  friend.age = 20;
+  friend.birth.yearsBeforeCurrent = 22;
+  const contact = attachCanonContact(friend, "loguetown", 0, friend.age + 1, { choices: [] });
+  const aid = contact.choices.find((choice) => choice.id === "canon_contact_aid");
+  assert.ok(aid, "a marine can choose to help a canon contact as well as report or arrest them");
+  aid.apply(friend);
+  assert.equal(friend.people.canonContacts.luffy.score, 30, "a meaningful act can earn the first relationship scene in one encounter");
+  const bond = canonBondScene(friend, friend.age + 1, { age: friend.age + 1 });
+  assert.equal(bond?.id, "life_bond_luffy_30", "a marine can earn an existing canon contact's friendship scene");
+  bond.choices[0].apply(friend);
+  assert.equal(friend.people.lastBondAge, friend.age + 1);
+
+  const later = { ...friend, age: 34, birth: { ...friend.birth, yearsBeforeCurrent: 24 } };
+  later.people = { canonContacts: { luffy: { score: 40, meetings: 3, captureAttempts: 0 } } };
+  assert.equal(canonBondScene(later, later.age + 1, { age: later.age + 1 })?.id, "life_bond_luffy_30",
+    "earned Straw Hat affinity remains claimable after the war-era boundary");
 });
