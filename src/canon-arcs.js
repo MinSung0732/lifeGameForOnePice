@@ -113,7 +113,7 @@ const ARCS = {
       body: "정오가 되자 먼바다가 거대하게 부풀어 올랐다. 바다가 하늘을 향해 기둥처럼 솟구쳤고, 작은 배 한 척이 그 꼭대기를 타고 구름 속으로 사라졌다.",
       after: (life) => { life.skill += 5; return "그날 본 바다 기둥을 떠올릴 때마다 하늘섬을 비웃던 술집의 웃음소리가 조금 작게 느껴졌다."; } }
   ] },
-  davy: { place: "롱 링 롱 랜드", art: "deck", scenes: [
+  davy: { place: "롱 링 롱 랜드", art: "arcLongRing", scenes: [
     { time: "경기 날 · 길쭉한 섬", title: "데이비 백 파이트의 응원석",
       body: "길쭉한 섬에서 동료를 건 해적 놀이가 열렸다. 관중석에서는 이미 판돈이 오가고 있었다. 상대 선장의 이상한 광선에 맞은 사람들은 한동안 느릿느릿 움직였다.",
       choices: [
@@ -208,7 +208,7 @@ const ARCS = {
           fail: (life) => { life.health -= 30; return "조여 오는 실에 팔이 베였다. 사람들이 끌어당겨 주지 않았다면 끝이었다."; } }
       ] }
   ] },
-  zou: { place: "조", art: "mink", scenes: [
+  zou: { place: "조", art: "arcZou", scenes: [
     { time: "도착한 날 · 코끼리 등", title: "상처 입은 마을",
       body: "조의 마을은 폐허에 가까웠다. 독가스 공격을 받고 살아남은 밍크족들이 붕대를 감은 채 서로를 돌보고 있었다. 그래도 그들은 낯선 손님에게 먼저 인사를 건넸다.",
       choices: [
@@ -237,7 +237,7 @@ const ARCS = {
         { id: "watch", label: "멀리서 불길을 지켜본다", risk: "기술 +5", personality: { caution: 6 }, apply: (life) => { life.skill += 5; return "새벽이 오자 불길이 잦아들었다. 바다의 판도가 바뀌었다는 것만은 분명했다."; } }
       ] }
   ] },
-  egghead: { place: "에그헤드 외해", art: "workbench", scenes: [
+  egghead: { place: "에그헤드 외해", art: "arcEgghead", scenes: [
     { time: "방송 날 · 에그헤드 근해", title: "봉쇄선과 세계를 향한 목소리",
       body: "미래섬 에그헤드를 해군 군함이 겹겹이 에워쌌다. 그때 모든 전보벌레가 한꺼번에 울리며 한 과학자의 목소리가 전 세계로 퍼졌다. 봉쇄선 한쪽에서는 거인들의 배가 군함과 맞서고 있었다.",
       choices: [
@@ -247,7 +247,7 @@ const ARCS = {
         { id: "listen", label: "닻을 내리고 방송을 끝까지 듣는다", risk: "기술 +10", personality: { caution: 5 }, apply: (life) => { life.skill += 10; return "세계가 숨기던 이야기의 조각이었다. 무엇을 믿어야 할지 몰라 밤새 생각했다."; } }
       ] }
   ] },
-  elbaf: { place: "엘바프", art: "giant", scenes: [
+  elbaf: { place: "엘바프", art: "arcElbaf", scenes: [
     { time: "도착한 날 · 엘바프 해안", title: "거인의 나라에 온 손님",
       body: "엘바프 해안에 밀짚모자 깃발을 단 배가 닿았다. 거인 전사들이 커다란 웃음으로 손님을 맞았고, 마을에서는 손님을 위한 잔치 준비가 시작됐다.",
       choices: [

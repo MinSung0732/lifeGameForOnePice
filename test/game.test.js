@@ -65,6 +65,46 @@ test("장면 ID와 그림 키, 원작 사건 근거를 검사한다", () => {
   assert.ok(PROFILE_OPTIONS.homes.인간.some((home) => home.includes("신세계")));
 });
 
+test("원작 삽화는 대응하는 전후 전쟁 장면과 섬 이벤트에 연결된다", async () => {
+  const { preCanonCount } = await import("../src/canon-before.js");
+  const { canonCount } = await import("../src/canon-events.js");
+  const { arcScene } = await import("../src/canon-arcs.js");
+  const life = createGame("free", 71, { species: "인간" });
+  Object.assign(life, { age: 120, location: "바다 건너", leftHome: false, seen: [] });
+  const before = new Map();
+  for (let step = 0; step < preCanonCount(life); step += 1) {
+    life.preCanonStep = step;
+    const scene = preCanonScene(life);
+    if (scene) before.set(scene.id, scene.art);
+  }
+  for (const [id, art] of Object.entries({
+    departure: "arcFoosha", zoro: "arcShellsTown", buggy: "arcOrangeTown", usopp: "arcSyrup",
+    baratie: "arcBaratie", arlong: "arcArlongPark", laboon: "arcTwinCape", skypiea_trial: "arcSkypiea",
+    skypiea_bell: "arcSkypiea", davy: "arcLongRing", enies_lobby: "arcEniesLobby", merry: "arcMerryFarewell",
+    thriller_shadows: "arcThrillerBark", thriller_aftermath: "arcThrillerBark", amazon_lily: "arcAmazonLily"
+  })) assert.equal(before.get(`canon_before_${id}`), art, `${id} 장면의 그림 연결`);
+
+  life.seen = ["life_marineford_news"];
+  const after = new Map();
+  for (let step = 0; step < canonCount(life); step += 1) {
+    life.canonStep = step;
+    const scene = canonScene(life);
+    if (scene) after.set(scene.id, scene.art);
+  }
+  for (const [id, art] of Object.entries({
+    war_after: "arcMarineford", training: "arcTraining", punk_hazard: "arcPunkHazard",
+    zou: "arcZou", reverie: "arcReverie", egghead: "arcEgghead", elbaf: "arcElbaf"
+  })) assert.equal(after.get(`canon_${id}`), art, `${id} 장면의 그림 연결`);
+
+  for (const [id, place, art] of [
+    ["davy", "롱 링 롱 랜드", "arcLongRing"], ["zou", "조", "arcZou"],
+    ["egghead", "에그헤드 외해", "arcEgghead"], ["elbaf", "엘바프", "arcElbaf"]
+  ]) {
+    life.location = place;
+    assert.equal(arcScene(life, { id }, life.age)?.art, art, `${place} 현장 이벤트의 그림 연결`);
+  }
+});
+
 test("출생 추첨은 시드와 모드에 재현 가능하고 잘못된 선택은 상태를 바꾸지 않는다", () => {
   const life = createGame("original", 42);
   assert.deepEqual(life.birth, createGame("free", 42).birth);
