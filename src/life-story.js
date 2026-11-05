@@ -2,6 +2,7 @@ import { ERA_WAR, eraStart, presentAge, storyBefore, stretched, canonCrew, openC
 import { personalBeat } from "./people.js";
 import { adventureScene, withTrait } from "./adventures.js";
 import { takenText } from "./canon-timeline.js";
+import { oldEraScene } from "./canon-old-era.js";
 import { islandEvent } from "./islands.js";
 import { fruitFor } from "./fruits.js";
 import { bountyScene } from "./bounty.js";
@@ -954,6 +955,9 @@ function sceneForAge(life) {
   if (age === life.birth.yearsBeforeCurrent - 10) return { ...base, id: "life_tom_news", urgent: true, art: "workbench", title: "워터 세븐에서 온 부고", canon: "https://one-piece.com/vivre/revision/index.html",
     body: "워터 세븐에서 온 배가 조선공 톰의 처형 소식을 전했다. 그가 만든 배와 해상열차는 남았지만, 작업장의 사람들은 이제 다른 길을 찾아야 했다." };
   if (age === life.birth.yearsBeforeCurrent - 6 && (life.mode === "original" || life.role !== "사황")) return { ...base, id: "life_shanks_news", urgent: true, art: "deck", title: "붉은 머리의 새 호칭", canon: "https://one-piece.com/vivre/revision/index.html", body: (state) => `바다의 신문은 샹크스를 사황이라고 불렀다. ${state.birth.name}이 만난 적 없는 사람의 이름도 항로의 분위기를 바꾸었다.` };
+  // Rule 18: the decades before Roger's execution have their own canon news after the fixed-year news above; a small child does not take it in.
+  const oldEra = age >= (giant(life) ? 35 : 6) ? oldEraScene(life, age, base) : null;
+  if (oldEra) return oldEra;
   if (!stretched(life) && age === life.birth.yearsBeforeCurrent - 2) return marinefordNews(life);
   // Rule 3 fills the two years from the war to the original present (the Elbaf arc), which older rules left empty.
   if (life.creationVersion === 3 && age === life.birth.yearsBeforeCurrent - 1) return { ...base, id: "life_timeskip_news", urgent: true, art: "deck", title: "전쟁 뒤의 신문",

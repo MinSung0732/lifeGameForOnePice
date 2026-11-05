@@ -5,6 +5,7 @@ import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, createGame, getConte
 import { createObservation, tickObservation } from "../src/observation.js";
 import { scenes } from "../src/story.js";
 import { degreeHz, moodFor } from "../src/music.js";
+import { OLD_ERA } from "../src/canon-old-era.js";
 import { encounterAt, presentAge, storyBefore, travelScene } from "../src/world.js";
 import { fruitFor } from "../src/fruits.js";
 import { bountyScene, pursuerFor } from "../src/bounty.js";
@@ -106,7 +107,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 18 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 19 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -805,7 +806,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 17);
+  assert.equal(createGame("original", 0).creationVersion, 18);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1243,4 +1244,17 @@ test("rule 17 follows the manga order at Water 7 and keeps Jarul at Elbaf in the
   assert.equal(encounterAt(present), "luffy_elbaf");
   present.seen.push("life_meet_luffy_elbaf");
   assert.equal(encounterAt(present), "jarul");
+});
+
+test("rule 18 brings old-era canon news to lives born decades before Roger's execution", () => {
+  const ids = (version) => {
+    const seen = new Set();
+    for (let seed = 1; seed <= 12; seed += 1) for (const id of play("original", seed, {}, { species: "인간" }, 3, version).seen) seen.add(id);
+    return [...seen].filter((id) => OLD_ERA.some((event) => id === `life_old_${event.id}`));
+  };
+  assert.deepEqual(ids(17), [], "older lives replay without the new news");
+  const shown = ids(18);
+  for (const id of ["life_old_god_valley", "life_old_pirate_king", "life_old_shiki_marineford"]) assert.ok(shown.includes(id), id);
+  // Events that share a year with fixed canon news still arrive in a later free year.
+  assert.ok(shown.includes("life_old_whitebeard_fishman"));
 });
