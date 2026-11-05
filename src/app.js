@@ -1,6 +1,7 @@
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, createGame, getScene, personalitySummary, replay, saveRecord } from "./game.js";
 import { crewNews } from "./world.js";
 import { peopleSummary } from "./people.js";
+import { canonRelationshipLine, canonRelationshipSummary } from "./canon-relationships.js";
 import { crewLine } from "./crew.js";
 import { canonCount, canonStatus } from "./canon-events.js";
 import { formatBounty } from "./bounty.js";
@@ -118,6 +119,7 @@ function renderLifeStrip() {
   byId("life-power").textContent = `${powerSummary()}${life.creationVersion >= 4 && life.bounty ? ` · 현상금 ${formatBounty(life.bounty)}` : ""}`;
   byId("life-goal").textContent = life.goal;
   byId("life-crew").textContent = byId("life-crew").title = crewLine(life);
+  byId("life-relationships").textContent = byId("life-relationships").title = canonRelationshipLine(life);
 }
 
 function powerSummary() {
@@ -580,7 +582,7 @@ function renderEnding() {
   const route = (life.travelHistory || [life.birth.home]).filter((place, index, all) => place !== all[index - 1]);
   byId("ending-route").textContent = `${route.join(" → ")} (${new Set(route).size}곳)`;
   byId("ending-bonds").textContent = completeLife && life.creationVersion >= 3
-    ? [peopleSummary(life), life.successor && "후배에게 전한 일", life.people?.fruitOwner && `이 세계선의 ${life.people.fruitOwner.owner}는 ${life.people.fruitOwner.fruit}를 먹지 않았다`].filter(Boolean).join(" · ") || "곁에 남은 이름 없이 혼자 걸은 삶"
+    ? [peopleSummary(life), life.successor && "후배에게 전한 일", life.people?.fruitOwner && `이 세계선의 ${life.people.fruitOwner.owner}는 ${life.people.fruitOwner.fruit}를 먹지 않았다`, canonRelationshipSummary(life)].filter(Boolean).join(" · ") || "곁에 남은 이름 없이 혼자 걸은 삶"
     : completeLife
     ? `양육자와의 기억 · 옛 친구와의 ${life.friendBond > 1 ? "지속된 인연" : "서로 다른 길"}${life.successor ? " · 후배에게 전한 일" : ""}`
     : `${life.guardianName || "준"}과의 기억 · ${life.friendName || "린"}과의 ${life.friendBond > 1 ? "지속된 인연" : "서로 다른 길"}${life.successor ? " · 후배에게 전한 일" : ""}`;

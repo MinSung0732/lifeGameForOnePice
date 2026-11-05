@@ -1,5 +1,6 @@
 import { moveTo, ro, routeFor, yearRoll } from "./world.js";
 import { takenText } from "./canon-timeline.js";
+import { attachCanonContact, canonRelationshipChanged, custodyArcScene } from "./canon-relationships.js";
 
 // Rule 8: a canon milestone opens a few dated scenes on its island. Someone already there gets swept up;
 // someone sailing nearby may hear the rumor and head there. The canon outcome never changes in these
@@ -267,16 +268,21 @@ export function arcScene(life, beat, age) {
     const index = arc.scenes.findIndex((_, i) => !life.seen.includes(arcId(beat.id, i)));
     if (index < 0) return null;
     const scene = arc.scenes[index];
-    return { ...base, id: arcId(beat.id, index), art: arc.art, title: scene.title, timeLabel: `${scene.time}`,
+    const originalId = arcId(beat.id, index);
+    const timeLabel = `${canonRelationshipChanged(life) ? "IF 세계선 · " : ""}${scene.time}`;
+    const custodyScene = custodyArcScene(life, beat.id, index, age, scene.time, originalId);
+    if (custodyScene) return custodyScene;
+    const card = { ...base, id: originalId, art: arc.art, title: scene.title, timeLabel,
       body: takenText(life, `arc:${beat.id}:${index}`) || (typeof scene.body === "function" ? scene.body(life) : scene.body),
       ...(scene.choices ? { choices: scene.choices } : { after: scene.after, manual: true }) };
+    return attachCanonContact(life, beat.id, index, age, card);
   }
   const lure = `canon_arc_${beat.id}_lure`;
   const route = routeFor(life);
   const reachable = route.some((place) => place.includes(arc.place)) || arc.place === "에그헤드 외해" && route.includes("엘바프");
   if (life.seen.includes(lure) || !life.leftHome || life.homebound || life.retired || !reachable
     || yearRoll(life.seed ^ 0x3c6ef372, beat.id.length * 31 + age) % 2) return null;
-  return { ...base, id: lure, art: "deck", title: `${arc.place}에서 온 소문`, timeLabel: `같은 무렵 · ${life.location}`,
+  return { ...base, id: lure, art: "deck", title: `${arc.place}에서 온 소문`, timeLabel: `${canonRelationshipChanged(life) ? "IF 세계선 · " : ""}같은 무렵 · ${life.location}`,
     body: `${arc.place}에서 큰일이 벌어지고 있다는 소문이 부두에 돌았다. 밀짚모자라는 이름도 섞여 있었다. 지금 출발하면 그 한가운데에 닿을 수 있었다.`,
     choices: [
       { id: "go", label: `${ro(arc.place)} 향한다`, cost: 10, risk: "물자 -10 · 사건에 휘말릴 수 있음", personality: { freedom: 6, ambition: 4 },

@@ -1,4 +1,5 @@
 import { arcScene } from "./canon-arcs.js";
+import { canonRelationshipChanged } from "./canon-relationships.js";
 import { EXTRA_BEFORE, takenText } from "./canon-timeline.js";
 // Rule 5 follows the published arc order without assigning exact days to the voyage.
 const EAST = "https://one-piece.com/story/east_blue/index.html";
@@ -134,7 +135,7 @@ export function preCanonScene(life) {
     : nearby(life, beat) ? beat.near : beat.far);
   return { id: `canon_before_${beat.id}`, age: presentAt(life), act: 3, species: "all", yearly: true,
     urgent: true, preCanonBeat: true, manual: !choices, art: beat.art || "deck", title: beat.title,
-    timeLabel: fruitTaken || life.worldBranch ? `IF 세계선 · ${beat.time}` : beat.time, canon: beat.canon, body, choices };
+    timeLabel: fruitTaken || life.worldBranch || canonRelationshipChanged(life) ? `IF 세계선 · ${beat.time}` : beat.time, canon: beat.canon, body, choices };
 }
 
 export function preCanonStatus(life) {

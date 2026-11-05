@@ -223,6 +223,9 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
 .life-strip .life-crew { grid-column: 1 / -1; display: flex; gap: 10px; align-items: baseline; }
 .life-strip .life-crew span { flex: 0 0 auto; }
 .life-strip .life-crew strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.life-strip .life-relationships { grid-column: 1 / -1; display: flex; gap: 10px; align-items: baseline; }
+.life-strip .life-relationships span { flex: 0 0 auto; }
+.life-strip .life-relationships strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 
 .ending { max-width: 1100px; margin: auto; padding: 60px 0 90px; }
 .ending h1 { margin: 17px 0 27px; font-size: clamp(34px, 4vw, 53px); line-height: 1.35; }

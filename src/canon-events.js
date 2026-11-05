@@ -1,4 +1,5 @@
 import { arcScene } from "./canon-arcs.js";
+import { canonRelationshipChanged } from "./canon-relationships.js";
 import { EXTRA_AFTER, takenText } from "./canon-timeline.js";
 // Rule-4 canon milestones. Relative time labels avoid claiming an unpublished manga calendar.
 const BEATS = [
@@ -72,7 +73,7 @@ export function canonScene(life) {
   if (!beat) return null;
   const arc = arcScene(life, beat, life.birth.yearsBeforeCurrent + beat.offset);
   if (arc) return arc;
-  const diverged = life.worldBranch || life.people?.fruitOwner;
+  const diverged = life.worldBranch || life.people?.fruitOwner || canonRelationshipChanged(life);
   const body = typeof beat.body === "function" ? beat.body(life) : beat.body;
   const canHelpFishman = life.location.includes("어인섬") || life.location === "샤본디 제도" || life.birth.species === "어인";
   const canHelpPunk = ["펑크 하자드", "드레스로자"].includes(life.location) || ["marine", "liberator"].includes(life.path);

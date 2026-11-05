@@ -5,6 +5,7 @@ import { canonIfAfter, canonScene } from "./canon-events.js";
 import { preCanonCount, preCanonScene } from "./canon-before.js";
 import { canonGapFor, canonInterludeScene } from "./canon-interludes.js";
 import { childhoodScene } from "./childhood.js";
+import { pendingCanonContactScene } from "./canon-relationships.js";
 
 export const SAVE_VERSION = 1;
 export const MODES = ["original", "free"];
@@ -183,11 +184,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 12) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 13) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -252,6 +253,8 @@ function sceneCard(life) {
   const authored = scenes[life.index];
   const age = authored && (typeof authored.age === "function" ? authored.age(life) : authored.age);
   if (life.rules !== 3) return authored;
+  const pendingContact = pendingCanonContactScene(life);
+  if (pendingContact) return pendingContact;
   if (life.pendingEncounter) return encounterScene(life);
   if (life.pendingBranch) return branchScene(life);
   if (life.creationVersion >= 5) {
@@ -435,6 +438,7 @@ export function advance(life, action = null) {
   next.lastChanges = changes;
   next.actions.push(action);
   next.seen.push(card.id);
+  if (card.skipSceneId && !next.seen.includes(card.skipSceneId)) next.seen.push(card.skipSceneId);
   next.journal.push({ id: card.id, act: card.act, age: view.age, title: card.title, choice: view.choices.find((choice) => choice.id === choiceId)?.label || null,
     result, changes, canon: card.canon || null, ...(view.timeLabel ? { timeLabel: view.timeLabel } : {}) });
   next.index = nextEligibleIndex(next, life.index + (card.yearly ? 0 : 1));
