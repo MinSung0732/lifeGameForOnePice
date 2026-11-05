@@ -1,5 +1,5 @@
 import { arcScene } from "./canon-arcs.js";
-import { EXTRA_AFTER } from "./canon-timeline.js";
+import { EXTRA_AFTER, takenText } from "./canon-timeline.js";
 // Rule-4 canon milestones. Relative time labels avoid claiming an unpublished manga calendar.
 const BEATS = [
   { id: "war_after", offset: -2, time: "정상전쟁 뒤 · 얼마 지나지 않아", title: "전쟁이 남긴 빈자리",
@@ -81,10 +81,10 @@ export function canonScene(life) {
   return {
     ...beat, id: `canon_${beat.id}`, age: life.birth.yearsBeforeCurrent + beat.offset,
     act: 3, art: beat.art || "deck", yearly: true, urgent: true, canonBeat: true, manual: !choices, choices,
-    timeLabel: beat.time,
-    body: diverged && life.canonStep >= 2
+    timeLabel: diverged ? `IF 세계선 · ${beat.time}` : beat.time,
+    body: takenText(life, beat.id) || (life.worldBranch && life.canonStep >= 2
       ? `원작 기준으로는 ${body} ${life.birth.name}의 세계는 이미 갈라졌다. 같은 결말이라고 단정할 수 없다.`
-      : body
+      : body)
   };
 }
 

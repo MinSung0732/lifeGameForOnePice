@@ -1,4 +1,5 @@
 import { moveTo, ro, routeFor, yearRoll } from "./world.js";
+import { takenText } from "./canon-timeline.js";
 
 // Rule 8: a canon milestone opens a few dated scenes on its island. Someone already there gets swept up;
 // someone sailing nearby may hear the rumor and head there. The canon outcome never changes in these
@@ -267,7 +268,7 @@ export function arcScene(life, beat, age) {
     if (index < 0) return null;
     const scene = arc.scenes[index];
     return { ...base, id: arcId(beat.id, index), art: arc.art, title: scene.title, timeLabel: `${scene.time}`,
-      body: typeof scene.body === "function" ? scene.body(life) : scene.body,
+      body: takenText(life, `arc:${beat.id}:${index}`) || (typeof scene.body === "function" ? scene.body(life) : scene.body),
       ...(scene.choices ? { choices: scene.choices } : { after: scene.after, manual: true }) };
   }
   const lure = `canon_arc_${beat.id}_lure`;

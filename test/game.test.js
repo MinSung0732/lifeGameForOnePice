@@ -105,7 +105,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 12 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 13 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -804,7 +804,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 11);
+  assert.equal(createGame("original", 0).creationVersion, 12);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -907,7 +907,8 @@ test("출항부터 정상전쟁까지 원작 사건과 일상을 가변 간격�
   local.location = "워터 세븐";
   assert.equal(preCanonScene(local).choices, undefined);
   local.people.fruitOwner = { owner: "루피", fruit: "고무고무 열매" };
-  assert.match(preCanonScene(local).body, /원작 기준/);
+  assert.match(preCanonScene(local).timeLabel, /IF 세계선/, "열매가 바뀐 세계선은 원작 장면에 IF 표시를 단다");
+  assert.doesNotMatch(preCanonScene(local).body, /단정할 수 없다/);
   assert.equal(preCanonScene(local).choices, undefined);
 });
 
@@ -1055,5 +1056,31 @@ test("규칙 10은 루피 일당과 겹치는 원작 연표를 훨씬 촘촘하�
   if (life.seen.includes("life_marineford_news")) {
     assert.equal(before.length, preCanonCount(life));
     for (const id of ["canon_before_coby", "canon_before_rainbase", "canon_before_bounty_300m", "canon_before_breakout"]) assert.ok(before.includes(id), id);
+  }
+});
+
+test("원작 열매를 먼저 먹으면 그 능력이 드러나는 원작 장면을 그 세계선에 맞게 다시 쓴다", async () => {
+  const { preCanonScene: before } = await import("../src/canon-before.js");
+  const life = createGame("free", 3, { species: "인간" });
+  life.age = life.birth.yearsBeforeCurrent - 3;
+  life.people.fruitOwner = { owner: "포트거스 D. 에이스", fruit: "이글이글 열매" };
+  life.location = "워터 세븐";
+  for (let step = 0; step < 60; step += 1) {
+    life.preCanonStep = step;
+    const scene = before(life);
+    if (scene?.id === "canon_before_nanohana_ace") {
+      assert.doesNotMatch(scene.body, /불꽃으로 막아/, "에이스가 불꽃을 쓰지 않는다");
+      assert.match(scene.body, /이글이글 열매를 먹지 않았다/);
+      assert.match(scene.timeLabel, /IF 세계선/);
+      return;
+    }
+  }
+  assert.fail("나노하나 장면을 찾지 못했다");
+});
+
+test("먼저 먹을 수 있는 원작 열매마다 그 세계선을 드러내는 원작 장면이 있다", async () => {
+  const { TAKEN_FRUIT_TEXT } = await import("../src/canon-timeline.js");
+  for (const fruit of ["고무고무 열매", "이글이글 열매", "꽃꽃 열매", "수술수술 열매", "동강동강 열매", "어둠어둠 열매"]) {
+    assert.ok(Object.keys(TAKEN_FRUIT_TEXT[fruit] || {}).length >= 1, `${fruit}의 IF 장면이 있어야 한다`);
   }
 });

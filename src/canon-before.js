@@ -1,5 +1,5 @@
 import { arcScene } from "./canon-arcs.js";
-import { EXTRA_BEFORE } from "./canon-timeline.js";
+import { EXTRA_BEFORE, takenText } from "./canon-timeline.js";
 // Rule 5 follows the published arc order without assigning exact days to the voyage.
 const EAST = "https://one-piece.com/story/east_blue/index.html";
 const ALABASTA = "https://one-piece.com/story/alabasta/index.html";
@@ -124,14 +124,17 @@ export function preCanonScene(life) {
   // Rule 8: scenes on the arc's island come first; the milestone itself closes the arc.
   const arc = arcScene(life, beat, presentAt(life));
   if (arc) return arc;
-  const diverged = Boolean(life.worldBranch || life.people?.fruitOwner);
+  const fruitTaken = Boolean(life.people?.fruitOwner);
+  // Rule 12 keeps nearby choices when only a fruit changed hands; older rules dropped them and still replay that way.
+  const diverged = Boolean(life.worldBranch || fruitTaken && life.creationVersion < 12);
   const choices = !diverged && nearby(life, beat) ? beat.choices : undefined;
-  const body = diverged
+  // A taken fruit rewrites only the scenes that show its power; the rest of the canon still happens.
+  const body = takenText(life, beat.id) || (life.worldBranch
     ? `원작 기준 기록에는 ${beat.far} ${life.birth.name}의 세계도 같은 길을 갔다고 단정할 수 없다.`
-    : nearby(life, beat) ? beat.near : beat.far;
+    : nearby(life, beat) ? beat.near : beat.far);
   return { id: `canon_before_${beat.id}`, age: presentAt(life), act: 3, species: "all", yearly: true,
     urgent: true, preCanonBeat: true, manual: !choices, art: beat.art || "deck", title: beat.title,
-    timeLabel: beat.time, canon: beat.canon, body, choices };
+    timeLabel: fruitTaken || life.worldBranch ? `IF 세계선 · ${beat.time}` : beat.time, canon: beat.canon, body, choices };
 }
 
 export function preCanonStatus(life) {

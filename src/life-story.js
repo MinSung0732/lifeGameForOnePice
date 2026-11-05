@@ -1,6 +1,7 @@
 import { canonCrew, encounterAt, encounterScene, moveTo, routeFor, standing, travelScene, yearRoll } from "./world.js";
 import { personalBeat } from "./people.js";
 import { adventureScene, withTrait } from "./adventures.js";
+import { takenText } from "./canon-timeline.js";
 import { islandEvent } from "./islands.js";
 import { fruitFor } from "./fruits.js";
 import { bountyScene } from "./bounty.js";
@@ -723,10 +724,10 @@ export function marinefordNews(life) {
   const age = life.birth.yearsBeforeCurrent - 2;
   return { id: "life_marineford_news", age, act: age < (giant(life) ? 112 : 19) ? 1 : 2,
     species: "all", yearly: true, urgent: true, art: "workbench",
-    title: life.creationVersion >= 4 && life.people?.fruitOwner ? "원작 연표 · 마린포드" : "마린포드 전쟁의 신문",
+    title: life.creationVersion >= 4 && life.people?.fruitOwner ? "IF 세계선 · 마린포드" : "마린포드 전쟁의 신문",
     canon: "https://one-piece.com/story/marineford/index.html",
     body: life.creationVersion >= 4 && life.people?.fruitOwner
-      ? "원작에서는 마린포드에서 에이스와 흰 수염이 죽고 샹크스가 전쟁을 멈췄다. 그러나 열매의 주인이 달라진 이 세계선에서 같은 전쟁이 벌어졌다고 단정할 수 없다."
+      ? takenText(life, "marineford") || "마린포드에서 에이스와 흰 수염이 쓰러지고 샹크스가 전쟁을 멈췄다는 신문이 닿았다. 열매의 주인이 달라진 이 세계선에서도 바다의 큰 흐름은 크게 바뀌지 않았다."
       : "마린포드 전쟁에서 에이스와 흰 수염이 목숨을 잃고, 샹크스가 싸움을 멈추게 했다는 신문이 닿았다. 전장에 없던 사람은 그곳을 봤다고 말할 수 없었다." };
 }
 
