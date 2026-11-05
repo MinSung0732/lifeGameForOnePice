@@ -103,6 +103,9 @@ test("원작 삽화는 대응하는 전후 전쟁 장면과 섬 이벤트에 연
     life.location = place;
     assert.equal(arcScene(life, { id }, life.age)?.art, art, `${place} 현장 이벤트의 그림 연결`);
   }
+  life.location = "롱 링 롱 랜드";
+  life.seen = ["canon_arc_davy_0"];
+  assert.equal(arcScene(life, { id: "davy" }, life.age)?.art, "specialIcePath", "쿠잔의 얼음길 장면은 별도 삽화를 쓴다");
 });
 
 test("출생 추첨은 시드와 모드에 재현 가능하고 잘못된 선택은 상태를 바꾸지 않는다", () => {

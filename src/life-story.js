@@ -203,7 +203,7 @@ const scenes = [
     { id: "help", label: "현장의 사람을 먼저 돕는다", cost: 10, risk: "물자 -10 · 지역의 신뢰 +10", personality: { empathy: 8, loyalty: 4 }, apply: (life) => { life.supplies -= 10; life.trust += 10; life.injustice = true; return "도움을 받은 이가 돌아왔다. 조직에서는 독단이었다고 꾸짖었다."; } }
   ] },
   { id: "life_repercussion", age: at(25, 140), art: "deck", title: "뒤따른 말", body: (life) => life.trust >= 40 ? "기항지의 사람들이 이름을 기억했다. 그 신뢰가 명령을 대신해 주지는 않았지만 다음 일을 함께 시작할 사람이 늘었다." : "기항지의 사람들은 쉽게 마음을 열지 않았다. 한 번의 결정이 오래 남을 수 있다는 사실을 배웠다." },
-  { id: "life_fruit_find", age: at(27, 149), art: "fruit", title: "물결에 밀려온 상자", when: (life) => life.seed % 3 === 0
+  { id: "life_fruit_find", age: at(27, 149), art: "specialFruitChest", title: "물결에 밀려온 상자", when: (life) => life.seed % 3 === 0
     && (life.creationVersion < 4 || fruitForCard(life, 27, 149)), body: (life) => life.creationVersion >= 4
     ? `떠밀려 온 상자에 악마의 열매가 있었다. 동행한 수집가는 ${fruitForCard(life, 27, 149).name}일 가능성을 말했다. ${fruitForCard(life, 27, 149).formerOwner ? "이전 능력자가 죽은 뒤 다시 나타났을 가능성이 있다." : "아직 능력자가 알려지기 전의 시기다."} 먹으면 바다에서 힘을 잃는다는 점만은 분명했다.`
     : life.creationVersion >= 3
@@ -621,7 +621,7 @@ function careerOpportunity(life, age, base) {
   if (life.path !== "marine" && yearsFromCareer >= tenureNeeded && life.trust >= 50
     && (life.rescued > 0 || life.trust >= 70 || life.homebound && life.bond >= 50)
     && age - life.lastMarineOfferAge >= offerGap) {
-    opportunities.push({ ...base, id: `life_marine_invitation_${age}`, urgent: true, art: "deck", title: "해군 지부의 제안",
+    opportunities.push({ ...base, id: `life_marine_invitation_${age}`, urgent: true, art: "specialMarineDeck", title: "해군 지부의 제안",
       body: "지역 해군 지부가 구조와 항로 기록을 살피고 입대 의사를 물었다. 지금의 일과 동료를 떠난다면 수병부터 다시 시작해야 했다.", choices: [
         { id: "remain", label: "지금의 일을 이어 간다", risk: "현재 소속 유지 · 기술 +10", personality: { loyalty: 5 },
           apply: (state) => { state.lastMarineOfferAge = age; state.skill += 10; return "제안서를 접고 원래 맡은 자리로 돌아왔다."; } },
@@ -1062,7 +1062,7 @@ export function yearlyScene(life, lastQuietAge = Infinity) {
 export function branchScene(life) {
   const kind = life.worldBranch;
   return { id: "life_branch_aftermath", age: life.age, act: 4, species: "all", yearly: true,
-    art: "workbench", title: { emperor: "새로운 사황의 항로", admiral: "새 대장의 첫 명령", commander: "다섯 번째 깃발" }[kind],
+    art: kind === "emperor" ? "specialEmperorToast" : "workbench", title: { emperor: "새로운 사황의 항로", admiral: "새 대장의 첫 명령", commander: "다섯 번째 깃발" }[kind],
     body: {
       emperor: `${life.birth.name}의 이름이 실린 신문이 항구에 닿았다. 동맹은 앞으로의 항로와 물자를 다시 묻고, 버기가 있었을 자리의 이야기는 여기서부터 달라졌다.`,
       admiral: `${life.birth.name}의 임명 소식이 부하들의 손에 전해졌다. 아라마키가 맡았을 원작의 임무는 이제 같은 방식으로 흘러갈 수 없었다.`,

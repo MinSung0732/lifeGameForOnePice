@@ -18,7 +18,7 @@ export function bountyScene(life, age, base) {
     const title = `${life.location}의 ${pursuer.name}`;
     if (life.journal.slice(-10).some((entry) => entry.title === title)) return null;
     const mark = (state) => { state.lastHuntAge = age; };
-    return { ...base, id: `life_bounty_hunt_${age}`, urgent: true, art: "lifeStorm", title,
+    return { ...base, id: `life_bounty_hunt_${age}`, urgent: true, art: "specialBountyPursuit", title,
       body: `${formatBounty(life.bounty)}짜리 수배서를 든 ${pursuer.name}이 부두로 왔다. 배와 동료가 있는 자리에서 도망칠 길, 맞설 곳, 숨길 사람을 재빨리 골라야 했다.`,
       choices: [
         { id: "escape", label: "동료와 함께 뒷항로로 빠져나간다", risk: "물자 -10 또는 건강 -10 · 추적을 피할 수 있을지는 미지수",

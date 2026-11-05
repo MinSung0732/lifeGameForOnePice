@@ -24,7 +24,7 @@ export default [
     ]
   },
   {
-    id: "sengoku_okaki", person: "센고쿠", paths: ["marine"], art: "workbench",
+    id: "sengoku_okaki", person: "센고쿠", paths: ["marine"], art: "specialMarineOffice",
     title: "원수실의 오카키",
     body: "서류를 전하러 원수실에 들어가니 센고쿠 원수가 오카키 봉지를 옆에 두고 보고서를 넘기고 있었다. 방 한쪽에서는 염소가 서류 끝을 씹고 있었다. 원수가 고개도 들지 않고 보고서를 읽어 보라고 했다.",
     choices: [
@@ -108,7 +108,7 @@ export default [
     ]
   },
   {
-    id: "garp_fist", person: "몽키 D. 가프", paths: ["marine"], art: "deck",
+    id: "garp_fist", person: "몽키 D. 가프", paths: ["marine"], art: "specialTrainingDeck",
     title: "사랑의 주먹",
     body: "가프 중장이 직접 훈련을 맡겠다고 나섰다. 갑판에 포탄 상자를 쌓아 놓고 손으로 하나씩 집어 던지며, 맞기 싫으면 피하든지 받아 내든지 하라고 웃었다. 실수한 병사의 머리에는 어김없이 주먹이 떨어졌다.",
     choices: [
@@ -391,7 +391,7 @@ export default [
 
   // 붉은 머리 해적단
   {
-    id: "shanks_feast", person: "샹크스", crew: "붉은 머리 해적단", art: "mishapFeast",
+    id: "shanks_feast", person: "샹크스", crew: "붉은 머리 해적단", art: "specialFeastTable",
     title: "붉은 머리의 잔치",
     body: "섬에 닿자마자 샹크스가 잔치를 열자고 했다. 이유를 묻자 섬에 닿았으니까라며 웃었다. 라키 루는 고기를 굽고 벤 베크만은 담배를 문 채 술통을 굴렸다. 선장이 내 잔부터 채우고 오늘은 마시라고 했다.",
     choices: [
@@ -563,7 +563,7 @@ export default [
     ]
   },
   {
-    id: "dragon_report", person: "몽키 D. 드래곤", paths: ["liberator"], art: "workbench",
+    id: "dragon_report", person: "몽키 D. 드래곤", paths: ["liberator"], art: "specialRevolutionRoom",
     title: "돌아온 보고서",
     body: "내가 쓴 해방 작전 보고서가 드래곤의 손을 거쳐 돌아왔다. 한 줄에만 표시가 있었다. 그 섬 사람들이 작전 뒤에 어떻게 살아가는지 적혀 있지 않다는 것이었다. 드래곤은 다시 다녀오라는 말 없이 지도를 내 앞에 놓았다.",
     choices: [

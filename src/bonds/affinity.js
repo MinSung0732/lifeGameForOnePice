@@ -134,7 +134,7 @@ export default [
     ] },
 
   // 상디
-  { id: "sanji_30", key: "sanji", threshold: 30, from: 0, to: 0, art: "mishapFeast", title: "배고픈 자에게 한 접시",
+  { id: "sanji_30", key: "sanji", threshold: 30, from: 0, to: 0, art: "specialGalleyKitchen", title: "배고픈 자에게 한 접시",
     body: "물자가 바닥나 사흘째 굶던 {name} 앞에 김이 오르는 접시가 놓였다. 담배를 문 상디였다. 배고픈 놈은 누구든 먹여야 한다며 앉으라고 했다. 잠깐 뒤 지나가는 여자 손님을 보고는 눈이 하트가 되어 주방으로 사라졌다.",
     choices: [
       { id: "dishes", label: "밥값 대신 설거지를 맡는다", hint: "요리사의 주방은 전쟁터다",
@@ -210,8 +210,8 @@ export default [
     ] },
 
   // 니코 로빈
-  { id: "robin_30", key: "robin", threshold: 30, from: 2, art: "workbench", title: "고서점의 조용한 손님",
-    body: "항구의 낡은 고서점에서 {name}은 높은 선반의 책을 꺼내려다 손이 닿지 않았다. 그때 선반에서 손 하나가 피어나 책을 건네주었다. 창가에 앉은 로빈이 미소 지었다. 그 책 결말은 다들 죽는 이야기라고 덧붙이면서.",
+  { id: "robin_30", key: "robin", threshold: 30, from: 2, art: "specialLibraryStudy", title: "배 안 서재의 조용한 손님",
+    body: "항해 중 배 안의 작은 서재에서 {name}은 높은 선반의 책을 꺼내려다 손이 닿지 않았다. 그때 선반에서 손 하나가 피어나 책을 건네주었다. 창가에 앉은 로빈이 미소 지었다. 그 책의 결말은 다들 죽는 이야기라고 덧붙이면서.",
     choices: [
       { id: "ask", label: "그녀가 읽는 역사책에 대해 묻는다", hint: "로빈은 질문을 좋아하지만 경계도 한다",
         check: { stat: "trust", against: 45 }, personality: { empathy: 3, ambition: 3 }, score: LIKE,

@@ -124,7 +124,7 @@ const ARCS = {
         { id: "cheer", label: "돈은 걸지 않고 목청껏 응원한다", risk: "친구와의 유대 +5", personality: { freedom: 5 },
           apply: (life) => { life.friendBond += 5; return "옆자리 관중과 어깨동무를 하고 소리를 질렀다. 목이 쉬었지만 즐거운 하루였다."; } }
       ] },
-    { time: "경기 뒤 · 해변", title: "얼어붙은 바다",
+    { time: "경기 뒤 · 해변", title: "얼어붙은 바다", art: "specialIcePath",
       body: "눈가리개를 한 키 큰 사내가 선 채로 자다 일어났다. 해군 대장이라는 말에 섬의 공기가 얼어붙었다. 실제로 바다 한쪽이 하얗게 얼어 있었다.",
       after: (life) => { life.health -= 5; return "얼음 바람을 피해 배로 돌아왔다. 대장 하나가 바다를 얼린다는 이야기는 과장이 아니었다."; } }
   ] },
@@ -272,7 +272,7 @@ export function arcScene(life, beat, age) {
     const timeLabel = `${canonRelationshipChanged(life) ? "IF 세계선 · " : ""}${scene.time}`;
     const custodyScene = custodyArcScene(life, beat.id, index, age, scene.time, originalId);
     if (custodyScene) return custodyScene;
-    const card = { ...base, id: originalId, art: arc.art, title: scene.title, timeLabel,
+    const card = { ...base, id: originalId, art: scene.art || arc.art, title: scene.title, timeLabel,
       body: takenText(life, `arc:${beat.id}:${index}`) || (typeof scene.body === "function" ? scene.body(life) : scene.body),
       ...(scene.choices ? { choices: scene.choices } : { after: scene.after, manual: true }) };
     return attachCanonContact(life, beat.id, index, age, card);
