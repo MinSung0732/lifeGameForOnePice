@@ -105,7 +105,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 13 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 14 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
