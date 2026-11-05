@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, createGame, getContentStats, getScene, personalitySummary, replay, saveRecord } from "../src/game.js";
 import { createObservation, tickObservation } from "../src/observation.js";
 import { scenes } from "../src/story.js";
+import { degreeHz, moodFor } from "../src/music.js";
 import { encounterAt, presentAge, storyBefore, travelScene } from "../src/world.js";
 import { fruitFor } from "../src/fruits.js";
 import { bountyScene, pursuerFor } from "../src/bounty.js";
@@ -1207,4 +1208,15 @@ test("규칙 16은 원작의 몇 해를 생애의 스무 해 남짓으로 늘려
       "원작 사건 사이에 자기 삶의 장면이 낀다");
   }
   assert.equal(checked, 3);
+});
+
+test("background music picks a mood per scene and keeps notes in tune", () => {
+  assert.equal(moodFor({ id: "life_danger_reef" }), "danger");
+  assert.equal(moodFor({ id: "canon_before_departure", canon: "east" }), "canon");
+  assert.equal(moodFor({ id: "life_school" }), "calm");
+  assert.equal(moodFor(null), "ending");
+  assert.ok(Math.abs(degreeHz("calm", 0) - 293.66) < 0.01);
+  assert.ok(Math.abs(degreeHz("calm", 7) - 587.32) < 0.01);
+  assert.ok(Math.abs(degreeHz("calm", -7) - 146.83) < 0.01);
+  assert.ok(Math.abs(degreeHz("calm", -1) - 293.66 * 2 ** (-1 / 12)) < 0.01);
 });

@@ -46,6 +46,9 @@ button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible
 .wordmark { color: var(--ink); text-decoration: none; font: 700 28px/1.2 "Batang", serif; white-space: nowrap; }
 .edition { font-size: 13px; color: var(--copper); letter-spacing: .08em; }
 .masthead .text-button { margin-left: auto; }
+.masthead .sound { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.masthead .sound .text-button, .masthead .sound ~ .text-button { margin-left: 0; }
+.sound input { width: 84px; accent-color: var(--sea); }
 .text-button { border: 0; border-bottom: 1px solid currentColor; background: transparent; color: var(--sea); padding: 8px 0; border-radius: 0; }
 .text-button:hover { color: #102b2d; }
 

@@ -9,6 +9,7 @@ import { fateLegacy } from "./fates.js";
 import { preCanonStatus } from "./canon-before.js";
 import { createObservation, tickObservation } from "./observation.js";
 import { scenes } from "./story.js";
+import { initMusic, moodFor, setMood } from "./music.js";
 
 const STORAGE_KEY = "a-life-at-sea.lives.v1";
 const modeName = (mode) => mode === "original" ? "원작 모드" : "더 자유로운 모드";
@@ -101,6 +102,7 @@ function renderIntro() {
   stopTimer();
   observation = null;
   showSection("intro");
+  setMood("calm");
   const hasActive = library.active >= 0;
   byId("resume").hidden = !hasActive;
   if (hasActive) {
@@ -271,6 +273,7 @@ function renderGame(focusTitle = false) {
   const scene = getScene(life);
   if (!scene) return renderEnding();
   showSection("game");
+  setMood(moodFor(scene));
   byId("game").classList.toggle("has-choices", scene.choices.length > 0 || scene.manual);
   byId("game").classList.toggle("many-choices", scene.choices.length >= 4);
   const passage = life.journal.length === 0 ? "태어난 해" : scene.age === life.age ? "같은 해" : `${scene.age - life.age}년 후`;
@@ -558,6 +561,7 @@ function renderEnding() {
   stopTimer();
   observation = null;
   showSection("ending");
+  setMood("ending");
   // Rule 7 also closes lives in prison, lost at sea, or alive at the original present.
   const closing = life.creationVersion >= 7 && { prison: "갇힌 채 멈춘 기록", missing: "돌아오지 않은 배", present: "원작의 현재에 닿은 삶" }[life.ending];
   const completeLife = life.rules === 3 && (life.ending === "death" || Boolean(closing));
@@ -775,4 +779,5 @@ byId("ending-new").addEventListener("click", () => { renderIntro(); window.scrol
 document.addEventListener("visibilitychange", scheduleObservation);
 
 loadLibrary();
+initMusic(byId("sound-toggle"), byId("sound-volume"));
 renderIntro();
