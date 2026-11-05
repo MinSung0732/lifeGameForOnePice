@@ -430,6 +430,14 @@ test("실제 섬으로 이동하고 시기와 장소가 맞을 때만 원작 인
   assert.equal(met.age, met.birth.yearsBeforeCurrent);
   assert.ok(met.seen.includes("life_meet_luffy_elbaf"));
   assert.equal(encounterAt(met), null);
+
+  const newRule = createGame("original", 4, { species: "인간" }, 3, 20);
+  newRule.age = newRule.birth.yearsBeforeCurrent + 11;
+  newRule.location = "엘바프";
+  assert.equal(storyBefore(newRule), 0);
+  assert.notEqual(encounterAt(newRule), "luffy_elbaf", "rule 20 must wait for the manga's Elbaf arrival scene");
+  newRule.seen.push("canon_arc_elbaf_0");
+  assert.equal(encounterAt(newRule), "luffy_elbaf");
 });
 
 test("선택의 여파는 같은 해에 보이고 자유 모드의 상위 직책만 IF로 열린다", () => {

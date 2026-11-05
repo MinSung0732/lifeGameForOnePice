@@ -165,7 +165,10 @@ export function encounterAt(life) {
   // latestV3/latestV17: canon still shows them there in the present; older rules keep their original window for replay.
   const latest = (entry) => life.creationVersion >= 17 && entry.latestV17 !== undefined ? entry.latestV17
     : life.creationVersion >= 3 && entry.latestV3 !== undefined ? entry.latestV3 : entry.latest;
-  return ENCOUNTERS.find((entry) => life.location === entry.place && beforePresent <= entry.earliest && beforePresent >= latest(entry) && !life.seen.includes(`life_meet_${entry.id}`))?.id || null;
+  // Rule 20 ties the side encounter to the actual Elbaf arrival beat, not the coarse post-reunion era.
+  return ENCOUNTERS.find((entry) => life.location === entry.place && beforePresent <= entry.earliest && beforePresent >= latest(entry)
+    && (entry.id !== "luffy_elbaf" || life.creationVersion < 20 || life.seen.includes("canon_arc_elbaf_0"))
+    && !life.seen.includes(`life_meet_${entry.id}`))?.id || null;
 }
 
 export function encounterScene(life) {
