@@ -22,7 +22,8 @@ const fightPower = (life) => life.skill / 2 + life.haki.armament * 12 + life.hak
 
 const BEATS = [
   {
-    id: "life_people_mate_meet", when: (life, age) => !life.people.mate
+    // Rule 14 keeps the dock-friend promise to about half of lives, so it stops being every life's first chapter.
+    id: "life_people_mate_meet", when: (life, age) => !life.people.mate && (life.creationVersion < 14 || yearRoll(life.seed ^ 0x3a7e, 2) % 100 < 45)
       && age >= span(life, 8, 45) + (life.creationVersion >= 9 ? yearRoll(life.seed ^ 0x51d2, 1) % span(life, 6, 30) : 0) && age < span(life, 18, 105),
     scene: (life) => {
       const name = pick(MATE_NAMES, life, 0x11);

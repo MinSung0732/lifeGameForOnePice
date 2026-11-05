@@ -5,6 +5,7 @@ import { canonRelationshipLine, canonRelationshipSummary } from "./canon-relatio
 import { crewLine } from "./crew.js";
 import { canonCount, canonStatus } from "./canon-events.js";
 import { formatBounty } from "./bounty.js";
+import { fateLegacy } from "./fates.js";
 import { preCanonStatus } from "./canon-before.js";
 import { createObservation, tickObservation } from "./observation.js";
 import { scenes } from "./story.js";
@@ -133,7 +134,7 @@ function powerSummary() {
 }
 
 // Moments worth keeping on the ending record: careers, promotions, powers, dangers, canon brushes and people.
-const KEY_MOMENT = /^(life_recruit_|life_career$|life_.*_invitation_|life_crew_offer_|life_rank_|life_free_rank$|life_branch_aftermath$|life_fruit_(find|payment|practice)$|life_haki_|life_conqueror_sign$|life_danger_|life_meet_|life_people_(mate_meet|mate_crisis|rival_clash|ward_meet|ward_return)$|life_retire_choice$|life_isle_|canon_arc_.*_0$)/;
+const KEY_MOMENT = /^(life_recruit_|life_career$|life_.*_invitation_|life_crew_offer_|life_rank_|life_free_rank$|life_branch_aftermath$|life_fruit_(find|payment|practice)$|life_haki_|life_conqueror_sign$|life_danger_|life_meet_|life_people_(mate_meet|mate_crisis|rival_clash|ward_meet|ward_return)$|life_retire_choice$|life_isle_|life_fate_|canon_arc_.*_0$)/;
 const POWER_MOMENT = /^(life_haki_training|life_haki_practice|life_conqueror_sign|life_fruit_find|life_fruit_payment|life_fruit_practice)$/;
 
 function lastPower() {
@@ -576,6 +577,9 @@ function renderEnding() {
   byId("ending-haki").textContent = [haki.observation && `견문색 ${haki.observation}단계`, haki.armament && `무장색 ${haki.armament}단계`,
     haki.conqueror && `패왕색 ${haki.conqueror}단계`].filter(Boolean).join(" · ") || "익히지 못함";
   byId("ending-last-power").textContent = lastPower();
+  const fates = fateLegacy(life);
+  byId("ending-fates-row").hidden = !fates.length;
+  byId("ending-fates").textContent = fates.join(" · ");
   renderTimeline();
   byId("ending-goal").textContent = completeLife ? life.goal : `${life.goal} · ${life.ending === "death" ? "미완" : life.ending === "retire" ? "책임 승계" : "진행 중"}`;
   byId("ending-personality").textContent = personalitySummary(life.personality);

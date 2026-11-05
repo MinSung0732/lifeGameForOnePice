@@ -105,7 +105,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 14 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 15 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -804,7 +804,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 13);
+  assert.equal(createGame("original", 0).creationVersion, 14);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1083,4 +1083,47 @@ test("먼저 먹을 수 있는 원작 열매마다 그 세계선을 드러내는
   for (const fruit of ["고무고무 열매", "이글이글 열매", "꽃꽃 열매", "수술수술 열매", "동강동강 열매", "어둠어둠 열매"]) {
     assert.ok(Object.keys(TAKEN_FRUIT_TEXT[fruit] || {}).length >= 1, `${fruit}의 IF 장면이 있어야 한다`);
   }
+});
+
+test("규칙 14의 생애는 뽑힌 운명의 갈래를 따라가고, 같은 선택도 능력치에 따라 결과가 갈린다", async () => {
+  const { drawnFate } = await import("../src/fates.js");
+  const { twist } = await import("../src/twists.js");
+  const opened = new Set();
+  for (let seed = 0; seed < 24; seed += 1) {
+    let life = createGame("original", seed, { species: "인간" });
+    const child = drawnFate(life, "child");
+    opened.add(child.key);
+    while (!life.finished && life.age < 26) {
+      const scene = getScene(life);
+      assert.ok(!["life_friend", "life_child_crisis", "life_after_storm"].includes(scene.id), "고정된 유년 사건 대신 운명의 갈래가 나와야 한다");
+      life = advance(life, scene.choices.find((choice) => !choice.disabled)?.id ?? null);
+    }
+    if (!life.finished) assert.ok(life.fates[child.key]?.step >= 3, `${child.key}의 유년 장들이 열려야 한다`);
+    assert.deepEqual(replay(saveRecord(life)), life);
+  }
+  assert.ok(opened.size >= 4, "회차마다 다른 유년의 갈래가 뽑혀야 한다");
+  // The same fate choice lands on better tiers for a strong life than for a weak one.
+  const verdicts = { weak: [], strong: [] };
+  for (let seed = 0; seed < 30; seed += 1) {
+    let life = createGame("original", seed, { species: "인간" });
+    while (!life.finished && !getScene(life).id.startsWith("life_fate_")) {
+      life = advance(life, getScene(life).choices.find((choice) => !choice.disabled)?.id ?? null);
+    }
+    if (life.finished) continue;
+    const fate = drawnFate(life, "child");
+    const scene = getScene(life);
+    const choice = fate.chapters.find((chapter) => scene.id === `life_fate_${fate.key}_${chapter.id}`).choices[0];
+    for (const [kind, value] of [["weak", 0], ["strong", 100]]) {
+      const result = advance({ ...life, [choice.check.stat]: value }, choice.id).lastOutcome;
+      verdicts[kind].push(result.match(/· (대성공|성공|실패)\./)[1]);
+    }
+  }
+  const count = (kind, verdict) => verdicts[kind].filter((item) => item === verdict).length;
+  assert.ok(count("strong", "대성공") > count("weak", "대성공") && count("weak", "실패") > count("strong", "실패"));
+  // A strong stat turns some plain gains into windfalls and never into setbacks; a weak one the reverse.
+  const strong = { skill: 95, health: 50, supplies: 50, bond: 50, friendBond: 50, trust: 50 };
+  const weak = { ...strong, skill: 5 };
+  const lines = (before) => Array.from({ length: 100 }, (_, index) => twist(before, { ...before, skill: before.skill + 10 }, index + 1));
+  assert.ok(lines(strong).some((line) => line.startsWith("뜻밖의 행운")) && !lines(strong).some((line) => line.startsWith("뜻밖의 차질")));
+  assert.ok(lines(weak).some((line) => line.startsWith("뜻밖의 차질")) && !lines(weak).some((line) => line.startsWith("뜻밖의 행운")));
 });

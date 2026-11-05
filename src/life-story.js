@@ -5,6 +5,7 @@ import { takenText } from "./canon-timeline.js";
 import { islandEvent } from "./islands.js";
 import { fruitFor } from "./fruits.js";
 import { bountyScene } from "./bounty.js";
+import { fateScene } from "./fates.js";
 import { childhoodArt, childhoodQuiet } from "./childhood.js";
 import { giantAdultDecisions, giantGrowingDecisions, giantGrowingYears, giantHomeYears, giantLaterYears, giantWorkingYears } from "./giant-years.js";
 
@@ -818,6 +819,7 @@ function offerFor(path, life, age, base) {
 // Rule 11: late-life scenes follow age and health, so lives that end in their fifties still see them.
 const LATE_LIFE = ["life_homecoming", "life_old_friend", "life_late_work", "life_last_student", "life_memory"];
 export const V11_DEFERRED = new Set(["life_retire_choice", ...LATE_LIFE]);
+export const V14_REPLACED = new Set(["life_friend", "life_child_crisis", "life_after_storm"]);
 
 function lateLife(life, age, base) {
   if (life.creationVersion < 11 || !life.path) return null;
@@ -946,6 +948,8 @@ function sceneForAge(life) {
     canon: "https://one-piece.com/story/land_of_wano/index.html",
     body: "2년 만에 다시 모인 밀짚모자 일당의 소식이 연달아 실렸다. 드레스로자의 도플라밍고, 와노국의 카이도와 빅 맘이 차례로 쓰러졌고 루피는 새 사황으로 불렸다. 에그헤드 사건 뒤 일당은 엘바프로 향했다." };
 
+  const fate = fateScene(life, age, base);
+  if (fate) return fate;
   const start = careerStart(life, age, base);
   if (start) return start;
   const follow = life.creationVersion >= 9 ? followUp(life) : null;

@@ -1,11 +1,12 @@
 import { CANON_CHAPTER, scenes } from "./story.js";
-import { FLEX_IDS, FLEX_IDS_V5, V9_DEFERRED, V11_DEFERRED, branchScene, marinefordNews, yearlyScene } from "./life-story.js";
+import { FLEX_IDS, FLEX_IDS_V5, V9_DEFERRED, V11_DEFERRED, V14_REPLACED, branchScene, marinefordNews, yearlyScene } from "./life-story.js";
 import { encounterScene, yearRoll } from "./world.js";
 import { canonIfAfter, canonScene } from "./canon-events.js";
 import { preCanonCount, preCanonScene } from "./canon-before.js";
 import { canonGapFor, canonInterludeScene } from "./canon-interludes.js";
 import { childhoodScene } from "./childhood.js";
 import { pendingCanonContactScene } from "./canon-relationships.js";
+import { twist } from "./twists.js";
 
 export const SAVE_VERSION = 1;
 export const MODES = ["original", "free"];
@@ -144,6 +145,8 @@ function nextEligibleIndex(life, from) {
     const childhoodLesson = life.creationVersion >= 6 && (card.id === "life_school" || card.id === "life_training");
     if (life.creationVersion >= 9 && V9_DEFERRED.has(card.id)) continue;
     if (life.creationVersion >= 11 && V11_DEFERRED.has(card.id)) continue;
+    // Rule 14 lets each life's drawn fates tell its childhood instead of the same friend and flood every time.
+    if (life.creationVersion >= 14 && V14_REPLACED.has(card.id)) continue;
     if (life.creationVersion >= 5 && FLEX_IDS_V5.has(card.id) && !childhoodLesson
       || life.creationVersion === 4 && FLEX_IDS.has(card.id)) continue;
     if (life.creationVersion >= 4 && (typeof card.age === "function" ? card.age(life) : card.age) < life.age) continue;
@@ -184,11 +187,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 13) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 14) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -242,7 +245,7 @@ export function createGame(mode, seed, profile = {}, rules = 3, creationVersion 
     routeIndex: -1, travelHistory: [birth.home], pendingEncounter: null, pendingBranch: false,
     people: {}, trustBy: {}, worldBranch: null, alliance: false, coalition: false, rival: false,
     canonStep: 0, bounty: 0, eternalPose: null, lastHuntAge: -100, lastPublicActAge: -100,
-    preCanonStep: 0, canonGapRemaining: 0, canonDailyIndex: 0,
+    preCanonStep: 0, canonGapRemaining: 0, canonDailyIndex: 0, fates: {},
     ending: null, deathCause: "", finished: false, lastOutcome: "", lastChanges: [], actions: [], journal: [], seen: []
   };
   life.index = nextEligibleIndex(life, 0);
@@ -383,6 +386,10 @@ export function advance(life, action = null) {
     next.lastDice = { roll, target, success };
     outcome = `주사위 ${roll} (${target} 이상 성공) · ${success ? "성공" : "실패"}. ${(success ? chosen.apply(next, name) : (chosen.fail || failedAttempt)(next)) || ""}`;
   } else outcome = chosen ? chosen.apply(next, name) : card.after?.(next);
+  if (next.creationVersion >= 14 && chosen && !target && !card.fate && !chosen.naming) {
+    const line = twist(life, next, diceRoll(life, card.id, `${chosen.id}~twist`));
+    if (line) outcome = `${outcome || ""} ${line}`.trim();
+  }
   if (next.creationVersion >= 9 && chosen?.personality && (!target || next.lastDice?.success)) {
     const strongest = PERSONALITY.reduce((best, trait) => life.personality[trait.key] > life.personality[best.key] ? trait : best).key;
     const fit = chosen.personality[strongest] || 0;
