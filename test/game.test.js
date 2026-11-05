@@ -105,7 +105,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 9 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 10 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -736,7 +736,7 @@ test("기록지침 항로와 영구 지침은 다른 섬으로 이어지고 개�
   const ages = new Set();
   for (let seed = 0; seed < 25; seed += 1) {
     for (let age = 20; age <= 30; age += 1) {
-      const candidate = createGame("original", seed, { species: "인간" });
+      const candidate = createGame("original", seed, { species: "인간" }, 3, 8);
       candidate.path = "civilian";
       candidate.age = age - 1;
       if (yearlyScene(candidate).id === "life_first_pay") ages.add(age);
@@ -804,7 +804,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 8);
+  assert.equal(createGame("original", 0).creationVersion, 9);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -988,4 +988,45 @@ test("규칙 8은 원작 편의 섬에 있으면 날짜별 장면에 휘말리�
   const marine = Object.assign(createGame("free", 5, { species: "인간" }), { path: "marine", careerStartAge: 20, rankTier: 2 });
   assert.ok(crewFor(marine).some((member) => member.role === "부관"));
   assert.equal(new Set(roster.map((member) => member.name)).size, roster.length, "곁의 사람 이름이 겹치지 않는다");
+});
+
+test("규칙 9는 소속을 상황별 제안으로 하나씩 주고, 고정 나이 장면을 섞고, 성격을 선택과 결과에 반영한다", () => {
+  const firstAges = new Map();
+  for (let seed = 0; seed < 30; seed += 1) {
+    let life = createGame("original", seed * 31 + 5, { species: "인간" });
+    const offered = [];
+    while (!life.finished && life.age < 30) {
+      const scene = getScene(life);
+      assert.notEqual(scene.id, "life_early_departure", "한꺼번에 묻는 14세 장면은 나오지 않는다");
+      if (scene.id.startsWith("life_recruit_")) {
+        const path = scene.id.split("_")[2];
+        assert.ok(!offered.includes(path), "거절한 길은 다시 권하지 않는다");
+        offered.push(path);
+        life = advance(life, "decline");
+        continue;
+      }
+      const usable = scene.choices.filter((choice) => !choice.disabled);
+      life = advance(life, (usable.find((choice) => !choice.dice) || usable[0])?.id ?? null);
+    }
+    assert.ok(offered.length >= 1, "모든 생애가 상황별 제안을 받는다");
+    assert.ok(life.path, "제안을 모두 거절해도 마지막 갈림길에서 길을 정한다");
+    for (const id of ["life_enemy", "life_mission"]) {
+      const entry = life.journal.find((item) => item.id === id);
+      if (entry) firstAges.set(id, new Set([...(firstAges.get(id) || []), entry.age]));
+    }
+  }
+  assert.ok([...firstAges.values()].some((ages) => ages.size > 2), "예전에 고정됐던 장면이 여러 나이에 나온다");
+
+  const bold = createGame("original", 3, { species: "인간" });
+  bold.personality = { empathy: 80, ambition: 40, loyalty: 40, caution: 40, freedom: 40 };
+  bold.age = 29;
+  Object.assign(bold, { path: "civilian", careerStartAge: 20, leftHome: true, seen: [...bold.seen, "life_leave_home", "life_first_station"] });
+  let scene = getScene(bold);
+  for (let guard = 0; guard < 40 && !scene.choices.some((choice) => choice.id === "trait_empathy"); guard += 1) {
+    bold.age += 1; scene = getScene(bold);
+  }
+  assert.ok(scene.choices.some((choice) => choice.id === "trait_empathy"), "강한 성격에는 그 성격만의 선택지가 붙는다");
+  const fitting = advance(bold, "trait_empathy");
+  assert.match(fitting.lastOutcome, /성격에 맞는 일이라/);
+  assert.equal(fitting.trust - bold.trust, Math.min(15, 100 - bold.trust), "성격에 맞는 선택은 오르는 수치가 1.5배");
 });

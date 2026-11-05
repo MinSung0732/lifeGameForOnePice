@@ -1,6 +1,6 @@
 import { canonCrew, encounterAt, encounterScene, moveTo, routeFor, standing, travelScene, yearRoll } from "./world.js";
 import { personalBeat } from "./people.js";
-import { adventureScene } from "./adventures.js";
+import { adventureScene, withTrait } from "./adventures.js";
 import { islandEvent } from "./islands.js";
 import { fruitFor } from "./fruits.js";
 import { bountyScene } from "./bounty.js";
@@ -11,7 +11,8 @@ import { giantAdultDecisions, giantGrowingDecisions, giantGrowingYears, giantHom
 const giant = (life) => life.birth.species === "거인족";
 const at = (ordinary, giantAge) => (life) => giant(life) ? giantAge : ordinary;
 const isAlive = (life) => !life.ending;
-const byPath = (life, pirate, marine, liberator, civilian) => ({ pirate, marine, liberator, civilian })[life.path];
+// Before any career (rule 9 can leave the path open past 19) the everyday text reads like ordinary work.
+const byPath = (life, pirate, marine, liberator, civilian) => ({ pirate, marine, liberator, civilian })[life.path] ?? civilian;
 const canLeadRescue = (life) => life.skill >= 40 && life.health >= 40 && life.supplies >= (life.devilFruit ? 40 : 20);
 const fruitForCard = (life, ordinary, giantAge) => fruitFor(life.creationVersion >= 4
   ? { ...life, age: at(ordinary, giantAge)(life) } : life);
@@ -415,16 +416,17 @@ export const FLEX_IDS_V5 = new Set([...FLEX_IDS, "life_school", "life_training",
 
 function flexibleIncident(life, age) {
   if (life.creationVersion < 4 || !life.path) return null;
-  const eligible = life.creationVersion >= 5 ? FLEX_IDS_V5 : FLEX_IDS;
+  const eligible = life.creationVersion >= 9 ? new Set([...FLEX_IDS_V5, ...V9_FLEX]) : life.creationVersion >= 5 ? FLEX_IDS_V5 : FLEX_IDS;
   const options = scenes.filter((card) => {
     if (!eligible.has(card.id) || life.seen.includes(card.id) || card.when && !card.when(life)) return false;
     if (life.creationVersion >= 6 && (card.id === "life_school" || card.id === "life_training")) return false;
     if (life.creationVersion >= 5 && card.id === "life_haki_practice" && !life.haki.observation && !life.haki.armament) return false;
     const center = typeof card.age === "function" ? card.age(life) : card.age;
-    const window = life.creationVersion >= 5 && center < (giant(life) ? 112 : 19) ? giant(life) ? 12 : 3 : giant(life) ? 24 : 7;
+    const window = life.creationVersion >= 5 && center < (giant(life) ? 112 : 19) ? giant(life) ? 12 : 3
+      : life.creationVersion >= 9 ? giant(life) ? 36 : 11 : giant(life) ? 24 : 7;
     return age >= center - window && age <= center + window;
   });
-  if (!options.length || yearRoll(life.seed ^ 0x4ecb7f1a, age) % 3 !== 0) return null;
+  if (!options.length || yearRoll(life.seed ^ 0x4ecb7f1a, age) % (life.creationVersion >= 9 ? 2 : 3) !== 0) return null;
   const chosen = options[yearRoll(life.seed ^ 0x93f4a26d, age) % options.length];
   return { ...chosen, age, act: 2, species: "all", yearly: true, urgent: true };
 }
@@ -700,10 +702,113 @@ export function marinefordNews(life) {
       : "마린포드 전쟁에서 에이스와 흰 수염이 목숨을 잃고, 샹크스가 싸움을 멈추게 했다는 신문이 닿았다. 전장에 없던 사람은 그곳을 봤다고 말할 수 없었다." };
 }
 
+
+// Rule 9: a path is offered one situation at a time, drawn from personality and what the life has done,
+// instead of a single menu of every organization. Scenes once tied to one age are drawn by age range,
+// and each keeps its follow-up right behind it.
+export const V9_DEFERRED = new Set(["life_departure_rumor", "life_career", "life_leave_home", "life_first_station",
+  "life_enemy", "life_enemy_after", "life_orders", "life_repercussion", "life_alliance_offer", "life_alliance_after",
+  "life_mission", "life_mission_after", "life_companion", "life_distance"]);
+const V9_FLEX = new Set(["life_enemy", "life_orders", "life_alliance_offer", "life_mission", "life_companion"]);
+const FOLLOW_UPS = [["life_enemy", "life_enemy_after"], ["life_orders", "life_repercussion"],
+  ["life_alliance_offer", "life_alliance_after"], ["life_mission", "life_mission_after"], ["life_companion", "life_distance"]];
+const cardById = (id) => scenes.find((entry) => entry.id === id);
+const asYearly = (card, age) => ({ ...card, age, act: 2, species: "all", yearly: true, urgent: true });
+const eunName = (word) => { const last = word.codePointAt(word.length - 1); return `${word}${last >= 0xac00 && last <= 0xd7a3 && (last - 0xac00) % 28 !== 0 ? "은" : "는"}`; };
+
+function followUp(life) {
+  for (const [parent, child] of FOLLOW_UPS) {
+    if (!life.seen.includes(parent) || life.seen.includes(child)) continue;
+    const card = cardById(child);
+    if (!card.when || card.when(life)) return asYearly(card, life.age);
+  }
+  return null;
+}
+
+// What the people around remember about this life: its most recent notable choice.
+function memoryOf(life) {
+  const entry = [...life.journal].reverse().find((item) => item.choice && item.age >= 5 && !/^life_years?_/.test(item.id));
+  return entry ? `${entry.age}세 때 '${entry.title}'의 일` : "부두에서 묵묵히 일하던 모습";
+}
+
+const LEANINGS = {
+  pirate: (life) => life.personality.freedom + life.personality.ambition / 2 + (life.rival ? 15 : 0),
+  marine: (life) => life.personality.loyalty + life.personality.caution / 2 + (life.trust >= 50 ? 10 : 0),
+  liberator: (life) => life.personality.empathy + life.personality.freedom / 2 + (life.injustice ? 20 : 0),
+  civilian: (life) => life.personality.caution + life.personality.empathy / 2 + (life.bond >= 55 ? 10 : 0)
+};
+
+function offerFor(path, life, age, base) {
+  const memory = memoryOf(life);
+  const name = life.birth.name;
+  const decline = (label, text) => ({ id: "decline", label, risk: "다음 기회를 기다림", personality: { caution: 3 },
+    apply: (state) => { state.recruitDeclined = [...(state.recruitDeclined || []), path]; return text; } });
+  const offers = {
+    pirate: { title: "기항한 해적선의 선장", art: "deck",
+      body: `낡은 해적선이 부두에 닿았다. 선장은 ${memory}을 들었다며 ${eunName(name)} 갑판 일을 해 볼 생각이 없느냐고 물었다. 배는 사흘 뒤 떠날 예정이었다.`,
+      choices: [
+        { id: "board", label: "해적선의 견습 선원이 된다", needs: { skill: 20 }, risk: "기술 20 필요 · 견습부터 시작", failRisk: "물자 -10",
+          personality: { freedom: 8, ambition: 6 }, fail: (state) => { state.supplies -= 10; state.recruitDeclined = [...(state.recruitDeclined || []), path]; return "짐을 나르다 실수를 연발했다. 선장은 웃으며 다음에 보자고 했다."; },
+          apply: (state) => { setCareer(state, "pirate"); depart(state); return "양육자에게 편지를 남기고 해적선의 가장 작은 일부터 맡았다."; } },
+        canonCrewChoice("canon_crew", null, depart, true),
+        { id: "captain", label: "친구와 우리만의 배를 띄운다", when: (state) => Boolean(state.people?.mate) && state.personality.ambition >= 55,
+          available: (state) => state.skill >= 30 && state.supplies >= 40 && state.friendBond >= 40,
+          risk: "기술 30 · 물자 40 · 친구와의 유대 40 필요", personality: { freedom: 9, ambition: 8, loyalty: 5 }, naming: true,
+          apply: (state, named) => { setCareer(state, "pirate"); state.independent = true; state.rankTier = 3; state.job = "해적단 선장"; state.affiliation = ownCrew(state, named); state.role = "선장"; state.supplies -= 20; depart(state); return "선장의 배를 따라가는 대신, 친구와 고친 작은 배에 우리만의 깃발을 달았다."; } },
+        decline("아직은 아니라며 배를 배웅한다", "해적선이 수평선 너머로 사라질 때까지 부두에 서 있었다.")
+      ] },
+    marine: { title: "지부 해군의 권유", art: "deck",
+      body: `해군 지부의 하사관이 마을을 돌며 견습 수병을 찾았다. ${memory}을 전해 들었다며 ${name}에게 시험을 한번 보라고 권했다.`,
+      choices: [
+        { id: "enlist", label: "견습 수병 시험을 본다", needs: { skill: 20, health: 55 }, risk: "기술 20 · 건강 55 필요 · 수병 교육부터", failRisk: "건강 -10",
+          personality: { loyalty: 6, caution: 4 }, fail: (state) => { state.health -= 10; state.recruitDeclined = [...(state.recruitDeclined || []), path]; return "체력 시험 도중 쓰러졌다. 하사관은 몸부터 만들고 오라고 했다."; },
+          apply: (state) => { setCareer(state, "marine"); depart(state); return "해군 지부의 교육을 받으며 청소와 기록부터 익혔다."; } },
+        decline("정중히 사양한다", "하사관은 언제든 마음이 바뀌면 지부로 오라며 명함 대신 해군 모자를 두고 갔다.")
+      ] },
+    liberator: { title: "문틈의 접힌 쪽지", art: "workbench",
+      body: `누군가 문틈으로 쪽지를 밀어 넣었다. 억압받는 사람들을 몰래 빼내는 연락망이 손을 찾는다는 내용이었다. 끝에는 ${memory}을 알고 있다는 한 줄이 적혀 있었다.`,
+      choices: [
+        { id: "join", label: "적힌 장소로 나간다", available: (state) => state.trust >= 35, risk: "지역의 신뢰 35 필요 · 연락 일부터", personality: { empathy: 7, freedom: 5 },
+          apply: (state) => { setCareer(state, "liberator"); if (state.birth.yearsBeforeCurrent - state.age <= 22) state.affiliation = "혁명군"; depart(state); return "위험한 이름은 묻지 않고 편지와 식량을 옮기는 일부터 배웠다."; } },
+        decline("쪽지를 태워 버린다", "불꽃이 꺼진 뒤에도 그 한 줄이 한동안 머릿속에 남았다.")
+      ] },
+    civilian: { title: "조선소 장인의 제안", art: "workbench",
+      body: `이웃 섬 조선소의 장인이 일손을 구하러 왔다. ${memory}을 듣고는 손이 야무지겠다며 견습 자리를 내밀었다. 고향에 남아 마을 일을 맡아 달라는 어른들의 말도 있었다.`,
+      choices: [
+        { id: "apprentice", label: "조선소의 견습 일꾼이 된다", risk: "견습부터 시작", personality: { caution: 5, ambition: 4 },
+          apply: (state) => { setCareer(state, "civilian"); state.trust += 10; return "장인의 망치 소리를 따라 나무를 다듬는 일부터 배웠다."; } },
+        { id: "home", label: "고향에 남아 마을 일을 맡는다", risk: "마을에 남음", personality: { loyalty: 5, caution: 4 },
+          apply: (state) => { setCareer(state, "civilian"); state.homebound = true; state.job = "마을 일꾼"; state.affiliation = "고향 마을"; state.role = "마을 일꾼"; state.goal = "익숙한 삶터를 지키기"; return "떠나는 배를 배웅하고 마을의 일손으로 남았다. 삶은 그곳에서도 계속됐다."; } },
+        decline("조금 더 생각해 보겠다고 한다", "장인은 웃으며 다음 계절에 다시 들르겠다고 했다.")
+      ] }
+  };
+  const offer = offers[path];
+  return { ...base, id: `life_recruit_${path}_${age}`, urgent: true, art: offer.art, title: offer.title, body: offer.body, choices: offer.choices };
+}
+
+function careerStart(life, age, base) {
+  if (life.creationVersion < 9) return null;
+  if (life.path) {
+    if (!life.leftHome && !life.homebound && !life.seen.includes("life_leave_home")) return asYearly(cardById("life_leave_home"), life.age);
+    if (!life.seen.includes("life_first_station") && age >= life.careerStartAge + 1) return asYearly(cardById("life_first_station"), age);
+    return null;
+  }
+  const [from, last] = giant(life) ? [76, 118] : [13, 22];
+  // Nobody took the earlier chances: the old fork arrives as a last resort.
+  if (age >= last) return asYearly(cardById("life_career"), age);
+  if (age < from || yearRoll(life.seed ^ 0x6b43a9b5, age) % 2) return null;
+  const open = Object.keys(LEANINGS).filter((path) => !(life.recruitDeclined || []).includes(path));
+  if (!open.length) return null;
+  const weights = open.map((path) => Math.max(1, LEANINGS[path](life) - 30) ** 2);
+  let roll = yearRoll(life.seed ^ 0x2f9e17c3, age) % weights.reduce((sum, w) => sum + w, 0);
+  const path = open.find((_, index) => (roll -= weights[index]) < 0) || open[0];
+  return offerFor(path, life, age, base);
+}
+
 function sceneForAge(life) {
   const age = life.age + 1;
   const base = { id: `life_year_${age}`, age, act: age < (giant(life) ? 112 : 19) ? 1 : 2, species: "all", yearly: true };
-  if (life.creationVersion >= 2 && age === (giant(life) ? 78 : 14)) return {
+  if (life.creationVersion >= 2 && life.creationVersion < 9 && age === (giant(life) ? 78 : 14)) return {
     ...base, id: "life_early_departure", urgent: true, art: "deck", title: "일손을 찾는 배",
     body: "고향에 여러 깃발의 배가 들렀다. 어린 일손을 받아 주겠다는 곳도 있었지만, 어느 배든 집 밖의 일을 먼저 배워야 했다.", choices: [
       { id: "stay", label: "고향에서 배움을 이어 간다", risk: "기술 +10 · 출항은 다음으로", personality: { caution: 5 },
@@ -796,6 +901,10 @@ function sceneForAge(life) {
     canon: "https://one-piece.com/story/land_of_wano/index.html",
     body: "2년 만에 다시 모인 밀짚모자 일당의 소식이 연달아 실렸다. 드레스로자의 도플라밍고, 와노국의 카이도와 빅 맘이 차례로 쓰러졌고 루피는 새 사황으로 불렸다. 에그헤드 사건 뒤 일당은 엘바프로 향했다." };
 
+  const start = careerStart(life, age, base);
+  if (start) return start;
+  const follow = life.creationVersion >= 9 ? followUp(life) : null;
+  if (follow) return follow;
   const wanted = bountyScene(life, age, base);
   if (wanted) return wanted;
   const adventure = adventureScene(life, age, base);
@@ -826,7 +935,7 @@ function sceneForAge(life) {
     const pool = life.creationVersion >= 2 && giant(life)
       ? [...(phase === "growing" ? giantGrowingDecisions : giantAdultDecisions), ...annualDecisions] : annualDecisions;
     const decision = pool[(Math.floor(age / cadence) + life.seed) % pool.length];
-    return { ...base, art: phase === "later" ? "workbench" : "deck", title: decision.title, body: decision.body, choices: decision.choices };
+    return { ...base, art: phase === "later" ? "workbench" : "deck", title: decision.title, body: decision.body, choices: withTrait(life, decision.choices) };
   }
   const shared = phase === "growing" ? life.creationVersion >= 6 ? childhoodQuiet : growingYears : life.homebound
     ? phase === "working" ? homeYears : homeLaterYears

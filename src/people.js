@@ -22,7 +22,8 @@ const fightPower = (life) => life.skill / 2 + life.haki.armament * 12 + life.hak
 
 const BEATS = [
   {
-    id: "life_people_mate_meet", when: (life, age) => !life.people.mate && age >= span(life, 8, 45) && age < span(life, 18, 105),
+    id: "life_people_mate_meet", when: (life, age) => !life.people.mate
+      && age >= span(life, 8, 45) + (life.creationVersion >= 9 ? yearRoll(life.seed ^ 0x51d2, 1) % span(life, 6, 30) : 0) && age < span(life, 18, 105),
     scene: (life) => {
       const name = pick(MATE_NAMES, life, 0x11);
       const dream = pick(routeFor(life).slice(3).filter((place) => !life.birth.home.includes(place)), life, 0x12);

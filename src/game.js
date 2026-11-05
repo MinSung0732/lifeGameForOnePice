@@ -1,5 +1,5 @@
 import { CANON_CHAPTER, scenes } from "./story.js";
-import { FLEX_IDS, FLEX_IDS_V5, branchScene, marinefordNews, yearlyScene } from "./life-story.js";
+import { FLEX_IDS, FLEX_IDS_V5, V9_DEFERRED, branchScene, marinefordNews, yearlyScene } from "./life-story.js";
 import { encounterScene, yearRoll } from "./world.js";
 import { CANON_IF_AFTER, canonScene } from "./canon-events.js";
 import { PRE_CANON_BEAT_COUNT, preCanonScene } from "./canon-before.js";
@@ -141,6 +141,7 @@ function nextEligibleIndex(life, from) {
   for (let index = from; index < scenes.length; index += 1) {
     const card = scenes[index];
     const childhoodLesson = life.creationVersion >= 6 && (card.id === "life_school" || card.id === "life_training");
+    if (life.creationVersion >= 9 && V9_DEFERRED.has(card.id)) continue;
     if (life.creationVersion >= 5 && FLEX_IDS_V5.has(card.id) && !childhoodLesson
       || life.creationVersion === 4 && FLEX_IDS.has(card.id)) continue;
     if (life.creationVersion >= 4 && (typeof card.age === "function" ? card.age(life) : card.age) < life.age) continue;
@@ -181,11 +182,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 8) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 9) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3, 4, 5, 6, 7, 8].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -376,6 +377,17 @@ export function advance(life, action = null) {
     next.lastDice = { roll, target, success };
     outcome = `주사위 ${roll} (${target} 이상 성공) · ${success ? "성공" : "실패"}. ${(success ? chosen.apply(next, name) : (chosen.fail || failedAttempt)(next)) || ""}`;
   } else outcome = chosen ? chosen.apply(next, name) : card.after?.(next);
+  if (next.creationVersion >= 9 && chosen?.personality && (!target || next.lastDice?.success)) {
+    const strongest = PERSONALITY.reduce((best, trait) => life.personality[trait.key] > life.personality[best.key] ? trait : best).key;
+    const fit = chosen.personality[strongest] || 0;
+    const factor = fit > 0 ? 1.5 : fit < 0 ? 0.5 : 1;
+    let scaled = false;
+    for (const stat of STATS) {
+      const gain = next[stat.key] - life[stat.key];
+      if (factor !== 1 && gain > 0) { next[stat.key] = life[stat.key] + Math.round(gain * factor); scaled = true; }
+    }
+    if (scaled) outcome = `${outcome || ""} ${factor > 1 ? "성격에 맞는 일이라 평소보다 잘 해냈다." : "마음이 내키지 않아 절반만 해냈다."}`.trim();
+  }
   if (next.creationVersion >= 4 && chosen?.bounty) {
     next.bounty += typeof chosen.bounty === "function" ? chosen.bounty(life) : chosen.bounty;
   }

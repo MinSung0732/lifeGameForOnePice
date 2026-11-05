@@ -290,11 +290,34 @@ export function adventureScene(life, age, base) {
     }
   }
   if (yearRoll(life.seed ^ 0x2b8e6d14, age) % 3 !== 0) return null;
-  const options = MISHAPS.filter((entry) => fresh(entry, "life_mishap_"));
+  const drawn = (entry) => life.creationVersion < 9 || yearRoll(life.seed ^ [...entry.id].reduce((h, c) => Math.imul(h ^ c.codePointAt(0), 0x01000193) >>> 0, 0), 2) % 100 < 55;
+  if (life.creationVersion >= 9 && life.seen.filter((id) => id.startsWith("life_mishap_")).length >= 7) return null;
+  const options = MISHAPS.filter((entry) => fresh(entry, "life_mishap_") && drawn(entry));
   if (!options.length) return null;
   const entry = pick(options, life, age, 0x5e2f8a61);
   return { ...base, id: `life_mishap_${entry.id}`, urgent: true, art: entry.art || "deck", title: entry.title,
-    body: typeof entry.body === "function" ? entry.body(life) : entry.body, choices: entry.choices };
+    body: typeof entry.body === "function" ? entry.body(life) : entry.body, choices: withTrait(life, entry.choices) };
+}
+
+// Rule 9: a strong trait (62+) adds its own way to handle an everyday decision or mishap.
+const TRAIT_CHOICES = {
+  empathy: { label: "[배려] 모두의 사정부터 먼저 듣는다", risk: "시간이 걸림", personality: { empathy: 4 },
+    apply: (life) => { life.trust += 10; life.friendBond += 5; return "서두르지 않고 한 사람씩 사정을 들었다. 다음 날 그 자리에 있던 사람들이 먼저 인사를 건넸다."; } },
+  ambition: { label: "[야망] 이참에 판을 크게 벌인다", needs: { skill: 45 }, risk: "기술 45 필요 · 크게 얻거나 크게 잃음", failRisk: "물자 -15", personality: { ambition: 4 },
+    fail: (life) => { life.supplies -= 15; return "욕심만큼 일이 따라오지 않았다. 남은 건 빈 상자와 배짱뿐이었다."; },
+    apply: (life) => { life.supplies += 20; life.trust += 5; return "남들이 망설이는 사이 한 발 먼저 움직였다. 판이 커진 만큼 몫도 커졌다."; } },
+  loyalty: { label: "[의리] 동료가 원하는 쪽을 따른다", risk: "동료의 뜻을 따름", personality: { loyalty: 4 },
+    apply: (life) => { life.friendBond += 10; return "내 생각은 접어 두고 동료의 뜻을 따랐다. 일이 끝나자 동료가 어깨를 두드렸다."; } },
+  caution: { label: "[신중함] 한 발 물러서 판을 읽는다", risk: "느리지만 안전함", personality: { caution: 4 },
+    apply: (life) => { life.skill += 5; life.health += 5; return "끼어들기 전에 오래 지켜보았다. 다들 놓친 작은 틈이 그제야 보였다."; } },
+  freedom: { label: "[자유로움] 아무도 생각 못 한 길로 간다", risk: "결과는 알 수 없음", personality: { freedom: 4 },
+    apply: (life) => { if (lucky(life, 0x9e01, 55)) { life.supplies += 15; life.skill += 5; return "다들 말렸지만 엉뚱한 길이 오히려 지름길이었다."; } life.health -= 5; return "엉뚱한 길은 정말 엉뚱한 곳으로 이어졌다. 그래도 웃으며 돌아왔다."; } }
+};
+
+export function withTrait(life, choices) {
+  if (life.creationVersion < 9) return choices;
+  const [key, value] = Object.entries(life.personality).sort((a, b) => b[1] - a[1])[0];
+  return value >= 62 && TRAIT_CHOICES[key] ? [...choices, { id: `trait_${key}`, ...TRAIT_CHOICES[key] }] : choices;
 }
 
 export const adventureCounts = { mishaps: MISHAPS.length, dangers: DANGERS.length };
