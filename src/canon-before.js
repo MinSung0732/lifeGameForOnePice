@@ -34,7 +34,7 @@ const BEATS = [
     near: "로저가 처형됐던 로그 타운에 루피의 배가 들렀다. 버기와 스모커가 그를 붙잡으려 했지만 배는 폭풍 사이로 빠져나갔다. 항구에는 누가 도왔는지 묻는 소리가 남았다.",
     far: "이스트 블루를 떠나기 전 루피는 로그 타운에서 버기와 스모커의 추격을 겪었다. 그 배는 결국 위대한 항로로 향했다." },
   { id: "laboon", title: "쌍둥이 언덕의 약속", time: "위대한 항로 입구 · 쌍둥이 언덕", canon: ALABASTA, places: ["쌍둥이 언덕"],
-    near: "리버스 마운틴을 넘은 밀짚모자 배가 고래 라분과 부딪힐 뻔했다. 등대지기 크로커스는 오래 기다린 고래의 사정을 말했고, 루피는 돌아오겠다고 약속했다.",
+    near: "리버스 마운틴을 넘은 밀짚모자 배가 고래 라분과 부딪힌 끝에 배째로 삼켜졌다. 등대지기 크로커스는 오래 기다린 고래의 사정을 말했고, 루피는 돌아오겠다고 약속했다.",
     far: "위대한 항로의 입구에서 루피는 고래 라분에게 다시 만나겠다고 약속했다. 쌍둥이 언덕의 등대는 다음 배에도 여전히 길을 비췄다." },
   { id: "whiskey", title: "위스키 피크의 환영", time: "기록지침을 따라 · 위스키 피크", canon: ALABASTA, places: ["위스키 피크"],
     near: "위스키 피크의 잔치는 현상금 사냥꾼들의 함정으로 드러났다. 왕녀 비비와 바로크 워크스의 이름이 얽히자 부두의 선원들도 화물 명단을 다시 살폈다.",
@@ -67,10 +67,10 @@ const BEATS = [
     near: "루피가 에넬을 막자 황금 종이 울렸다. 스카이피아 사람들과 샨디아가 오랜 다툼을 멈추는 사이, 주민들은 무너진 길을 다시 이었다.",
     far: "스카이피아에서 에넬이 패하고 황금 종이 울렸다. 자야의 크리켓에게도 하늘에 황금향이 있었다는 답이 닿았다." },
   { id: "davy", title: "롱 링 롱 랜드의 기묘한 경기", time: "푸른 바다로 돌아와 · 롱 링 롱 랜드", canon: "https://one-piece.com/story/davy_back_fight/index.html", places: ["롱 링 롱 랜드"],
-    near: "롱 링 롱 랜드에서는 동료를 걸고 벌이는 데이비 백 파이트가 열렸다. 폭시의 느림보 광선보다 시끄러웠던 것은 응원 소리였다. 뒤이어 해군 대장 아오키지가 나타나 분위기가 얼어붙었다.",
+    near: "롱 링 롱 랜드에서는 동료를 걸고 벌이는 데이비 백 파이트가 열렸다. 폭시의 느릿느릿 빔보다 시끄러웠던 것은 응원 소리였다. 뒤이어 해군 대장 아오키지가 나타나 분위기가 얼어붙었다.",
     far: "루피 일행은 폭시 해적단과 동료를 건 경기를 치렀다. 얼마 뒤 아오키지와 마주쳐 압도적인 힘의 차이도 겪었다." },
   { id: "water_seven", title: "워터 세븐의 갈라진 마음", time: "다음 기항 · 워터 세븐", canon: WATER, places: ["워터 세븐"], art: "workbench",
-    near: "워터 세븐에서 메리호가 더는 항해하기 어렵다는 판정이 나왔다. 우솝이 일행과 갈라지고 로빈마저 사라진 날, 아쿠아 라구나를 대비하던 조선공들은 도시 전체의 배를 묶어야 했다.",
+    near: "워터 세븐에서 메리호가 더는 항해하기 어렵다는 판정이 나왔다. 우솝이 일행과 갈라지고 로빈마저 사라진 날, 아쿠아 라구나를 앞둔 주민들은 높은 곳으로 몸을 피해야 했다.",
     far: "워터 세븐에서 메리호의 수명을 두고 일행이 갈라졌다. 로빈의 실종과 CP9의 움직임이 겹치며 도시에는 폭풍까지 다가왔다.",
     choices: [
       { id: "repair", label: "동네 배를 묶고 비바람에 대비한다", cost: 10, risk: "물자 10 필요 · 지역의 신뢰 +10", personality: { loyalty: 5 },
@@ -82,13 +82,13 @@ const BEATS = [
     near: "로빈을 데려간 CP9을 쫓아 밀짚모자 일행이 에니에스 로비에 들어왔다. 정부의 깃발이 불타고 버스터 콜이 시작되자 섬 밖의 배들도 퇴로를 찾느라 분주했다.",
     far: "밀짚모자 일행이 로빈을 구하려 에니에스 로비에서 CP9과 싸웠다. 정부의 깃발이 불타고 버스터 콜이 울렸지만 일행은 탈출했다." },
   { id: "merry", title: "메리호와 작별한 항구", time: "탈출 뒤 · 워터 세븐", canon: ENIES, places: ["워터 세븐"], art: "workbench",
-    near: "돌아온 일행은 고잉 메리호와 작별했다. 프랑키가 만든 새 배 사우전드 써니호가 물에 뜨자, 조선공들은 떠나는 배보다 남겨진 작업장의 빈자리를 먼저 살폈다.",
-    far: "에니에스 로비를 벗어난 일행은 메리호를 떠나보냈다. 워터 세븐에서 프랑키가 동료가 되고 새 배 사우전드 써니호가 출항했다." },
+    near: "에니에스 로비를 벗어난 일행은 불타는 고잉 메리호를 바다 위에서 떠나보냈다. 워터 세븐의 조선소에서는 프랑키가 그들을 위한 새 배를 짓기 시작했다.",
+    far: "에니에스 로비를 벗어난 일행은 메리호를 떠나보냈다. 워터 세븐에서는 프랑키가 새 배를 짓고 있다는 말이 돌았다." },
   { id: "thriller_shadows", title: "스릴러 바크의 그림자", time: "안개 속 · 스릴러 바크", canon: THRILLER, places: ["스릴러 바크"],
     near: "안개 속 거대한 배 스릴러 바크에서 그림자를 잃은 사람들이 해가 뜨기 전에 숨을 곳을 찾았다. 루피 일행도 브룩과 함께 모리아의 좀비 군단을 상대했다.",
     far: "루피 일행은 스릴러 바크에서 브룩을 만나고 모리아에게 그림자를 빼앗긴 사람들을 보았다. 해가 뜨기 전까지 되찾아야 하는 싸움이었다." },
   { id: "thriller_aftermath", title: "새벽 뒤에도 남은 일", time: "다음 날 · 스릴러 바크", canon: THRILLER, places: ["스릴러 바크"],
-    near: "모리아가 패해 그림자들이 돌아왔다. 그러나 쿠마가 나타나면서 승리의 잔치는 잠시 멈췄다. 배를 떠날 때 브룩은 라분과의 오래된 약속을 다시 품었다.",
+    near: "모리아가 패해 그림자들이 돌아왔다. 그러나 승리의 잔치는 쿠마가 나타났다 떠난 뒤에야 열렸다. 배를 떠날 때 브룩은 라분과의 오래된 약속을 다시 품었다.",
     far: "모리아가 쓰러지고 빼앗긴 그림자들이 돌아왔다. 쿠마와의 위험한 대치 뒤 브룩이 일행에 합류해 라분을 다시 만날 길을 택했다." },
   { id: "sabaody_auction", title: "샤본디의 경매장", time: "얼마 뒤 · 샤본디 제도", canon: SABAODY, places: ["샤본디 제도"],
     near: "샤본디에는 억대 현상금의 신인 해적들이 모였다. 인어 케이미가 경매장에 끌려갔고, 하치가 총에 맞자 루피가 천룡인을 때렸다. 거리의 사람들은 곧 해군이 온다는 것을 알았다.",
@@ -113,7 +113,12 @@ const BEATS = [
 // Rule 10 inserts the extra beats after the one they follow; they share its places and art unless they name their own.
 const BEATS_V10 = BEATS.flatMap((beat) => [beat, ...(EXTRA_BEFORE[beat.id] || []).map((extra) => ({
   places: beat.places, art: beat.art, canon: beat.canon, near: extra.far, ...extra }))]);
-const beatsFor = (life) => life.creationVersion >= 10 ? BEATS_V10 : BEATS;
+// Rule 17 follows the manga order: Garp visits Water 7 (ch. 431) before the new posters go up (ch. 435).
+const BEATS_V17 = [...BEATS_V10];
+const garpAt = BEATS_V17.findIndex((beat) => beat.id === "garp");
+const postersAt = BEATS_V17.findIndex((beat) => beat.id === "bounty_300m");
+[BEATS_V17[garpAt], BEATS_V17[postersAt]] = [BEATS_V17[postersAt], BEATS_V17[garpAt]];
+const beatsFor = (life) => life.creationVersion >= 17 ? BEATS_V17 : life.creationVersion >= 10 ? BEATS_V10 : BEATS;
 export const preCanonCount = (life) => beatsFor(life).length;
 
 // Older rules put every pre-war beat in the one year Luffy sets out; rule 16 spreads them over ERA_WAR years.

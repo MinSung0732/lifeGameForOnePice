@@ -9,7 +9,7 @@ import { fateLegacy } from "./fates.js";
 import { preCanonStatus } from "./canon-before.js";
 import { createObservation, tickObservation } from "./observation.js";
 import { scenes } from "./story.js";
-import { initMusic, moodFor, setMood } from "./music.js";
+import { diceResult, diceTick, initMusic, moodFor, setMood } from "./music.js";
 
 const STORAGE_KEY = "a-life-at-sea.lives.v1";
 const modeName = (mode) => mode === "original" ? "원작 모드" : "더 자유로운 모드";
@@ -463,6 +463,7 @@ async function playDice({ roll, target, success, tier }) {
     // Flicker through random faces, slowing down like a die losing momentum.
     for (let delay = 45; delay < 230 && !skipped; delay *= 1.16) {
       die.textContent = String(1 + Math.floor(Math.random() * 100));
+      diceTick();
       await pause(delay);
     }
   }
@@ -474,6 +475,7 @@ async function playDice({ roll, target, success, tier }) {
   verdict.className = `dice-verdict ${kind}`;
   verdict.textContent = { great: "대성공!", success: "성공", fail: "실패" }[kind];
   card.classList.add(`verdict-${kind}`);
+  diceResult(kind);
   if (kind === "great" && !reduced) {
     for (let index = 0; index < 18; index += 1) {
       const spark = document.createElement("span");

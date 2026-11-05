@@ -17,7 +17,7 @@ const CHARACTERS = {
   ace: { name: "포트거스 D. 에이스", display: "에이스", group: "흰 수염 해적단", captureable: true },
   vivi: { name: "네펠타리 비비", display: "비비", group: "알라바스타 왕국" },
   crocodile: { name: "크로커다일", display: "크로커다일", group: "바로크 워크스", captureable: true },
-  blackbeard: { name: "마샬 D. 티치", display: "검은수염", group: "검은수염 해적단", captureable: true },
+  blackbeard: { name: "마셜 D. 티치", display: "검은수염", group: "검은수염 해적단", captureable: true },
   foxy: { name: "폭시", display: "폭시", group: "폭시 해적단", captureable: true },
   aokiji: { name: "쿠잔", display: "쿠잔", group: "해군" },
   hachi: { name: "하치", display: "하치", group: "어인", captureable: true },

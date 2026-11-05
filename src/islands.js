@@ -38,7 +38,7 @@ const ISLAND_EVENTS = [
   { id: "drum_doctors", place: "드럼섬", from: 15, to: 3, title: "의사가 사라진 나라",
     body: "드럼 왕국의 왕은 이름난 의사들을 성에 모아 두고 자기 사람에게만 치료를 허락했다. 마을에는 열이 내리지 않는 아이가 있었다.", choices: [
       { id: "climb", label: "산꼭대기의 의사를 찾아 업고 오른다", needs: { health: 50 }, risk: "건강 50 필요 · 성공하면 지역의 신뢰 +20", failRisk: "건강 -20", personality: { empathy: 9, caution: -5 },
-        apply: (life) => { life.trust += 20; life.health -= 10; return "눈보라 속에서 성에 닿았다. 괴팍한 노의사는 투덜대면서도 아이를 받아 주었다."; },
+        apply: (life) => { life.trust += 20; life.health -= 10; return "눈보라 속에서 산 위의 집에 닿았다. 괴팍한 노의사는 투덜대면서도 아이를 받아 주었다."; },
         fail: (life) => { life.health -= 20; return "중턱에서 발을 헛디뎠다. 마을 사람들이 내려와 둘을 끌고 갔다."; } },
       { id: "medicine", label: "가진 약을 나눈다", cost: 10, risk: "물자 -10 · 지역의 신뢰 +10", personality: { empathy: 6 },
         apply: (life) => { life.supplies -= 10; life.trust += 10; return "아이의 열은 조금 내렸다. 왕이 없는 곳에서 사람들은 서로를 돌봤다."; } },
@@ -105,7 +105,7 @@ const ISLAND_EVENTS = [
     body: "어인섬 거리에는 지상 사람을 경계하는 눈빛과 함께, 오래전 지상의 친구를 만들자고 했던 왕비의 이야기가 함께 남아 있었다.",
     after: (life) => { life.skill += 10; return "해류와 거품 코팅의 쓰임을 배웠다."; } },
   { id: "riku_dressrosa", place: "드레스로자", from: 60, to: 11, title: "가난하지만 다정한 나라",
-    body: "드레스로자의 리쿠 왕가는 화려하지 않았다. 왕실의 곳간을 열어 백성의 빚을 갚아 준다는 이야기를 시장 사람들이 자랑처럼 했다.",
+    body: "드레스로자의 리쿠 왕가는 화려하지 않았다. 왕이 백성과 가까이 지내며 그들의 사정을 듣는다는 이야기를 시장 사람들이 자랑처럼 했다.",
     after: (life) => { life.trust += 10; return "시장 사람들과 오래 이야기를 나눴다."; } },
   { id: "toys_dressrosa", place: "드레스로자", from: 10, to: 1, title: "말하는 장난감",
     body: "도플라밍고가 다스리는 드레스로자의 밤에 한쪽 다리의 장난감 병정이 말을 걸었다. 자기를 기억하는 사람이 섬에 아무도 없다고 했다.", choices: [
@@ -140,7 +140,7 @@ const ISLAND_EVENTS = [
       { id: "help", label: "물자를 나누고 일을 돕는다", cost: 10, risk: "물자 -10 · 지역의 신뢰 +20", personality: { empathy: 8, loyalty: 6 },
         apply: (life) => { life.supplies -= 10; life.trust += 20; return "밭일을 돕고 지붕을 고쳤다. 섬사람들이 다음에도 오라고 했다."; } },
       { id: "pass", label: "짧게 들르고 떠난다", risk: "변화 없음", personality: { caution: 4 },
-        apply: () => "섬 언덕의 무덤 쪽을 한 번 바라보고 출항했다." }
+        apply: () => "흰 수염이 나고 자란 섬을 한 번 돌아보고 출항했다." }
     ] },
   { id: "hachinosu", place: "하치노스 근해", title: "해적섬의 소문",
     body: "해골 모양의 바위섬 하치노스에는 법이 닿지 않았다. 근해를 지나는 배마다 그곳에서 누가 사람을 모으는지 이야기했다.", choices: [
@@ -157,7 +157,7 @@ const ISLAND_EVENTS = [
         apply: () => "폭포 소리가 멀어질 때까지 노를 저었다." }
     ] },
   { id: "totland_tribute", place: "홀케이크 아일랜드 외해", from: 60, to: 1, title: "과자 조공",
-    body: "빅 맘의 함대가 다가와 이 바다를 지나려면 과자를 바치라고 했다. 빅 맘의 영역에서 약속을 어긴 섬의 이야기는 모두가 알았다.", choices: [
+    body: "빅 맘의 함대가 영역의 섬들에서 달마다 바칠 과자를 거두다가 지나가던 배에도 몫을 내라고 했다. 빅 맘의 영역에서 약속을 어긴 섬의 이야기는 모두가 알았다.", choices: [
       { id: "pay", label: "과자와 물자를 바친다", cost: 20, risk: "물자 -20 · 안전", personality: { caution: 7 },
         apply: (life) => { life.supplies -= 20; return "함대는 상자를 받아 들고 길을 열었다."; } },
       { id: "refuse", label: "거절하고 빠져나간다", needs: { skill: 60, health: 50 }, risk: "기술 60 · 건강 50 필요 · 성공하면 지역의 신뢰 +10", failRisk: "건강 -25 · 물자 -20", personality: { freedom: 8, caution: -6 },

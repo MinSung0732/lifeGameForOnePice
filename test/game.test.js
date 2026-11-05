@@ -106,7 +106,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 17 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 18 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -805,7 +805,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 16);
+  assert.equal(createGame("original", 0).creationVersion, 17);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1219,4 +1219,28 @@ test("background music picks a mood per scene and keeps notes in tune", () => {
   assert.ok(Math.abs(degreeHz("calm", 7) - 587.32) < 0.01);
   assert.ok(Math.abs(degreeHz("calm", -7) - 146.83) < 0.01);
   assert.ok(Math.abs(degreeHz("calm", -1) - 293.66 * 2 ** (-1 / 12)) < 0.01);
+});
+
+test("rule 17 follows the manga order at Water 7 and keeps Jarul at Elbaf in the present", () => {
+  const order = (version) => {
+    const life = createGame("original", 3, { species: "인간" }, 3, version);
+    const ids = [];
+    for (let step = 0; step < 80 && ids.length < 80; step += 1) {
+      life.preCanonStep = step;
+      life.age = life.birth.yearsBeforeCurrent + 30;
+      const scene = preCanonScene(life);
+      if (scene) ids.push(scene.id);
+    }
+    return ids;
+  };
+  const v17 = order(17);
+  assert.ok(v17.indexOf("canon_before_garp") < v17.indexOf("canon_before_bounty_300m"));
+  const v16 = order(16);
+  assert.ok(v16.indexOf("canon_before_garp") > v16.indexOf("canon_before_bounty_300m"), "older lives replay the old order");
+  const present = createGame("original", 0, { species: "인간" }, 3, 17);
+  present.location = "엘바프";
+  present.age = presentAge(present);
+  assert.equal(encounterAt(present), "luffy_elbaf");
+  present.seen.push("life_meet_luffy_elbaf");
+  assert.equal(encounterAt(present), "jarul");
 });

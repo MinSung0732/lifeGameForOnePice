@@ -123,7 +123,7 @@ const ENCOUNTERS = [
       { id: "watch", label: "멀리서 결투를 보고 떠난다", risk: "결투에 끼어들지 않음 · 기술 +10", personality: { caution: 6 }, apply: (life) => { life.skill += 10; return "물러설 때를 아는 것도 오래 남는 배움이었다."; } }
     ] },
   { id: "kureha", place: "드럼섬", earliest: 30, latest: 3, latestV3: 0, name: "닥터 쿠레하", canon: "https://one-piece.com/character/Dr_Kureha/index.html",
-    body: "드럼섬에서 오래 일한 의사 닥터 쿠레하를 만났다. 그는 환자의 몸보다 먼저 여행 준비가 허술하다고 지적했다.",
+    body: "드럼섬에서 오래 일한 의사 닥터 쿠레하를 만났다. 쿠레하는 환자의 몸보다 먼저 여행 준비가 허술하다고 지적했다.",
     choices: [
       { id: "treat", label: "치료와 진찰을 부탁한다", available: (life) => life.supplies >= 20, risk: "물자 20 필요 · 건강 +20", personality: { caution: 5 }, apply: (life) => { life.supplies -= 20; life.health += 20; return "진찰은 거칠었지만 돌아갈 힘이 생겼다."; } },
       { id: "listen", label: "준비에 관한 말을 듣는다", risk: "기술 +10", personality: { caution: 5 }, apply: (life) => { life.skill += 10; return "약보다 먼저 필요한 물자와 쉬는 날을 적었다."; } }
@@ -146,24 +146,25 @@ const ENCOUNTERS = [
       { id: "learn", label: "배의 구조를 함께 점검한다", available: (life) => life.supplies >= 10, risk: "물자 10 필요 · 기술 +20", personality: { caution: 5, ambition: 4 }, apply: (life) => { life.supplies -= 10; life.skill += 20; return "나무가 물을 먹는 자리와 보강할 부분을 기록했다."; } },
       { id: "thank", label: "조언을 듣고 일터로 돌아간다", risk: "기술 +10", personality: { loyalty: 4 }, apply: (life) => { life.skill += 10; return "톰의 작업을 방해하지 않고 자기 배로 돌아왔다."; } }
     ] },
-  { id: "jarul", place: "엘바프", earliest: 63, latest: 3, name: "야를", canon: "https://one-piece.com/character/Jarul/index.html",
-    body: "엘바프에 기항한 날, 장로 야를을 만났다. 그는 다른 배가 무엇을 얻으러 왔는지보다 누구와 함께 돌아갈지를 먼저 물었다.",
-    choices: [
-      { id: "share", label: "동행의 사정을 솔직히 말한다", risk: "지역의 신뢰 +10", personality: { loyalty: 6, empathy: 5 }, apply: (life) => { life.trust += 10; return "야를은 짧게 고개를 끄덕이고 기항할 자리를 알려 주었다."; } },
-      { id: "observe", label: "예의를 갖추고 섬을 둘러본다", risk: "기술 +10", personality: { caution: 5 }, apply: (life) => { life.skill += 10; return "낯선 땅에서는 먼저 길과 일상을 익히기로 했다."; } }
-    ] },
   { id: "luffy_elbaf", place: "엘바프", earliest: 0, latest: 0, name: "몽키 D. 루피", canon: "https://one-piece.com/story/elbaph/index.html",
     body: "엘바프에서 밀짚모자 루피를 잠깐 마주쳤다. 그는 동료들이 있는 쪽을 묻고 있었고, 항구의 길은 여러 갈래였다.",
     choices: [
       { id: "guide", label: "동료들이 지나간 길을 가리킨다", risk: "짧은 대화 · 지역의 신뢰 +10", personality: { empathy: 5 }, apply: (life) => { life.trust += 10; return "루피는 고맙다며 손을 흔들었다. 이어지는 모험은 그의 동료들과 함께할 일이었다."; } },
       { id: "pass", label: "다른 길목을 살피러 간다", risk: "기술 +10 · 각자의 항로", personality: { caution: 5 }, apply: (life) => { life.skill += 10; return "떠들썩한 항구를 뒤로하고 자기 배의 길을 확인했다."; } }
+    ] },
+  { id: "jarul", place: "엘바프", earliest: 63, latest: 3, latestV17: 0, name: "야를", canon: "https://one-piece.com/character/Jarul/index.html",
+    body: "엘바프에 기항한 날, 장로 야를을 만났다. 그는 다른 배가 무엇을 얻으러 왔는지보다 누구와 함께 돌아갈지를 먼저 물었다.",
+    choices: [
+      { id: "share", label: "동행의 사정을 솔직히 말한다", risk: "지역의 신뢰 +10", personality: { loyalty: 6, empathy: 5 }, apply: (life) => { life.trust += 10; return "야를은 짧게 고개를 끄덕이고 기항할 자리를 알려 주었다."; } },
+      { id: "observe", label: "예의를 갖추고 섬을 둘러본다", risk: "기술 +10", personality: { caution: 5 }, apply: (life) => { life.skill += 10; return "낯선 땅에서는 먼저 길과 일상을 익히기로 했다."; } }
     ] }
 ];
 
 export function encounterAt(life) {
   const beforePresent = storyBefore(life);
-  // latestV3: canon still shows them there in the present; older rules keep their original window for replay.
-  const latest = (entry) => life.creationVersion >= 3 && entry.latestV3 !== undefined ? entry.latestV3 : entry.latest;
+  // latestV3/latestV17: canon still shows them there in the present; older rules keep their original window for replay.
+  const latest = (entry) => life.creationVersion >= 17 && entry.latestV17 !== undefined ? entry.latestV17
+    : life.creationVersion >= 3 && entry.latestV3 !== undefined ? entry.latestV3 : entry.latest;
   return ENCOUNTERS.find((entry) => life.location === entry.place && beforePresent <= entry.earliest && beforePresent >= latest(entry) && !life.seen.includes(`life_meet_${entry.id}`))?.id || null;
 }
 
@@ -262,7 +263,7 @@ export function crewNews(life, age = life.age) {
   const line = before > 19 ? "아직 없다. 훗날의 선장도 태어나기 전이다."
     : before > 12 ? "훗날의 선장 루피는 이스트 블루 푸샤 마을의 어린아이다."
       : before === 12 ? "푸샤 마을을 떠나는 샹크스가 어린 루피에게 밀짚모자를 맡겼다."
-        : before > 2 ? "루피는 코르보산에서 형제들과 자라며 바다로 나갈 날을 기다린다."
+        : before > 2 ? "루피는 코르보산의 산적 다단 일가에서 자라며 바다로 나갈 날을 기다린다."
           : before === 2 ? "루피가 바다로 나가 동료를 모았다. 마린포드 전쟁 뒤 일당은 흩어져 수련에 들어갔다."
             : before === 1 ? "흩어진 일당이 각자의 섬에서 2년의 수련을 이어 간다."
               : before === 0 ? "다시 모인 일당이 신세계를 건너 엘바프에 닿았다."

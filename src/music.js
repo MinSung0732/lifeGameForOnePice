@@ -181,6 +181,36 @@ function stop() {
   }
 }
 
+// Dice sounds follow the same ♪ switch: a wooden click per flicker, then a verdict sting.
+const soundOn = () => settings.on && ctx && ctx.state === "running";
+
+export function diceTick() {
+  if (!soundOn()) return;
+  const start = ctx.currentTime;
+  const out = ctx.createGain();
+  const knock = ctx.createOscillator();
+  knock.type = "triangle";
+  knock.frequency.setValueAtTime(700 + Math.random() * 500, start);
+  knock.frequency.exponentialRampToValueAtTime(220, start + 0.04);
+  out.gain.setValueAtTime(0.12, start);
+  out.gain.exponentialRampToValueAtTime(0.001, start + 0.06);
+  knock.connect(out).connect(master);
+  knock.start(start);
+  knock.stop(start + 0.07);
+}
+
+// great: a rising major arpeggio; success: two bright notes; fail: a low falling thud.
+const STINGS = { great: [[0, 0], [2, 0.09], [4, 0.18], [7, 0.27], [9, 0.36]], success: [[4, 0], [7, 0.12]], fail: [[-3, 0], [-6, 0.2]] };
+export function diceResult(kind) {
+  if (!soundOn()) return;
+  const now = ctx.currentTime;
+  for (const [degree, delay] of STINGS[kind]) {
+    note(degreeHz(kind === "fail" ? "danger" : "calm", degree), now + delay, kind === "great" && delay > 0.3 ? 0.9 : 0.3, 0.07);
+  }
+  if (kind === "fail") drum(now);
+  if (kind === "great") drum(now + 0.36);
+}
+
 export function setMood(next) {
   if (next === mood) return;
   mood = next;

@@ -19,14 +19,14 @@ const ARCS = {
         { id: "children", label: "구경하던 아이들을 처마 밑으로 데려간다", risk: "지역의 신뢰 +10", personality: { empathy: 6 }, apply: (life) => { life.trust += 10; return "곧 무슨 일이 터질 것 같았다. 아이들을 가게 안으로 들여보내자마자 광장이 소란해졌다."; } }
       ] },
     { time: "같은 날 오후 · 폭풍 속", title: "처형대에 떨어진 번개",
-      body: "칼날이 내려오기 직전, 번개가 처형대를 때렸다. 불타는 나무 사이로 밀짚모자 소년이 웃으며 걸어 나왔고, 연기의 해군이 빗속을 가르며 뒤쫓았다. 항구로 향하는 길이 순식간에 막혔다.",
+      body: "칼날이 내려오기 직전, 번개가 처형대를 때렸다. 무너진 처형대 잔해 속에서 밀짚모자 소년이 일어나 웃었고, 연기의 해군이 빗속을 가르며 뒤쫓았다. 항구로 향하는 길이 순식간에 막혔다.",
       choices: [
         { id: "checkpoint", label: "해군의 검문을 돕는다", when: (life) => life.path === "marine", risk: "지역의 신뢰 +10", personality: { loyalty: 6 },
           apply: (life) => { life.trust += 10; return "골목마다 검문을 섰지만 배는 폭풍 사이로 빠져나갔다. 상관은 바람이 이상하게 그쪽으로만 불었다고 중얼거렸다."; } },
         { id: "slip", label: "빗속에서 해군의 눈을 피해 배로 달린다", when: (life) => outlaw(life), needs: { skill: 40 }, bounty: 3_000_000, risk: "기술 40 필요 · 현상금이 오를 수 있음", failRisk: "건강 -15",
           personality: { freedom: 7 }, apply: () => "혼란을 틈타 닻줄을 끊었다. 등 뒤의 광장에서는 아직 번개의 냄새가 났다.",
           fail: (life) => { life.health -= 15; return "골목 끝에서 해군과 부딪혔다. 몸싸움 끝에 겨우 배에 올랐다."; } },
-        { id: "shelter", label: "문을 걸고 폭풍을 피한다", risk: "건강 +5", personality: { caution: 6 }, apply: (life) => { life.health += 5; return "덧창을 닫고 밤을 보냈다. 다음 날 아침 광장에는 그을린 처형대만 남아 있었다."; } }
+        { id: "shelter", label: "문을 걸고 폭풍을 피한다", risk: "건강 +5", personality: { caution: 6 }, apply: (life) => { life.health += 5; return "덧창을 닫고 밤을 보냈다. 다음 날 아침 광장에는 무너진 처형대의 그을린 잔해만 남아 있었다."; } }
       ] }
   ] },
   whiskey: { place: "위스키 피크", art: "arcWhiskey", scenes: [
@@ -35,7 +35,7 @@ const ARCS = {
       choices: [
         { id: "join", label: "사냥꾼들 편에 서서 덤빈다", needs: { skill: 60 }, risk: "기술 60 필요 · 상대가 심상치 않음", failRisk: "건강 -20",
           personality: { ambition: 6, caution: -5 }, apply: (life) => { life.health -= 5; return "한 합을 겨루고 살아남은 것만으로도 운이 좋았다. 날이 밝자 마을 사냥꾼 백 명이 전부 쓰러져 있었다."; },
-          fail: (life) => { life.health -= 20; return "검을 뽑기도 전에 바닥에 누워 있었다. 검객은 하품을 하며 다음 사냥꾼을 상대했다."; } },
+          fail: (life) => { life.health -= 20; return "검을 뽑기도 전에 바닥에 누워 있었다. 검객은 이미 다음 사냥꾼을 상대하고 있었다."; } },
         { id: "hide", label: "술통 뒤에 숨어 지켜본다", risk: "기술 +5", personality: { caution: 7 }, apply: (life) => { life.skill += 5; return "한 사람이 백 명을 쓰러뜨리는 밤을 숨죽여 보았다. 검 쓰는 법 하나를 몰래 배웠다."; } },
         { id: "leave", label: "밤배로 마을을 빠져나간다", cost: 10, risk: "물자 -10", personality: { caution: 6 }, apply: (life) => { life.supplies -= 10; return "선인장 바위산이 멀어지는 동안 마을에서 칼 부딪히는 소리가 밤새 들렸다."; } }
       ] }
@@ -45,7 +45,7 @@ const ARCS = {
       body: "숲 한가운데에 거대한 밀랍 케이크 같은 무대가 솟았다. 그 위에서 사람들이 하얗게 굳어 가고 있었다. 바로크 워크스의 이름이 숲 여기저기서 들렸다.",
       choices: [
         { id: "fire", label: "불을 피워 밀랍을 녹이는 걸 돕는다", needs: { skill: 40 }, risk: "기술 40 필요 · 지역의 신뢰 +10", failRisk: "건강 -15",
-          personality: { empathy: 6, ambition: 4 }, apply: (life) => { life.trust += 10; return "누군가 기름을 부어 불을 키웠다. 밀랍이 녹아내리는 연기 속에서 굳어 가던 사람들이 숨을 몰아쉬었다."; },
+          personality: { empathy: 6, ambition: 4 }, apply: (life) => { life.trust += 10; return "누군가 붙인 불이 무대를 휘감았다. 밀랍이 녹아내리는 연기 속에서 굳어 가던 사람들이 숨을 몰아쉬었다."; },
           fail: (life) => { life.health -= 15; return "다리가 밀랍에 붙어 움직이지 않았다. 불길이 번진 뒤에야 겨우 빠져나왔다."; } },
         { id: "flee", label: "공룡을 피해 해안으로 물러난다", risk: "물자 +10", personality: { caution: 6 }, apply: (life) => { life.supplies += 10; return "해안에서 열매를 모으며 숲의 소동이 끝나기를 기다렸다. 멀리서 두 거인의 웃음이 다시 울렸다."; } }
       ] }
@@ -55,7 +55,7 @@ const ARCS = {
       body: "해적에게 쫓겨 도망쳤던 옛 왕이 배를 끌고 돌아왔다. 마을 사람들은 문을 걸었고, 덩치 큰 남자 한 명이 홀로 왕의 앞을 막아섰다.",
       choices: [
         { id: "guard", label: "그 남자의 곁에 서서 길을 막는다", needs: { health: 50 }, risk: "건강 50 필요 · 지역의 신뢰 +20", failRisk: "건강 -20",
-          personality: { loyalty: 7, caution: -5 }, apply: (life) => { life.trust += 20; return "왕의 부하들이 주춤했다. 그 틈에 아이들이 산 위 성 쪽으로 피신했다."; },
+          personality: { loyalty: 7, caution: -5 }, apply: (life) => { life.trust += 20; return "왕의 부하들이 주춤했다. 그 틈에 아이들이 집 안으로 피신했다."; },
           fail: (life) => { life.health -= 20; return "단번에 눈밭에 처박혔다. 덩치 큰 남자가 대신 앞을 막았다."; } },
         { id: "evacuate", label: "노인과 아이를 이웃 마을로 옮긴다", risk: "건강 -5 · 지역의 신뢰 +10", personality: { empathy: 7 }, apply: (life) => { life.health -= 5; life.trust += 10; return "눈길을 반나절 걸었다. 이웃 마을에서 따뜻한 국을 얻어먹었다."; } }
       ] },
@@ -86,20 +86,20 @@ const ARCS = {
       body: "사막 한가운데 도시 레인베이스에는 거대한 카지노가 서 있었다. 주인이 칠무해 크로커다일이라 손님들은 안심하고 돈을 걸었다. 지하에서 이상한 물소리가 들린다는 소문도 있었다.",
       choices: [
         { id: "gamble", label: "판돈을 건다", cost: 10, risk: "물자 -10 · 결과는 알 수 없음", personality: { ambition: 6, freedom: 5 },
-          apply: (life) => { life.supplies -= 10; if (lucky(life, 0x8a01, 35)) { life.supplies += 30; return "주사위가 연달아 맞았다! 칩을 바꿔 들고 서둘러 나왔다."; } return "칩은 순식간에 사라졌다. 이 카지노는 손님이 이기게 두지 않았다."; } },
+          apply: (life) => { life.supplies -= 10; if (lucky(life, 0x8a01, 35)) { life.supplies += 30; return "주사위가 연달아 맞았다! 칩을 바꿔 들고 서둘러 나왔다."; } return "칩은 순식간에 사라졌다. 오늘의 운은 끝내 이쪽으로 오지 않았다."; } },
         { id: "listen", label: "지하의 소문을 캐 본다", needs: { skill: 50 }, risk: "기술 50 필요 · 위험한 소문", failRisk: "건강 -15",
           personality: { caution: 4, freedom: 5 }, apply: (life) => { life.skill += 10; return "지하에는 거대한 악어들이 사는 물길과 바다의 돌로 만든 우리가 있다고 했다. 이 나라의 비가 왜 끊겼는지 짐작이 갔다."; },
           fail: (life) => { life.health -= 15; return "직원들에게 끌려 나와 사막에 내던져졌다. 모래 맛이 오래 남았다."; } }
       ] },
     { time: "결전의 날 · 수도 알바나", title: "시계탑의 오후",
-      body: "국왕군과 반란군이 수도 알바나의 광장에서 맞붙었다. 왕녀가 싸움을 멈추라고 외쳤지만 포성에 묻혔다. 광장의 시계탑 근처에 거대한 포탄이 숨겨져 있다는 소리가 사람들 사이로 번졌다.",
+      body: "국왕군과 반란군이 수도 알바나의 광장에서 맞붙었다. 왕녀가 싸움을 멈추라고 외쳤지만 포성에 묻혔다. 시계탑 근처에 거대한 포탄이 숨겨져 있다고 외치며 달려가는 이들이 있었다.",
       choices: [
         { id: "plaza", label: "시민들을 광장 밖으로 이끈다", risk: "건강 -10 · 지역의 신뢰 +20", personality: { empathy: 9, loyalty: 5 },
-          apply: (life) => { life.health -= 10; life.trust += 20; return "골목마다 사람을 밀어 넣으며 광장을 비웠다. 오후 네 시, 하늘 높은 곳에서 무언가가 터졌다."; } },
+          apply: (life) => { life.health -= 10; life.trust += 20; return "골목마다 사람을 밀어 넣으며 광장을 비웠다. 오후 네 시 반, 하늘 높은 곳에서 무언가가 터졌다."; } },
         { id: "search", label: "시계탑 주변을 뒤진다", needs: { skill: 55, health: 45 }, risk: "기술 55 · 건강 45 필요", failRisk: "건강 -25",
           personality: { ambition: 6, empathy: 6, caution: -6 }, apply: (life) => { life.trust += 10; return "시계탑을 가리키며 외쳤다. 누군가 그 말을 듣고 탑으로 달려갔다. 마지막 일은 다른 이들의 몫이었다."; },
           fail: (life) => { life.health -= 25; return "병사들의 싸움에 휘말려 계단에서 굴렀다. 정신을 차렸을 때 하늘에서 폭음이 울렸다."; } },
-        { id: "cover", label: "건물 안에 몸을 숨긴다", risk: "신중함이 자람", personality: { caution: 7 }, apply: () => "창틈으로 광장을 보았다. 싸움이 멎은 뒤, 몇 해 만에 하늘에서 비가 내렸다." }
+        { id: "cover", label: "건물 안에 몸을 숨긴다", risk: "신중함이 자람", personality: { caution: 7 }, apply: () => "창틈으로 광장을 보았다. 몇 해 만에 하늘에서 비가 내렸고, 그제야 싸움이 멎었다." }
       ] }
   ] },
   jaya: { place: "모크 타운", art: "arcJaya", scenes: [
@@ -107,11 +107,11 @@ const ARCS = {
       body: "술집에서 이름난 해적이 하늘섬을 믿는 신참 해적들을 두들겨 팼다. 밀짚모자 소년은 끝까지 맞서지 않았다. 구석 자리의 이 빠진 사내가 사람의 꿈은 끝나지 않는다며 크게 웃었다.",
       choices: [
         { id: "laugh", label: "사내의 말에 잔을 들어 맞장구친다", risk: "자유로움이 자람 · 친구와의 유대 +5", personality: { freedom: 8 }, apply: (life) => { life.friendBond += 5; return "사내는 기분 좋게 체리 파이를 하나 더 시켰다. 나중에야 그 얼굴을 수배서에서 다시 보게 됐다."; } },
-        { id: "mock", label: "술집 분위기에 맞춰 함께 비웃는다", risk: "신중함이 자람", personality: { caution: 5, freedom: -5 }, apply: () => "웃음은 금방 식었다. 밀짚모자 소년이 웃으며 나가는 뒷모습이 이상하게 마음에 걸렸다." }
+        { id: "mock", label: "술집 분위기에 맞춰 함께 비웃는다", risk: "신중함이 자람", personality: { caution: 5, freedom: -5 }, apply: () => "웃음은 금방 식었다. 밀짚모자 소년이 말없이 나가는 뒷모습이 이상하게 마음에 걸렸다." }
       ] },
     { time: "다음 날 정오 · 앞바다", title: "하늘로 솟구친 해류",
-      body: "정오가 되자 앞바다가 거대하게 부풀어 올랐다. 바다가 하늘을 향해 기둥처럼 솟구쳤고, 작은 배 한 척이 그 꼭대기를 타고 구름 속으로 사라졌다.",
-      after: (life) => { life.skill += 5; return "그날 이후 모크 타운에서 하늘섬을 비웃는 목소리가 조금 작아졌다."; } }
+      body: "정오가 되자 먼바다가 거대하게 부풀어 올랐다. 바다가 하늘을 향해 기둥처럼 솟구쳤고, 작은 배 한 척이 그 꼭대기를 타고 구름 속으로 사라졌다.",
+      after: (life) => { life.skill += 5; return "그날 본 바다 기둥을 떠올릴 때마다 하늘섬을 비웃던 술집의 웃음소리가 조금 작게 느껴졌다."; } }
   ] },
   davy: { place: "롱 링 롱 랜드", art: "deck", scenes: [
     { time: "경기 날 · 길쭉한 섬", title: "데이비 백 파이트의 응원석",
@@ -124,12 +124,12 @@ const ARCS = {
         { id: "cheer", label: "돈은 걸지 않고 목청껏 응원한다", risk: "친구와의 유대 +5", personality: { freedom: 5 },
           apply: (life) => { life.friendBond += 5; return "옆자리 관중과 어깨동무를 하고 소리를 질렀다. 목이 쉬었지만 즐거운 하루였다."; } }
       ] },
-    { time: "경기 다음 날 · 해변", title: "얼어붙은 바다",
-      body: "키 큰 사내가 해변에서 낮잠을 자다 일어났다. 해군 대장이라는 말에 섬의 공기가 얼어붙었다. 실제로 바다 한쪽이 하얗게 얼어 있었다.",
+    { time: "경기 뒤 · 해변", title: "얼어붙은 바다",
+      body: "눈가리개를 한 키 큰 사내가 선 채로 자다 일어났다. 해군 대장이라는 말에 섬의 공기가 얼어붙었다. 실제로 바다 한쪽이 하얗게 얼어 있었다.",
       after: (life) => { life.health -= 5; return "얼음 바람을 피해 배로 돌아왔다. 대장 하나가 바다를 얼린다는 이야기는 과장이 아니었다."; } }
   ] },
   water_seven: { place: "워터 세븐", art: "arcWater7", scenes: [
-    { time: "도착 이튿날 · 뒷골목", title: "해체업자의 집",
+    { time: "도착한 날 · 뒷골목", title: "해체업자의 집",
       body: "뒷골목에서 해체업자 무리가 돈 가방을 둘러싸고 환호했다. 밀짚모자 일행의 돈이라는 말이 들리더니, 얼마 뒤 그 집이 통째로 무너지는 소리가 났다.",
       choices: [
         { id: "watch", label: "구경꾼 틈에서 지켜본다", risk: "기술 +5", personality: { freedom: 4 }, apply: (life) => { life.skill += 5; return "무너진 집 앞에서 해체업자들이 울상을 지었다. 도시 사람들은 늘 있는 일이라는 듯 웃었다."; } },
@@ -144,12 +144,12 @@ const ARCS = {
         { id: "away", label: "불길에서 물러나 배를 지킨다", risk: "물자 +5", personality: { caution: 6 }, apply: (life) => { life.supplies += 5; return "부두에서 불길을 바라보았다. 다음 날 도시에는 아무도 믿기 어려운 소문이 퍼졌다."; } }
       ] },
     { time: "아쿠아 라구나의 날 · 역", title: "폭풍 속으로 떠난 열차",
-      body: "해일이 몰려오는데도 바다 위를 달리는 열차 한 대가 역을 박차고 나갔다. 해군 기지 섬으로 가는 길이라고 했다. 역무원들은 미친 짓이라며 고개를 저었다.",
+      body: "해일이 몰려오는데도 바다 위를 달리는 열차 한 대가 역을 박차고 나갔다. 정부의 사법의 섬으로 가는 길이라고 했다. 역무원들은 미친 짓이라며 고개를 저었다.",
       after: (life) => { life.health -= 5; return "높은 곳으로 피해 해일을 견뎠다. 며칠 뒤 정부의 섬에서 깃발이 불탔다는 소식이 왔다."; } }
   ] },
   sabaody_auction: { place: "샤본디 제도", art: "arcSabaody", scenes: [
     { time: "그날 · 1번 그로브 경매장", title: "경매장의 총성",
-      body: "인간 경매장에서 천룡인이 문어 어인을 쐈다. 모두가 고개를 숙인 순간, 밀짚모자 소년이 계단을 뛰어 내려가 천룡인을 주먹으로 날려 버렸다. 경매장이 뒤집혔다.",
+      body: "인간 경매장에서 천룡인이 문어 어인을 쐈다. 모두가 고개를 숙인 순간, 밀짚모자 소년이 객석 계단을 걸어 내려가 천룡인을 주먹으로 날려 버렸다. 경매장이 뒤집혔다.",
       choices: [
         { id: "kneel", label: "바닥에 엎드려 지나가기를 기다린다", risk: "신중함이 자람", personality: { caution: 8 }, apply: () => "머리 위로 사람이 날아다녔다. 고개를 들었을 때 경매장 문은 해군에게 포위돼 있었다." },
         { id: "free", label: "혼란을 틈타 사슬에 묶인 이들을 푼다", needs: { skill: 50 }, bounty: 10_000_000, risk: "기술 50 필요 · 현상금이 오를 수 있음", failRisk: "건강 -20",
@@ -170,7 +170,7 @@ const ARCS = {
     { time: "2년 뒤 · 샤본디", title: "가짜 밀짚모자의 모집",
       body: "밀짚모자 루피라고 자칭하는 사내가 샤본디에서 선원을 모았다. 현상금 4억이라고 떠들었지만 키도 얼굴도 수배서와 딴판이었다.",
       choices: [
-        { id: "laugh", label: "면접만 보고 웃으며 나온다", risk: "친구와의 유대 +5", personality: { freedom: 5 }, apply: (life) => { life.friendBond += 5; return "가짜 선장은 진짜 해군이 들이닥치자마자 도망쳤다. 그날 진짜는 따로 있었다."; } },
+        { id: "laugh", label: "면접만 보고 웃으며 나온다", risk: "친구와의 유대 +5", personality: { freedom: 5 }, apply: (life) => { life.friendBond += 5; return "가짜 선장은 해군이 들이닥치자 손쓸 새도 없이 붙잡혔다. 그날 진짜는 따로 있었다."; } },
         { id: "report", label: "해군에 제보한다", when: (life) => life.path === "marine", risk: "지역의 신뢰 +10", personality: { loyalty: 5 }, apply: (life) => { life.trust += 10; return "가짜는 체포됐다. 진짜 밀짚모자는 그 사이 바다 밑으로 떠났다."; } }
       ] }
   ] },
@@ -186,17 +186,17 @@ const ARCS = {
   ] },
   dressrosa: { place: "드레스로자", art: "arcDressrosa", scenes: [
     { time: "첫날 · 콜로세움", title: "불꽃 열매가 걸린 투기장",
-      body: "드레스로자의 콜로세움에서 죽은 형제의 열매를 걸고 싸우는 대회가 열렸다. 관중석 너머로 진 투사들이 어디론가 끌려갔다. 거리에서는 말하는 장난감들이 사람처럼 일을 했다.",
+      body: "드레스로자의 콜로세움에서 이글이글 열매를 걸고 싸우는 대회가 열렸다. 관중석 너머로 진 투사들이 어디론가 끌려갔다. 거리에서는 말하는 장난감들이 사람처럼 일을 했다.",
       choices: [
         { id: "enter", label: "투기장에 출전한다", needs: { skill: 65, health: 55 }, risk: "기술 65 · 건강 55 필요 · 진 사람은 어딘가로 끌려감", failRisk: "건강 -25",
           personality: { ambition: 9, caution: -7 }, apply: (life) => { life.skill += 10; return "예선 한 조에서 살아남았다. 결승은 이름난 괴물들의 무대였다. 그 이상은 무리였다."; },
           fail: (life) => { life.health -= 25; return "패자 대기실로 끌려가던 중 소동을 틈타 빠져나왔다. 그곳에서 무슨 일이 일어나는지 보지 않은 게 다행이었다."; } },
-        { id: "crowd", label: "관중석에서 응원한다", risk: "기술 +5", personality: { freedom: 4 }, apply: (life) => { life.skill += 5; return "가면을 쓴 사내가 투기장을 휩쓸었다. 관중들은 그 이름을 몰랐지만 모두 환호했다."; } }
+        { id: "crowd", label: "관중석에서 응원한다", risk: "기술 +5", personality: { freedom: 4 }, apply: (life) => { life.skill += 5; return "투구를 쓰고 수염을 붙인 투사 루시가 투기장을 휩쓸었다. 관중들은 그 정체를 몰랐지만 모두 환호했다."; } }
       ] },
-    { time: "이튿날 · 거리", title: "장난감이 사람으로 돌아온 날",
-      body: "한낮에 거리의 장난감들이 하나둘 사람으로 돌아왔다. 잊고 있던 가족의 얼굴이 갑자기 떠올라 사람들이 길바닥에 주저앉아 울었다.",
+    { time: "같은 날 · 거리", title: "장난감이 사람으로 돌아온 날",
+      body: "한낮에 거리의 장난감들이 한꺼번에 사람으로 돌아왔다. 잊고 있던 가족의 얼굴이 갑자기 떠올라 사람들이 길바닥에 주저앉아 울었다.",
       choices: [
-        { id: "help", label: "가족을 찾는 사람들을 돕는다", risk: "지역의 신뢰 +20 · 친구와의 유대 +5", personality: { empathy: 9 }, apply: (life) => { life.trust += 20; life.friendBond += 5; return "외다리 병정이었던 남자가 딸을 찾았다. 둘이 껴안는 모습을 끝까지 지켜보았다."; } },
+        { id: "help", label: "가족을 찾는 사람들을 돕는다", risk: "지역의 신뢰 +20 · 친구와의 유대 +5", personality: { empathy: 9 }, apply: (life) => { life.trust += 20; life.friendBond += 5; return "장난감이었던 남자가 딸을 찾았다. 둘이 껴안는 모습을 끝까지 지켜보았다."; } },
         { id: "remember", label: "잊고 있던 이름을 떠올려 본다", risk: "건강 +5", personality: { loyalty: 5 }, apply: (life) => { life.health += 5; return "이 섬에서 만났던 장난감 하나의 이름이 떠올랐다. 그 사람도 어딘가에서 돌아왔기를 바랐다."; } }
       ] },
     { time: "같은 날 오후 · 새장 안", title: "조여 오는 새장",
@@ -229,17 +229,17 @@ const ARCS = {
   ] },
   wano: { place: "와노국 외해", art: "arcWano", scenes: [
     { time: "불의 축제 밤 · 외해", title: "귀신섬의 불길",
-      body: "닫힌 나라 와노국의 앞바다에서 밤하늘이 붉게 물들었다. 귀신섬 쪽에서 거대한 불기둥과 용의 울음소리 같은 것이 들렸다. 폭포 아래로 피난민을 태운 작은 배들이 흘러나왔다.",
+      body: "닫힌 나라 와노국의 앞바다에서 밤하늘이 붉게 물들었다. 귀신섬 쪽에서 거대한 불기둥과 용의 울음소리 같은 것이 들렸다. 폭포 아래 거친 물살에는 작은 배 몇 척이 휩쓸려 있었다.",
       choices: [
-        { id: "rescue", label: "피난민의 배를 끌어 준다", needs: { skill: 45 }, risk: "기술 45 필요 · 지역의 신뢰 +20", failRisk: "건강 -15",
-          personality: { empathy: 8, loyalty: 5 }, apply: (life) => { life.trust += 20; return "밧줄을 던져 작은 배 세 척을 끌어왔다. 새벽에 피난민들은 나라가 해방됐다는 소식을 들었다."; },
-          fail: (life) => { life.health -= 15; return "급류에 휘말려 배가 크게 흔들렸다. 피난민 배 하나는 다른 이들이 건졌다."; } },
+        { id: "rescue", label: "물살에 휩쓸린 배를 끌어 준다", needs: { skill: 45 }, risk: "기술 45 필요 · 지역의 신뢰 +20", failRisk: "건강 -15",
+          personality: { empathy: 8, loyalty: 5 }, apply: (life) => { life.trust += 20; return "밧줄을 던져 작은 배 세 척을 끌어왔다. 새벽녘, 귀신섬 쪽의 불길이 잦아드는 것을 함께 지켜보았다."; },
+          fail: (life) => { life.health -= 15; return "급류에 휘말려 배가 크게 흔들렸다. 휩쓸리던 배 하나는 다른 이들이 건졌다."; } },
         { id: "watch", label: "멀리서 불길을 지켜본다", risk: "기술 +5", personality: { caution: 6 }, apply: (life) => { life.skill += 5; return "새벽이 오자 불길이 잦아들었다. 바다의 판도가 바뀌었다는 것만은 분명했다."; } }
       ] }
   ] },
   egghead: { place: "에그헤드 외해", art: "workbench", scenes: [
     { time: "방송 날 · 에그헤드 근해", title: "봉쇄선과 세계를 향한 목소리",
-      body: "미래섬 에그헤드를 해군 군함이 겹겹이 에워쌌다. 그때 모든 전보벌레가 한꺼번에 울리며 한 과학자의 목소리가 전 세계로 퍼졌다. 수평선에서는 거인들의 배가 봉쇄선을 향해 다가왔다.",
+      body: "미래섬 에그헤드를 해군 군함이 겹겹이 에워쌌다. 그때 모든 전보벌레가 한꺼번에 울리며 한 과학자의 목소리가 전 세계로 퍼졌다. 봉쇄선 한쪽에서는 거인들의 배가 군함과 맞서고 있었다.",
       choices: [
         { id: "slip", label: "봉쇄선 사이로 빠져나간다", needs: { skill: 55 }, risk: "기술 55 필요", failRisk: "건강 -20",
           personality: { freedom: 6, caution: 4 }, apply: () => "포성이 거인의 배 쪽으로 쏠린 틈에 빠져나왔다. 방송의 마지막 말이 귓가에 남았다.",
@@ -249,10 +249,10 @@ const ARCS = {
   ] },
   elbaf: { place: "엘바프", art: "giant", scenes: [
     { time: "도착한 날 · 엘바프 해안", title: "거인의 나라에 온 손님",
-      body: "엘바프 해안에 밀짚모자 깃발을 단 배가 닿았다. 거인 전사들이 커다란 웃음으로 손님을 맞았고, 해안 마을은 며칠 동안 잔치 준비로 들썩였다.",
+      body: "엘바프 해안에 밀짚모자 깃발을 단 배가 닿았다. 거인 전사들이 커다란 웃음으로 손님을 맞았고, 마을에서는 손님을 위한 잔치 준비가 시작됐다.",
       choices: [
         { id: "feast", label: "잔치 준비를 돕는다", risk: "친구와의 유대 +10", personality: { empathy: 5, freedom: 5 }, apply: (life) => { life.friendBond += 10; return "통나무만 한 고기를 굽는 데 하루가 걸렸다. 거인과 사람이 한 식탁에서 웃었다."; } },
-        { id: "look", label: "멀리서 손님들을 구경한다", risk: "기술 +5", personality: { caution: 5 }, apply: (life) => { life.skill += 5; return "밀짚모자 소년이 거인 아이들과 뛰노는 모습이 보였다. 이 나라에서 무슨 일이 시작될지는 아직 아무도 몰랐다."; } }
+        { id: "look", label: "멀리서 손님들을 구경한다", risk: "기술 +5", personality: { caution: 5 }, apply: (life) => { life.skill += 5; return "밀짚모자 소년이 거인들 틈에서 고기를 뜯는 모습이 보였다. 이 나라에서 무슨 일이 시작될지는 아직 아무도 몰랐다."; } }
       ] }
   ] }
 };
