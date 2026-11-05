@@ -103,7 +103,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 6 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 7 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -761,7 +761,7 @@ test("같은 나이의 재출항은 매번 다른 제목을 쓰고 이전 출생
 });
 
 test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하고 이전 기록을 보존한다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 5);
+  assert.equal(createGame("original", 0, {}, 3, 5).creationVersion, 5);
   assert.ok(FLEX_IDS_V5.has("life_haki_training"));
   assert.ok(FLEX_IDS_V5.size > FLEX_IDS.size);
   const eventAges = new Set();
@@ -798,6 +798,76 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
   const previous = play("original", 7, {}, { species: "인간" }, 3, 4);
   assert.ok(!previous.seen.some((id) => id.startsWith("canon_before_")));
   assert.deepEqual(replay(saveRecord(previous)), previous);
+});
+
+test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
+  assert.equal(createGame("original", 0).creationVersion, 6);
+  const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
+  const paths = new Set();
+  const crises = new Set();
+  const arts = new Set();
+  for (let seed = 0; seed < 12; seed += 1) {
+    let life = createGame("original", seed, { species: "인간" });
+    const beats = [];
+    while (!life.finished && getScene(life).id !== "life_after_storm") {
+      const scene = getScene(life);
+      if (childhoodIds.has(scene.id)) beats.push(scene);
+      life = advance(life, scene.choices.find((choice) => !choice.disabled)?.id ?? null);
+    }
+    assert.equal(beats.length, 4);
+    assert.ok(beats.every((scene, index) => index === 0 || scene.art.src !== beats[index - 1].art.src),
+      "연속된 유년 주요 장면이 같은 그림을 쓰지 않아야 한다");
+    const crisis = beats[3];
+    const follow = getScene(life);
+    assert.equal(follow.title, `${crisis.title} 뒤`);
+    assert.ok(life.childhoodMemory?.key);
+    assert.equal(life.childhoodMemory.outcome, "safe");
+    assert.deepEqual(replay(saveRecord(life)), life);
+    paths.add(beats.map((scene) => scene.title).join(" / "));
+    crises.add(crisis.title);
+    for (const scene of beats) arts.add(scene.art.src);
+  }
+  assert.ok(paths.size >= 10, "여러 회차의 유년 주요 사건 조합이 달라야 한다");
+  assert.ok(crises.size >= 6, "위기 사건이 한 종류에 몰리지 않아야 한다");
+  assert.ok(arts.size >= 6, "유년 주요 장면에 여러 그림이 나와야 한다");
+
+  const attempt = reach(0, "life_child_crisis", { life_first_skill: "help" }, { species: "인간" }, 6);
+  assert.ok(getScene(attempt).choices.find((choice) => choice.id === "act").dice);
+  const failed = advance(attempt, "act");
+  assert.equal(failed.childhoodMemory.outcome, "fail");
+  assert.ok(failed.health < attempt.health);
+  assert.match(getScene(failed).body, /다친 곳이 아물 때까지/);
+  assert.deepEqual(replay(saveRecord(failed)), failed);
+
+  const previous = reach(0, "life_child_crisis", {}, { species: "인간" }, 5);
+  assert.equal(getScene(previous).title, "범람한 길목");
+  assert.equal(getScene(advance(previous, "wait")).title, "그날의 새벽");
+  assert.deepEqual(replay(saveRecord(previous)), previous);
+});
+
+test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {
+  const schoolTitles = new Set();
+  const trainingTitles = new Set();
+  for (let seed = 0; seed < 12; seed += 1) {
+    const training = reach(seed, "life_training", {}, { species: "인간" }, 6);
+    const school = training.journal.find((entry) => entry.id === "life_school");
+    assert.ok(school, "배움 장면은 수련보다 먼저 나와야 한다");
+    assert.ok(training.seen.includes("life_early_departure"), "이른 출항 선택을 건너뛰면 안 된다");
+    assert.ok(!training.seen.includes("life_career"), "첫 소속 선택보다 먼저 나와야 한다");
+    schoolTitles.add(school.title);
+    trainingTitles.add(getScene(training).title);
+  }
+  assert.ok(schoolTitles.size >= 5);
+  assert.equal(trainingTitles.size, 4);
+
+  const ready = reach(0, "life_training", {}, { species: "인간" }, 6);
+  const poor = { ...ready, supplies: 0 };
+  assert.equal(getScene(poor).choices.find((choice) => choice.id === "practice").disabled, true);
+  assert.throws(() => advance(poor, "practice"));
+  const practiced = advance(ready, "practice");
+  assert.equal(practiced.skill, ready.skill + 10);
+  assert.equal(practiced.supplies, ready.supplies - 10);
+  assert.deepEqual(replay(saveRecord(practiced)), practiced);
 });
 
 test("출항부터 정상전쟁까지 원작 사건과 일상을 가변 간격으로 함께 보여 준다", () => {

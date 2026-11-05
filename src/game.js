@@ -4,6 +4,7 @@ import { encounterScene, yearRoll } from "./world.js";
 import { CANON_IF_AFTER, canonScene } from "./canon-events.js";
 import { PRE_CANON_BEAT_COUNT, preCanonScene } from "./canon-before.js";
 import { canonGapFor, canonInterludeScene } from "./canon-interludes.js";
+import { childhoodScene } from "./childhood.js";
 
 export const SAVE_VERSION = 1;
 export const MODES = ["original", "free"];
@@ -65,6 +66,16 @@ export const ART = {
   deck: { src: "./design/assets/life-deck.png", alt: "인물 없는 배의 갑판과 먼바다" },
   workbench: { src: "./design/assets/life-workbench.png", alt: "해도를 펼친 빈 작업대와 바다가 보이는 창" },
   lifeStorm: { src: "./design/assets/life-storm.png", alt: "거친 비바람에 밧줄이 풀린 빈 계류장" },
+  childMarket: { src: "./design/assets/child-market.webp", alt: "전보벌레와 과일 좌판이 있는 낮의 항구 장터" },
+  childClinic: { src: "./design/assets/child-clinic.webp", alt: "약초와 붕대를 정리해 둔 마을 치료실" },
+  childChart: { src: "./design/assets/child-chart.webp", alt: "나침반과 작은 배 표식이 놓인 해도 작업대" },
+  childLantern: { src: "./design/assets/child-lantern.webp", alt: "저녁 등불과 편지가 놓인 마을 길목" },
+  childFestival: { src: "./design/assets/child-festival.webp", alt: "가면과 공동 식탁이 차려진 섬의 축제 광장" },
+  childInlet: { src: "./design/assets/child-inlet.webp", alt: "낯선 배와 봉인 상자가 머문 저녁 해안" },
+  childUndersea: { src: "./design/assets/child-undersea.webp", alt: "산호 좌판이 늘어선 어인섬의 생활 장터" },
+  childMink: { src: "./design/assets/child-mink.webp", alt: "나무 위 마을의 장터와 등불이 있는 조의 생활 길목" },
+  childSky: { src: "./design/assets/child-sky.webp", alt: "구름 배와 노점이 있는 하늘섬의 생활 장터" },
+  childGiant: { src: "./design/assets/child-giant.webp", alt: "큰 식탁과 해안 길목이 있는 엘바프의 생활 공간" },
   legacy: { src: "./design/assets/life-legacy.png", alt: "일지와 나침반이 놓인 빈 작업대" },
   fruit: { src: "./design/assets/life-fruit.png", alt: "항구 작업대 위 상자에 놓인 정체 모를 무늬 열매" },
   birth: { src: "./design/assets/birth-harbor.webp", alt: "양육자와 조산사가 아기를 돌보는 조용한 항구와 온전한 가족의 배" },
@@ -113,7 +124,9 @@ function personalize(text, name, creationVersion) {
 function nextEligibleIndex(life, from) {
   for (let index = from; index < scenes.length; index += 1) {
     const card = scenes[index];
-    if (life.creationVersion >= 5 && FLEX_IDS_V5.has(card.id) || life.creationVersion === 4 && FLEX_IDS.has(card.id)) continue;
+    const childhoodLesson = life.creationVersion >= 6 && (card.id === "life_school" || card.id === "life_training");
+    if (life.creationVersion >= 5 && FLEX_IDS_V5.has(card.id) && !childhoodLesson
+      || life.creationVersion === 4 && FLEX_IDS.has(card.id)) continue;
     if (life.creationVersion >= 4 && (typeof card.age === "function" ? card.age(life) : card.age) < life.age) continue;
     if ((card.species === "all" || (card.species || "인간") === life.birth.species) && (!card.rules || card.rules.includes(life.rules)) && (!card.when || card.when(life))) return index;
   }
@@ -152,11 +165,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 5) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 6) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3, 4, 5].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4, 5, 6].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -271,7 +284,7 @@ function canChoose(choice, life) {
 
 export function getScene(life) {
   if (life.finished || (life.rules !== 3 && life.index >= scenes.length)) return null;
-  const card = sceneCard(life);
+  const card = childhoodScene(life, sceneCard(life));
   const artKey = typeof card.art === "function" ? card.art(life) : card.art;
   const age = typeof card.age === "function" ? card.age(life) : card.age;
   return {
@@ -308,7 +321,7 @@ function typedName(text) {
 export function advance(life, action = null) {
   const view = getScene(life);
   if (!view) throw new Error("이미 끝난 생애입니다.");
-  const card = sceneCard(life);
+  const card = childhoodScene(life, sceneCard(life));
   const [choiceId, typed] = splitAction(action);
   const chosen = card.choices?.find((choice) => choice.id === choiceId && (!choice.when || choice.when(life)) && canChoose(choice, life));
   if (card.choices && !chosen) throw new Error("이 장면에서 고를 수 없는 선택입니다.");

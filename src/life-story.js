@@ -3,6 +3,7 @@ import { personalBeat } from "./people.js";
 import { islandEvent } from "./islands.js";
 import { fruitFor } from "./fruits.js";
 import { bountyScene } from "./bounty.js";
+import { childhoodArt, childhoodQuiet } from "./childhood.js";
 import { giantAdultDecisions, giantGrowingDecisions, giantGrowingYears, giantHomeYears, giantLaterYears, giantWorkingYears } from "./giant-years.js";
 
 // A species describes where a life begins. Work and allegiance are chosen later.
@@ -416,6 +417,7 @@ function flexibleIncident(life, age) {
   const eligible = life.creationVersion >= 5 ? FLEX_IDS_V5 : FLEX_IDS;
   const options = scenes.filter((card) => {
     if (!eligible.has(card.id) || life.seen.includes(card.id) || card.when && !card.when(life)) return false;
+    if (life.creationVersion >= 6 && (card.id === "life_school" || card.id === "life_training")) return false;
     if (life.creationVersion >= 5 && card.id === "life_haki_practice" && !life.haki.observation && !life.haki.armament) return false;
     const center = typeof card.age === "function" ? card.age(life) : card.age;
     const window = life.creationVersion >= 5 && center < (giant(life) ? 112 : 19) ? giant(life) ? 12 : 3 : giant(life) ? 24 : 7;
@@ -818,18 +820,21 @@ function sceneForAge(life) {
     const decision = pool[(Math.floor(age / cadence) + life.seed) % pool.length];
     return { ...base, art: phase === "later" ? "workbench" : "deck", title: decision.title, body: decision.body, choices: decision.choices };
   }
-  const shared = phase === "growing" ? growingYears : life.homebound
+  const shared = phase === "growing" ? life.creationVersion >= 6 ? childhoodQuiet : growingYears : life.homebound
     ? phase === "working" ? homeYears : homeLaterYears
     : phase === "working" ? workingYears : laterYears;
   // Giant lives span centuries of quiet years, so they draw from a larger giant-only pool first.
   const pool = giant(life) ? [...(phase === "growing" ? giantGrowingYears : phase === "later" ? giantLaterYears
-    : life.homebound ? giantHomeYears : giantWorkingYears), ...shared] : shared;
-  let index = (age + life.seed) % pool.length;
+    : life.homebound ? giantHomeYears : giantWorkingYears), ...shared,
+  ...(life.creationVersion >= 6 && phase === "growing" ? shared : [])] : shared;
+  let index = life.creationVersion >= 6 && phase === "growing"
+    ? yearRoll(life.seed ^ 0x18d72a63, age) % pool.length : (age + life.seed) % pool.length;
   // Folded years put fewer scenes between pool repeats, so rule 3 skips a title shown in the last ten scenes.
   const recent = life.creationVersion >= 3 ? life.journal.slice(-10).map((entry) => entry.title) : [];
   for (let tries = 0; tries < pool.length && recent.includes(pool[index][0]); tries += 1) index = (index + 1) % pool.length;
-  const [title, body] = pool[index];
-  return { ...base, art: phase === "later" ? "workbench" : "deck", title, body, quiet: true };
+  const [title, body, art] = pool[index];
+  return { ...base, art: art ? childhoodArt(life, art) : life.creationVersion >= 6 && giant(life) && phase === "growing" ? "giant"
+    : phase === "later" ? "workbench" : "deck", title, body, quiet: true };
 }
 
 // Rule 3 folds a run of quiet years into one scene; it never skips past lastQuietAge (the next authored card).
