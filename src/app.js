@@ -1,5 +1,5 @@
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, createGame, getScene, personalitySummary, replay, saveRecord } from "./game.js";
-import { crewNews } from "./world.js";
+import { crewNews, eraStart, presentAge, stretched } from "./world.js";
 import { peopleSummary } from "./people.js";
 import { canonRelationshipLine, canonRelationshipSummary } from "./canon-relationships.js";
 import { crewLine } from "./crew.js";
@@ -257,7 +257,7 @@ function renderPersonality() {
 
 function renderAgeTimeline(scene) {
   const age = scene.age;
-  const current = life.birth.yearsBeforeCurrent;
+  const current = presentAge(life);
   byId("timeline-age").textContent = scene.timeLabel ? `${age}세 · ${scene.timeLabel}` : `${age}세`;
   byId("timeline-end").textContent = age <= current ? `원작 현재: ${current}세` : `원작 현재 이후 ${age - current}년 · 이후 미공개`;
   byId("age-fill").style.width = `${Math.min(100, age / current * 100)}%`;
@@ -287,8 +287,10 @@ function renderGame(focusTitle = false) {
       && (life.creationVersion >= 5 || life.canonStep < canonCount(life))
       ? canonStatus(life)
       : life.creationVersion >= 5 && !life.seen.includes("life_marineford_news")
-        && scene.age >= life.birth.yearsBeforeCurrent - 2
+        && scene.age >= eraStart(life)
         ? preCanonStatus(life) : crewNews(life, scene.age) : "";
+  // Rule 16 says once, beside the canon line, that the canon calendar is stretched for this game.
+  if (stretched(life) && scene.age >= eraStart(life)) byId("crew-news").textContent += " · 원작 시간은 게임에 맞춰 늘려 표시";
   const changeText = describeChanges(life.lastChanges);
   byId("scene-result").textContent = [life.lastOutcome, changeText].filter(Boolean).join(" · ");
   byId("scene-result").hidden = !life.lastOutcome && !changeText;

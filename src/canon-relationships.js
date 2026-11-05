@@ -1,4 +1,5 @@
 import { crewTie } from "./canon-crews.js";
+import { storyBefore } from "./world.js";
 
 const CHARACTERS = {
   luffy: { name: "몽키 D. 루피", display: "루피", group: "밀짚모자 일당", captureable: true },
@@ -219,7 +220,7 @@ export function attachCanonContact(life, beatId, index, age, scene) {
 // Rule 15: once Luffy's crew trusts someone outside the marines, Luffy asks them aboard (free mode only).
 function strawHatInvite(life) {
   if (life.creationVersion < 15 || life.path === "marine" || life.canonCrew === "밀짚모자 일당" || life.seen.includes("canon_strawhat_invite")
-    || !crewTie(life, "밀짚모자 일당") || life.birth.yearsBeforeCurrent - life.age > 2) return null;
+    || !crewTie(life, "밀짚모자 일당") || storyBefore(life) > 2) return null;
   return { id: "canon_strawhat_invite", age: life.age, act: 3, yearly: true, urgent: true, art: "mishapFeast", title: "밀짚모자의 권유",
     timeLabel: `IF 세계선 · ${life.location}`,
     body: `연회가 한창일 때 루피가 고기를 든 채 ${life.birth.name} 앞에 섰다. 너 재밌는 녀석이라며, 우리 배에 타라고 했다. 뒤에서 나미는 한숨을 쉬었고 조로는 술잔을 든 채 웃었다.`,

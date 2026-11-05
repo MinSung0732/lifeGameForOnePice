@@ -1,4 +1,4 @@
-import { canonCrew, openCanonCrews, encounterAt, encounterScene, moveTo, routeFor, standing, travelScene, yearRoll } from "./world.js";
+import { ERA_WAR, eraStart, presentAge, storyBefore, stretched, canonCrew, openCanonCrews, encounterAt, encounterScene, moveTo, routeFor, standing, travelScene, yearRoll } from "./world.js";
 import { personalBeat } from "./people.js";
 import { adventureScene, withTrait } from "./adventures.js";
 import { takenText } from "./canon-timeline.js";
@@ -6,6 +6,7 @@ import { islandEvent } from "./islands.js";
 import { fruitFor } from "./fruits.js";
 import { bountyScene } from "./bounty.js";
 import { fateScene } from "./fates.js";
+import { canonIfAfter } from "./canon-events.js";
 import { crewContactScene } from "./canon-crews.js";
 import { RECRUIT_VARIANTS } from "./recruit-variants.js";
 import { childhoodArt, childhoodQuiet } from "./childhood.js";
@@ -589,7 +590,7 @@ function careerOpportunity(life, age, base) {
   const offerGap = giant(life) ? 50 : 18;
   const opportunities = [];
   if (life.path !== "liberator" && yearsFromCareer >= tenureNeeded && (life.injustice || life.rescued > 0 || life.trust >= 70)
-    && life.birth.yearsBeforeCurrent - age <= 22 && life.birth.yearsBeforeCurrent - age >= 0
+    && storyBefore(life, age) <= 22 && storyBefore(life, age) >= 0
     && age - life.lastRevolutionOfferAge >= offerGap) {
     opportunities.push({ ...base, id: `life_revolution_invitation_${age}`, urgent: true, art: "workbench", title: "멀리서 온 연락원",
       body: life.injustice
@@ -732,7 +733,7 @@ function lastDay(life) {
 }
 
 export function marinefordNews(life) {
-  const age = life.birth.yearsBeforeCurrent - 2;
+  const age = stretched(life) ? Math.max(life.age, eraStart(life) + ERA_WAR) : life.birth.yearsBeforeCurrent - 2;
   return { id: "life_marineford_news", age, act: age < (giant(life) ? 112 : 19) ? 1 : 2,
     species: "all", yearly: true, urgent: true, art: "workbench",
     title: life.creationVersion >= 4 && life.people?.fruitOwner ? "IF 세계선 · 마린포드" : "마린포드 전쟁의 신문",
@@ -809,7 +810,7 @@ function offerFor(path, life, age, base) {
       body: `누군가 문틈으로 쪽지를 밀어 넣었다. 억압받는 사람들을 몰래 빼내는 연락망이 손을 찾는다는 내용이었다. 끝에는 ${memory}을 알고 있다는 한 줄이 적혀 있었다.`,
       choices: [
         { id: "join", label: "적힌 장소로 나간다", available: (state) => state.trust >= 35, risk: "지역의 신뢰 35 필요 · 연락 일부터", personality: { empathy: 7, freedom: 5 },
-          apply: (state) => { setCareer(state, "liberator"); if (state.birth.yearsBeforeCurrent - state.age <= 22) state.affiliation = "혁명군"; depart(state); return "위험한 이름은 묻지 않고 편지와 식량을 옮기는 일부터 배웠다."; } },
+          apply: (state) => { setCareer(state, "liberator"); if (storyBefore(state) <= 22) state.affiliation = "혁명군"; depart(state); return "위험한 이름은 묻지 않고 편지와 식량을 옮기는 일부터 배웠다."; } },
         decline("쪽지를 태워 버린다", "불꽃이 꺼진 뒤에도 그 한 줄이 한동안 머릿속에 남았다.")
       ] },
     civilian: { title: "조선소 장인의 제안", art: "workbench",
@@ -879,13 +880,13 @@ function sceneForAge(life) {
         apply: (state) => { setCareer(state, "marine"); depart(state); return "해군 지부의 교육을 받으며 청소와 기록부터 익혔다."; } },
       { id: "liberator", label: "구호 연락망의 어린 심부름꾼이 된다", available: (state) => state.trust >= 40,
         risk: "지역의 신뢰 40 필요 · 연락 업무부터", personality: { empathy: 7, freedom: 5 },
-        apply: (state) => { setCareer(state, "liberator"); if (state.birth.yearsBeforeCurrent - age <= 22) state.affiliation = "혁명군"; depart(state); return "위험한 이름은 듣지 않고 편지와 식량을 옮기는 일부터 배웠다."; } }
+        apply: (state) => { setCareer(state, "liberator"); if (storyBefore(state, age) <= 22) state.affiliation = "혁명군"; depart(state); return "위험한 이름은 듣지 않고 편지와 식량을 옮기는 일부터 배웠다."; } }
     ] };
   // Rule 3 opens the IF to mid-rank careers and the revolutionary army, so the free mode's "what if" is actually reachable.
   const ifReady = life.creationVersion === 1 ? true : life.creationVersion === 2
     ? life.path === "pirate" ? life.independent && life.role === "선장" : life.rankTier >= 5
     : standing(life) >= (life.creationVersion >= 11 ? 45 : 50) && (life.path === "pirate" ? life.independent || life.rankTier >= 2 : life.rankTier >= (life.path === "marine" ? 3 : 2));
-  if ((age === life.birth.yearsBeforeCurrent - 1 || life.creationVersion >= 4 && age === life.birth.yearsBeforeCurrent)
+  if ((stretched(life) ? life.canonStep >= canonIfAfter(life) && !life.seen.includes("life_free_rank") : age === life.birth.yearsBeforeCurrent - 1 || life.creationVersion >= 4 && age === life.birth.yearsBeforeCurrent)
     && life.mode === "free" && !life.retired
     && (life.creationVersion >= 3 ? ["pirate", "marine", "liberator"] : ["pirate", "marine"]).includes(life.path) && ifReady) {
     if (life.path === "liberator") return { ...base, id: "life_free_rank", urgent: true, art: "workbench", title: "비어 있는 군대장 자리",
@@ -918,7 +919,7 @@ function sceneForAge(life) {
       ] };
   }
   // Rule 7 closes every surviving life at the original present instead of running into unpublished years.
-  if (life.creationVersion >= 7 && age > life.birth.yearsBeforeCurrent) return { ...base, id: "life_present_end", age: life.birth.yearsBeforeCurrent,
+  if (life.creationVersion >= 7 && age > presentAge(life)) return { ...base, id: "life_present_end", age: presentAge(life),
     urgent: true, art: "legacy", title: "원작이 멈춘 자리",
     body: (state) => `엘바프에 닿은 밀짚모자 일당의 소식이 바다의 마지막 신문이었다. ${state.birth.name}의 기록도 여기서 펜을 놓는다. 이 뒤의 바다는 아직 아무도 그리지 않았다.`,
     after: (state) => { state.ending = "present"; state.deathCause = "원작의 현재에 닿음"; return "원작이 그린 마지막 시간까지 살아 낸 기록이 남았다."; } };
@@ -953,7 +954,7 @@ function sceneForAge(life) {
   if (age === life.birth.yearsBeforeCurrent - 10) return { ...base, id: "life_tom_news", urgent: true, art: "workbench", title: "워터 세븐에서 온 부고", canon: "https://one-piece.com/vivre/revision/index.html",
     body: "워터 세븐에서 온 배가 조선공 톰의 처형 소식을 전했다. 그가 만든 배와 해상열차는 남았지만, 작업장의 사람들은 이제 다른 길을 찾아야 했다." };
   if (age === life.birth.yearsBeforeCurrent - 6 && (life.mode === "original" || life.role !== "사황")) return { ...base, id: "life_shanks_news", urgent: true, art: "deck", title: "붉은 머리의 새 호칭", canon: "https://one-piece.com/vivre/revision/index.html", body: (state) => `바다의 신문은 샹크스를 사황이라고 불렀다. ${state.birth.name}이 만난 적 없는 사람의 이름도 항로의 분위기를 바꾸었다.` };
-  if (age === life.birth.yearsBeforeCurrent - 2) return marinefordNews(life);
+  if (!stretched(life) && age === life.birth.yearsBeforeCurrent - 2) return marinefordNews(life);
   // Rule 3 fills the two years from the war to the original present (the Elbaf arc), which older rules left empty.
   if (life.creationVersion === 3 && age === life.birth.yearsBeforeCurrent - 1) return { ...base, id: "life_timeskip_news", urgent: true, art: "deck", title: "전쟁 뒤의 신문",
     body: "마린포드 전쟁 뒤 해군 원수가 바뀌고, 검은 수염이 새로운 사황으로 불리기 시작했다. 밀짚모자 일당의 이름은 한동안 신문에서 사라졌다." };

@@ -1,5 +1,24 @@
 // Named stops follow places shown in the original story; the exact voyage is this game's fiction.
 import { crewTie } from "./canon-crews.js";
+
+// Rule 16 stretches the canon era (Luffy's few years at sea) over ERA_YEARS of the protagonist's life,
+// like its long serialization. The protagonist ages normally; canon people keep their canon ages.
+export const ERA_YEARS = 24;
+export const ERA_WAR = 10;
+export const ERA_REUNION = 13;
+export const stretched = (life) => life.creationVersion >= 16;
+// The age at which Luffy sets out: two canon years before the present.
+export const eraStart = (life) => life.birth.yearsBeforeCurrent - 2;
+export const presentAge = (life) => stretched(life) ? eraStart(life) + ERA_YEARS : life.birth.yearsBeforeCurrent;
+
+// Canon years before the present at the protagonist's age. Inside a stretched era it steps 2 (to the war),
+// 1 (the two years apart) and 0 (the New World), so canon-dated content keeps its own calendar.
+export function storyBefore(life, age = life.age) {
+  const raw = life.birth.yearsBeforeCurrent - age;
+  if (!stretched(life) || raw >= 2) return raw;
+  const into = age - eraStart(life);
+  return into <= ERA_WAR ? 2 : into < ERA_REUNION ? 1 : 0;
+}
 const BLUE_ROUTE = ["리버스 마운틴", "쌍둥이 언덕", "위스키 피크", "리틀 가든", "드럼섬", "알라바스타 · 나노하나", "자야 · 모크 타운", "롱 링 롱 랜드", "워터 세븐", "샤본디 제도", "어인섬", "드레스로자", "그린 비트", "조", "스핑크스 섬", "엘바프"];
 const GRAND_ROUTE = BLUE_ROUTE.slice(6);
 const NEW_ROUTE = ["스핑크스 섬", "드레스로자", "그린 비트", "조", "엘바프", "하치노스 근해", "와노국 외해", "홀케이크 아일랜드 외해"];
@@ -77,7 +96,7 @@ const CANON_CREWS = [
 ];
 
 export function openCanonCrews(life, age = life.age) {
-  const before = life.birth.yearsBeforeCurrent - age;
+  const before = storyBefore(life, age);
   return CANON_CREWS.filter((crew) => before <= crew.from && before >= crew.to && (!crew.species || crew.species === life.birth.species)
     && (!crew.rule || life.creationVersion >= crew.rule) && (!crew.freeOnly || life.mode === "free")).map((crew) => crew.name);
 }
@@ -142,7 +161,7 @@ const ENCOUNTERS = [
 ];
 
 export function encounterAt(life) {
-  const beforePresent = life.birth.yearsBeforeCurrent - life.age;
+  const beforePresent = storyBefore(life);
   // latestV3: canon still shows them there in the present; older rules keep their original window for replay.
   const latest = (entry) => life.creationVersion >= 3 && entry.latestV3 !== undefined ? entry.latestV3 : entry.latest;
   return ENCOUNTERS.find((entry) => life.location === entry.place && beforePresent <= entry.earliest && beforePresent >= latest(entry) && !life.seen.includes(`life_meet_${entry.id}`))?.id || null;
@@ -239,7 +258,7 @@ export function yearRoll(seed, age) {
 
 // A one-line public summary of the canon crew's whereabouts in the same year, in this game's own words.
 export function crewNews(life, age = life.age) {
-  const before = life.birth.yearsBeforeCurrent - age;
+  const before = storyBefore(life, age);
   const line = before > 19 ? "아직 없다. 훗날의 선장도 태어나기 전이다."
     : before > 12 ? "훗날의 선장 루피는 이스트 블루 푸샤 마을의 어린아이다."
       : before === 12 ? "푸샤 마을을 떠나는 샹크스가 어린 루피에게 밀짚모자를 맡겼다."

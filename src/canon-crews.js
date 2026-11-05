@@ -1,6 +1,6 @@
 // Rule 15: named crews and organizations show their canon people when the era fits, and a named crew
 // only takes a life in after some earlier contact with its people.
-import { yearRoll } from "./world.js";
+import { storyBefore, yearRoll } from "./world.js";
 import { rollTier } from "./fates.js";
 
 // from/to are years before the original present, inclusive. Roles are what the protagonist would see.
@@ -32,7 +32,7 @@ function withParticle(name, particle) {
   return name + PAIRS[particle][batchim ? 0 : 1];
 }
 
-const before = (life, age = life.age) => life.birth.yearsBeforeCurrent - age;
+const before = (life, age = life.age) => storyBefore(life, age);
 const inEra = (life, person) => before(life) <= person.from && before(life) >= person.to;
 
 // Canon names around the protagonist, top of the organization first; empty when the era has none.

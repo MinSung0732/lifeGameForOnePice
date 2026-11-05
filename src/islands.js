@@ -1,3 +1,4 @@
+import { storyBefore } from "./world.js";
 // Island events adapted from what the original story has shown about each place and period.
 // `from`/`to` are years before the original present (larger = earlier); the player's own part is this game's fiction.
 const ISLAND_EVENTS = [
@@ -167,7 +168,7 @@ const ISLAND_EVENTS = [
 
 export function islandEvent(life, age, base) {
   if (life.creationVersion < 3 || life.ending) return null;
-  const beforePresent = life.birth.yearsBeforeCurrent - age;
+  const beforePresent = storyBefore(life, age);
   const event = ISLAND_EVENTS.find((entry) => entry.place === life.location && !life.seen.includes(`life_isle_${entry.id}`)
     && (entry.from === undefined || beforePresent <= entry.from) && (entry.to === undefined || beforePresent >= entry.to));
   if (!event) return null;

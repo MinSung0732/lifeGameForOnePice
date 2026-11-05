@@ -1,8 +1,8 @@
 import { CANON_CHAPTER, scenes } from "./story.js";
 import { FLEX_IDS, FLEX_IDS_V5, V9_DEFERRED, V11_DEFERRED, V14_REPLACED, branchScene, marinefordNews, yearlyScene } from "./life-story.js";
-import { encounterScene, yearRoll } from "./world.js";
-import { canonIfAfter, canonScene } from "./canon-events.js";
-import { preCanonCount, preCanonScene } from "./canon-before.js";
+import { ERA_WAR, encounterScene, eraStart, stretched, yearRoll } from "./world.js";
+import { canonAge, canonCount, canonIfAfter, canonScene } from "./canon-events.js";
+import { preCanonAge, preCanonCount, preCanonScene } from "./canon-before.js";
 import { canonGapFor, canonInterludeScene } from "./canon-interludes.js";
 import { childhoodScene } from "./childhood.js";
 import { pendingCanonContactScene } from "./canon-relationships.js";
@@ -187,11 +187,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 15) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 16) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -211,7 +211,9 @@ export function createGame(mode, seed, profile = {}, rules = 3, creationVersion 
     yearsBeforeCurrent: rules === 3
       // Rule 7: a life ends by the original present at the latest, so the birth year spans a whole lifetime
       // (humans 40~95 years before, giants 130~300) and a natural death can come before Luffy's era.
-      ? creationVersion >= 7
+      // Rule 16 stretches the canon era over decades, so humans are born nearer to it (24~73 years before).
+      ? creationVersion >= 16 && species !== "거인족" ? 24 + random() % 50
+      : creationVersion >= 7
         ? species === "거인족" ? 130 + random() % 171 : 40 + random() % 56
         // Rules 3~6: born at most 20 years before Roger's execution; giants reach adulthood around that era.
         : creationVersion >= 3
@@ -267,11 +269,11 @@ function sceneCard(life) {
     const beforeWar = preCanonScene(life);
     if (beforeWar) return beforeWar;
     if (life.preCanonStep === preCanonCount(life) && !life.seen.includes("life_marineford_news")
-      && life.age >= life.birth.yearsBeforeCurrent - 2) return marinefordNews(life);
+      && life.age >= (stretched(life) ? eraStart(life) + ERA_WAR : life.birth.yearsBeforeCurrent - 2)) return marinefordNews(life);
   }
   if (life.creationVersion >= 4) {
     if (life.canonStep === canonIfAfter(life) && !life.seen.includes("life_free_rank")) {
-      const rank = yearlyScene({ ...life, age: life.birth.yearsBeforeCurrent - 1 });
+      const rank = yearlyScene(stretched(life) ? life : { ...life, age: life.birth.yearsBeforeCurrent - 1 });
       if (rank.id === "life_free_rank") return rank;
     }
     if (life.canonStep > 0 && age === life.age) return authored;
@@ -279,12 +281,20 @@ function sceneCard(life) {
     if (milestone) return milestone;
   }
   if (age === life.age) return authored;
-  const quietLimit = life.creationVersion >= 5 && life.preCanonStep < preCanonCount(life)
+  const quietLimit = stretched(life) ? Math.min(authored ? age - 1 : Infinity, nextCanonDue(life) - 1)
+    : life.creationVersion >= 5 && life.preCanonStep < preCanonCount(life)
     ? Math.min(authored ? age - 1 : Infinity, life.birth.yearsBeforeCurrent - 4)
     : authored ? age - 1 : Infinity;
   const yearly = yearlyScene(life, quietLimit);
   if (yearly.urgent || !authored || age > life.age + 1) return yearly;
   return authored;
+}
+
+// Rule 16: the next year a canon beat is due, so folded quiet years never skip past one.
+function nextCanonDue(life) {
+  if (life.preCanonStep < preCanonCount(life)) return preCanonAge(life);
+  if (!life.seen.includes("life_marineford_news")) return Math.max(life.age, eraStart(life) + ERA_WAR);
+  return life.canonStep < canonCount(life) ? canonAge(life) : Infinity;
 }
 
 // Rule 3: an ability-gated choice can still be attempted; the target roll grows with how far short each ability falls.

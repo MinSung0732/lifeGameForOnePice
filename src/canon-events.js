@@ -1,6 +1,7 @@
 import { arcScene } from "./canon-arcs.js";
 import { canonRelationshipChanged } from "./canon-relationships.js";
 import { EXTRA_AFTER, takenText } from "./canon-timeline.js";
+import { ERA_REUNION, ERA_WAR, ERA_YEARS, eraStart, stretched } from "./world.js";
 // Rule-4 canon milestones. Relative time labels avoid claiming an unpublished manga calendar.
 const BEATS = [
   { id: "war_after", offset: -2, time: "정상전쟁 뒤 · 얼마 지나지 않아", title: "전쟁이 남긴 빈자리",
@@ -67,11 +68,23 @@ const beatsFor = (life) => life.creationVersion >= 10 ? BEATS_V10 : BEATS;
 export const canonCount = (life) => beatsFor(life).length;
 export const canonIfAfter = (life) => beatsFor(life).findIndex((beat) => beat.id === "egghead");
 
+// Rule 16: the beats before the crew reunites share the years apart; the rest spread to the present.
+export function canonAge(life, step = life.canonStep) {
+  const beats = beatsFor(life);
+  if (!stretched(life)) return life.birth.yearsBeforeCurrent + beats[step].offset;
+  const reunion = beats.findIndex((beat) => beat.id === "reunion");
+  const into = step < reunion ? ERA_WAR + 1 + Math.floor(step * (ERA_REUNION - ERA_WAR - 1) / reunion)
+    : ERA_REUNION + Math.floor((step - reunion) * (ERA_YEARS - ERA_REUNION) / (beats.length - reunion));
+  return Math.max(life.age, eraStart(life) + into);
+}
+
 export function canonScene(life) {
   if (life.creationVersion < 4 || !life.seen.includes("life_marineford_news")) return null;
   const beat = beatsFor(life)[life.canonStep];
   if (!beat) return null;
-  const arc = arcScene(life, beat, life.birth.yearsBeforeCurrent + beat.offset);
+  // A stretched era lets the protagonist's own years pass until the beat's year comes.
+  if (stretched(life) && canonAge(life) > life.age) return null;
+  const arc = arcScene(life, beat, canonAge(life));
   if (arc) return arc;
   const diverged = life.worldBranch || life.people?.fruitOwner || canonRelationshipChanged(life);
   const body = typeof beat.body === "function" ? beat.body(life) : beat.body;
@@ -80,9 +93,9 @@ export function canonScene(life) {
   const choices = (beat.id === "fishman" && !canHelpFishman || beat.id === "punk_hazard" && !canHelpPunk)
     ? undefined : beat.choices;
   return {
-    ...beat, id: `canon_${beat.id}`, age: life.birth.yearsBeforeCurrent + beat.offset,
+    ...beat, id: `canon_${beat.id}`, age: canonAge(life),
     act: 3, art: beat.art || "deck", yearly: true, urgent: true, canonBeat: true, manual: !choices, choices,
-    timeLabel: diverged ? `IF 세계선 · ${beat.time}` : beat.time,
+    timeLabel: `${diverged ? "IF 세계선 · " : ""}${stretched(life) ? beat.time.replace(/약 ?2년 뒤/, "긴 공백 뒤") : beat.time}`,
     body: takenText(life, beat.id) || (life.worldBranch && life.canonStep >= 2
       ? `원작 기준으로는 ${body} ${life.birth.name}의 세계는 이미 갈라졌다. 같은 결말이라고 단정할 수 없다.`
       : body)

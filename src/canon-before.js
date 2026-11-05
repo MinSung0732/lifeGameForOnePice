@@ -1,6 +1,7 @@
 import { arcScene } from "./canon-arcs.js";
 import { canonRelationshipChanged } from "./canon-relationships.js";
 import { EXTRA_BEFORE, takenText } from "./canon-timeline.js";
+import { ERA_WAR, eraStart, stretched } from "./world.js";
 // Rule 5 follows the published arc order without assigning exact days to the voyage.
 const EAST = "https://one-piece.com/story/east_blue/index.html";
 const ALABASTA = "https://one-piece.com/story/alabasta/index.html";
@@ -115,11 +116,15 @@ const BEATS_V10 = BEATS.flatMap((beat) => [beat, ...(EXTRA_BEFORE[beat.id] || []
 const beatsFor = (life) => life.creationVersion >= 10 ? BEATS_V10 : BEATS;
 export const preCanonCount = (life) => beatsFor(life).length;
 
-const presentAt = (life) => life.birth.yearsBeforeCurrent - 2;
+// Older rules put every pre-war beat in the one year Luffy sets out; rule 16 spreads them over ERA_WAR years.
+export const preCanonAge = (life, step = life.preCanonStep) => stretched(life)
+  ? Math.max(life.age, eraStart(life) + Math.floor(step * ERA_WAR / beatsFor(life).length)) : life.birth.yearsBeforeCurrent - 2;
+const presentAt = (life) => preCanonAge(life);
+const STRETCH_NOTE = " 이 기록에서는 원작의 몇 해를 스무 해 남짓에 걸쳐 풀어 놓았다. 원작 인물의 나이는 원작을 따른다.";
 const nearby = (life, beat) => beat.places.some((place) => life.location.includes(place));
 
 export function preCanonScene(life) {
-  if (life.creationVersion < 5 || life.preCanonStep >= beatsFor(life).length || life.age < presentAt(life) - 1
+  if (life.creationVersion < 5 || life.preCanonStep >= beatsFor(life).length || life.age < presentAt(life) - (stretched(life) ? 0 : 1)
     || life.seen.includes("life_marineford_news")) return null;
   const beat = beatsFor(life)[life.preCanonStep];
   // Rule 8: scenes on the arc's island come first; the milestone itself closes the arc.
@@ -134,8 +139,9 @@ export function preCanonScene(life) {
     ? `원작 기준 기록에는 ${beat.far} ${life.birth.name}의 세계도 같은 길을 갔다고 단정할 수 없다.`
     : nearby(life, beat) ? beat.near : beat.far);
   return { id: `canon_before_${beat.id}`, age: presentAt(life), act: 3, species: "all", yearly: true,
-    urgent: true, preCanonBeat: true, manual: !choices, art: beat.art || "deck", title: beat.title,
-    timeLabel: fruitTaken || life.worldBranch || canonRelationshipChanged(life) ? `IF 세계선 · ${beat.time}` : beat.time, canon: beat.canon, body, choices };
+    urgent: true, preCanonBeat: true, manual: !choices, art: beat.art || "deck", title: beat.title, body,
+    ...(stretched(life) && life.preCanonStep === 0 ? { body: body + STRETCH_NOTE } : {}),
+    timeLabel: fruitTaken || life.worldBranch || canonRelationshipChanged(life) ? `IF 세계선 · ${beat.time}` : beat.time, canon: beat.canon, choices };
 }
 
 export function preCanonStatus(life) {

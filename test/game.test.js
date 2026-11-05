@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, createGame, getContentStats, getScene, personalitySummary, replay, saveRecord } from "../src/game.js";
 import { createObservation, tickObservation } from "../src/observation.js";
 import { scenes } from "../src/story.js";
-import { encounterAt, travelScene } from "../src/world.js";
+import { encounterAt, presentAge, storyBefore, travelScene } from "../src/world.js";
 import { fruitFor } from "../src/fruits.js";
 import { bountyScene, pursuerFor } from "../src/bounty.js";
 import { CANON_BEAT_COUNT, canonScene } from "../src/canon-events.js";
@@ -105,7 +105,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 16 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 17 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -496,19 +496,19 @@ test("저장 기록은 같은 삶으로 복원되고, 여러 시드가 막힘 �
     assert.ok(life.journal.every((entry, index, entries) => !entries.slice(Math.max(0, index - 10), index)
       .some((previous) => previous.title === entry.title)), "최근 10장면의 제목은 반복되지 않아야 한다");
     for (const entry of life.journal) {
-      if (entry.id === "life_roger_news") assert.equal(life.birth.yearsBeforeCurrent - entry.age, 24);
-      if (entry.id === "life_revolution_choice") assert.equal(life.birth.yearsBeforeCurrent - entry.age, 22);
-      if (entry.id === "life_tiger_liberation_news") assert.equal(life.birth.yearsBeforeCurrent - entry.age, 15);
-      if (entry.id === "life_tom_news") assert.equal(life.birth.yearsBeforeCurrent - entry.age, 10);
-      if (entry.id === "life_marineford_news") assert.equal(life.birth.yearsBeforeCurrent - entry.age, 2);
-      if (entry.id === "life_timeskip_news") assert.equal(life.birth.yearsBeforeCurrent - entry.age, 1);
-      if (entry.id === "life_new_era_news") assert.equal(life.birth.yearsBeforeCurrent - entry.age, 0);
+      if (entry.id === "life_roger_news") assert.equal(storyBefore(life, entry.age), 24);
+      if (entry.id === "life_revolution_choice") assert.equal(storyBefore(life, entry.age), 22);
+      if (entry.id === "life_tiger_liberation_news") assert.equal(storyBefore(life, entry.age), 15);
+      if (entry.id === "life_tom_news") assert.equal(storyBefore(life, entry.age), 10);
+      if (entry.id === "life_marineford_news") assert.equal(storyBefore(life, entry.age), 2);
+      if (entry.id === "life_timeskip_news") assert.equal(storyBefore(life, entry.age), 1);
+      if (entry.id === "life_new_era_news") assert.equal(storyBefore(life, entry.age), 0);
     }
     assert.deepEqual(replay(saveRecord(life)), life);
     completed.add(life.ending);
     assert.ok(["death", "prison", "missing", "present"].includes(life.ending));
     assert.ok(life.deathCause);
-    assert.ok(life.age <= life.birth.yearsBeforeCurrent, "규칙 7의 생애는 원작 현재를 넘기지 않는다");
+    assert.ok(life.age <= presentAge(life), "규칙 7의 생애는 원작 현재를 넘기지 않는다");
   }
   assert.ok(completed.has("death") && completed.has("present"), `결말 종류: ${[...completed]}`);
   assert.throws(() => replay({ version: 1, mode: "original", seed: 1, actions: ["not-a-choice"] }));
@@ -804,7 +804,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 15);
+  assert.equal(createGame("original", 0).creationVersion, 16);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1061,7 +1061,8 @@ test("규칙 10은 루피 일당과 겹치는 원작 연표를 훨씬 촘촘하�
 
 test("원작 열매를 먼저 먹으면 그 능력이 드러나는 원작 장면을 그 세계선에 맞게 다시 쓴다", async () => {
   const { preCanonScene: before } = await import("../src/canon-before.js");
-  const life = createGame("free", 3, { species: "인간" });
+  // Rule 15 keeps every pre-war beat in one year, so any step can be asked for directly.
+  const life = createGame("free", 3, { species: "인간" }, 3, 15);
   life.age = life.birth.yearsBeforeCurrent - 3;
   life.people.fruitOwner = { owner: "포트거스 D. 에이스", fruit: "이글이글 열매" };
   life.location = "워터 세븐";
@@ -1179,4 +1180,31 @@ test("규칙 15: 열매·패기·비능력자마다 다른 선택지가 붙고, 
     }
   }
   assert.deepEqual([...tiers].sort(), ["bad", "good", "great"]);
+});
+
+test("규칙 16은 원작의 몇 해를 생애의 스무 해 남짓으로 늘려, 원작 사건 사이에 자기 삶이 흐른다", async () => {
+  const { eraStart } = await import("../src/world.js");
+  let checked = 0;
+  for (let seed = 0; seed < 40 && checked < 3; seed += 1) {
+    let life = createGame("original", seed, { species: "인간" });
+    const canon = [];
+    let departure = null;
+    while (!life.finished) {
+      const scene = getScene(life);
+      if (/^canon_|^life_marineford_news$/.test(scene.id)) canon.push(scene);
+      if (scene.id === "canon_before_departure") departure = scene;
+      life = advance(life, scene.choices.find((choice) => !choice.disabled)?.id ?? null);
+    }
+    const war = life.journal.find((entry) => entry.id === "life_marineford_news");
+    if (!war) continue;
+    checked += 1;
+    assert.match(departure.body, /스무 해 남짓에 걸쳐 풀어 놓았다/);
+    assert.equal(presentAge(life), eraStart(life) + 24, "원작 현재는 출항으로부터 24년 뒤");
+    assert.ok(life.age <= presentAge(life));
+    assert.ok(war.age - departure.age >= 9, "출항에서 정상전쟁까지 여러 해가 흐른다");
+    assert.equal(storyBefore(life, war.age), 2);
+    assert.ok(life.journal.some((entry) => entry.age > departure.age && entry.age < war.age && !/^canon_|^life_marineford/.test(entry.id)),
+      "원작 사건 사이에 자기 삶의 장면이 낀다");
+  }
+  assert.equal(checked, 3);
 });

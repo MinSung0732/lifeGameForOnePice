@@ -1,4 +1,4 @@
-import { yearRoll } from "./world.js";
+import { storyBefore, yearRoll } from "./world.js";
 
 // Canon fruits with the approximate year (before the original present) their canon user ate them.
 // Free mode can offer one only before that year; eating it takes the power away from that user in this worldline.
@@ -30,7 +30,7 @@ const LEGACY_FRUITS = [
 // Same seed and age give the same fruit, so the offer shown and the fruit eaten always match.
 export function fruitFor(life) {
   const roll = yearRoll(life.seed ^ 0x5f3759df, life.age);
-  const beforePresent = life.birth.yearsBeforeCurrent - life.age;
+  const beforePresent = storyBefore(life);
   if (life.creationVersion >= 4) {
     // Approximate eating dates get a two-year buffer so an offer cannot overlap the canon owner.
     const available = CANON_FRUITS.filter((fruit) => fruit.releasedBefore !== undefined
