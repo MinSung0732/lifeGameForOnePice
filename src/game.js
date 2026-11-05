@@ -319,7 +319,8 @@ export function getScene(life) {
         const shown = life.supplies < cost && !risk.includes(`물자 ${cost} 필요`) ? `${risk} · 물자 ${cost} 필요` : risk;
         return { id: choice.id, label: typeof choice.label === "function" ? choice.label(life) : choice.label,
           risk: target ? `${shown} · 조건 부족: 주사위 1~100에서 ${target} 이상이면 성공, 실패하면 ${choice.failRisk || "건강 -15"}` : shown,
-          dice: target || null, naming: Boolean(choice.naming), disabled: !canChoose(choice, life) };
+          condition: shown, dice: target || null, failRisk: target ? choice.failRisk || "건강 -15" : null,
+          naming: Boolean(choice.naming), disabled: !canChoose(choice, life) };
       })
   };
 }

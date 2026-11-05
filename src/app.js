@@ -151,13 +151,19 @@ function describeChanges(changes) {
   }).join(" · ");
 }
 
-function appendMeter(grid, labelText, value, max, className) {
+function appendMeter(grid, labelText, value, max, className, delta = 0) {
   const item = document.createElement("div");
   item.className = `stat ${className}`;
   const head = document.createElement("div");
   head.className = "stat-head";
   const label = document.createElement("span");
   label.textContent = labelText;
+  if (delta) {
+    const badge = document.createElement("em");
+    badge.className = `stat-delta ${delta > 0 ? "up" : "down"}`;
+    badge.textContent = `${delta > 0 ? "+" : ""}${delta}`;
+    label.append(badge);
+  }
   const number = document.createElement("strong");
   number.textContent = `${value} / ${max}`;
   head.append(label, number);
@@ -175,6 +181,13 @@ function appendMeter(grid, labelText, value, max, className) {
   grid.append(item);
 }
 
+const changeOf = (key) => (life.lastChanges || []).find((change) => change.key === key)?.delta || 0;
+
+// Choices show only their conditions; what a choice raises is revealed after it is made.
+function conditionText(text) {
+  return (text || "").split(" · ").filter((part) => !/[+-]\d[\d,]*( 베리)?$/.test(part) && !/자람$/.test(part)).join(" · ");
+}
+
 function renderStats() {
   const grid = byId("stats-grid");
   grid.replaceChildren();
@@ -186,14 +199,14 @@ function renderStats() {
   for (const stat of STATS) {
     const max = life.rules === 3 ? stat.max : stat.key === "health" ? 3 : 5;
     const value = Math.max(0, Math.min(max, life[stat.key]));
-    appendMeter(grid, statLabel(stat), value, max, `stat-${stat.key}`);
+    appendMeter(grid, statLabel(stat), value, max, `stat-${stat.key}`, changeOf(stat.key));
   }
 }
 
 function renderPersonality() {
   const grid = byId("personality-grid");
   grid.replaceChildren();
-  for (const trait of PERSONALITY) appendMeter(grid, trait.label, life.personality[trait.key], 100, `trait-${trait.key}`);
+  for (const trait of PERSONALITY) appendMeter(grid, trait.label, life.personality[trait.key], 100, `trait-${trait.key}`, changeOf(`personality.${trait.key}`));
   byId("personality-summary").textContent = `성향 · ${personalitySummary(life.personality)}`;
 }
 
@@ -249,14 +262,32 @@ function renderGame(focusTitle = false) {
     const copy = document.createElement("span");
     const label = document.createElement("strong");
     label.textContent = choice.label;
-    const risk = document.createElement("small");
-    risk.textContent = choice.risk;
+    copy.className = "choice-copy";
+    copy.append(label);
+    const condition = conditionText(choice.condition ?? choice.risk);
+    if (condition) {
+      const risk = document.createElement("small");
+      risk.textContent = condition;
+      copy.append(risk);
+    }
     const arrow = document.createElement("span");
     arrow.className = "choice-arrow";
     arrow.setAttribute("aria-hidden", "true");
     arrow.textContent = "↗";
-    copy.append(label, risk);
-    button.append(copy, arrow);
+    button.append(copy);
+    if (choice.dice) {
+      const dice = document.createElement("span");
+      dice.className = "choice-dice";
+      const goal = document.createElement("b");
+      goal.textContent = `주사위 ${choice.dice} 이상`;
+      const rule = document.createElement("small");
+      rule.textContent = "조건 부족 · 1~100 굴림";
+      const fail = document.createElement("small");
+      fail.textContent = `실패 시 ${choice.failRisk}`;
+      dice.append(goal, rule, fail);
+      button.append(dice);
+    }
+    button.append(arrow);
     button.addEventListener("click", () => choice.naming ? askCrewName(choice) : advanceLife(choice.id));
     choices.append(button);
   }
@@ -312,12 +343,59 @@ function askCrewName(choice) {
   input.focus();
 }
 
-function advanceLife(choiceId) {
+let playingChanges = false;
+
+// After a choice the screen dims, a card lists what changed, then it flies into the stat panel.
+async function playChanges(changes) {
+  if (!changes.length) return;
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const overlay = document.createElement("div");
+  overlay.className = "fx-overlay";
+  const card = document.createElement("div");
+  card.className = "fx-card";
+  card.setAttribute("role", "status");
+  const heading = document.createElement("p");
+  heading.className = "fx-title";
+  heading.textContent = "이번 선택으로";
+  const list = document.createElement("ul");
+  for (const { key, delta } of changes) {
+    const item = document.createElement("li");
+    item.className = delta > 0 ? "up" : "down";
+    const name = document.createElement("span");
+    name.textContent = key === "bounty" ? "현상금" : statLabel(STATS.find((entry) => entry.key === key) || { key });
+    const amount = document.createElement("strong");
+    amount.textContent = key === "bounty" ? `${delta > 0 ? "+" : ""}${formatBounty(delta)}` : `${delta > 0 ? "+" : ""}${delta}`;
+    item.append(name, amount);
+    list.append(item);
+  }
+  card.append(heading, list);
+  overlay.append(card);
+  document.body.append(overlay);
+  let skip;
+  const pause = (ms) => new Promise((resolve) => { const timer = setTimeout(resolve, ms); skip = () => { clearTimeout(timer); resolve(); }; });
+  overlay.addEventListener("click", () => skip?.());
+  requestAnimationFrame(() => overlay.classList.add("show"));
+  await pause(reduced ? 900 : 1300);
+  const target = byId("stats-grid").getBoundingClientRect();
+  const from = card.getBoundingClientRect();
+  card.style.transform = `translate(${target.left + target.width / 2 - (from.left + from.width / 2)}px, ${target.top + target.height / 2 - (from.top + from.height / 2)}px) scale(0.12)`;
+  overlay.classList.add("leaving");
+  await pause(reduced ? 0 : 560);
+  overlay.remove();
+}
+
+async function advanceLife(choiceId) {
+  if (playingChanges) return;
   stopTimer();
   try {
+    const chose = choiceId !== null && getScene(life).choices.length > 0;
     life = advance(life, choiceId);
     library.lives[library.active] = saveRecord(life);
     persist();
+    if (chose) {
+      playingChanges = true;
+      try { await playChanges(life.lastChanges); } finally { playingChanges = false; }
+    }
     if (life.finished) renderEnding();
     else renderGame(true);
   } catch (error) {

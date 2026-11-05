@@ -167,6 +167,28 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
 .choice strong { display: block; font-size: 15px; font-weight: 700; }
 .choice small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; line-height: 1.35; }
 .choice-arrow { color: var(--copper); font-size: 21px; flex: 0 0 auto; }
+.choice-copy { flex: 1 1 auto; min-width: 0; }
+/* Dice terms sit in the button's empty right side instead of the condition line. */
+.choice-dice { flex: 0 0 132px; display: flex; flex-direction: column; gap: 1px; border-left: 1px solid var(--line); padding: 2px 0 2px 10px; text-align: left; }
+.choice-dice b { color: var(--copper); font-size: 13px; font-weight: 700; }
+.choice-dice small { margin: 0; font-size: 11px; line-height: 1.3; }
+.stat-delta { margin-left: 6px; font-style: normal; font-weight: 700; font-size: 12px; animation: delta-pop 2.8s ease-out forwards; }
+.stat-delta.up { color: var(--sea); }
+.stat-delta.down { color: #a3503e; }
+@keyframes delta-pop { 0% { opacity: 0; } 12% { opacity: 1; } 78% { opacity: 1; } 100% { opacity: 0; } }
+.fx-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(12, 22, 26, 0); transition: background .3s ease; cursor: pointer; }
+.fx-overlay.show { background: rgba(12, 22, 26, .58); }
+.fx-overlay.leaving { background: rgba(12, 22, 26, 0); transition: background .5s ease; }
+.fx-card { min-width: 230px; max-width: min(360px, 86vw); padding: 16px 22px 14px; border: 1px solid var(--line); background: var(--paper); box-shadow: 0 18px 50px rgba(0, 0, 0, .35);
+  opacity: 0; transform: scale(.86); transition: opacity .28s ease, transform .28s ease; }
+.fx-overlay.show .fx-card { opacity: 1; transform: scale(1); }
+.fx-overlay.leaving .fx-card { opacity: 0; transition: transform .56s cubic-bezier(.55, 0, .9, .35), opacity .56s ease-in; }
+.fx-title { margin: 0 0 8px; color: var(--copper); font-size: 12px; font-weight: 700; letter-spacing: .04em; }
+.fx-card ul { margin: 0; padding: 0; list-style: none; }
+.fx-card li { display: flex; justify-content: space-between; gap: 18px; padding: 3px 0; font-size: 15px; color: var(--ink); }
+.fx-card li strong { font-size: 16px; }
+.fx-card li.up strong { color: var(--sea); }
+.fx-card li.down strong { color: #a3503e; }
 .scene-hint { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
 
 .life-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 18px; margin: 0 0 12px; padding: 7px 0 9px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -296,6 +318,7 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
   .choice { min-height: 0; padding: 4px 5px; }
   .choice strong { font-size: 13px; }
   .choice small { font-size: 11px; }
+  .choice-dice { flex-basis: 96px; padding-left: 8px; }
   .life-strip { grid-template-columns: 1fr 1fr; gap: 4px 8px; margin: 0 0 8px; padding: 5px 0; }
   .life-strip div { display: block; }
   .life-strip span, .life-strip strong { display: block; }
@@ -315,4 +338,6 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  /* Keep the +n badges readable instead of letting the shortened fade hide them at once. */
+  .stat-delta { animation: none !important; }
 }
