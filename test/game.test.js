@@ -84,8 +84,10 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(human.skill, human.birthStats.species.skill + human.birthStats.individual.skill);
   assert.equal(human.health, human.birthStats.species.health + human.birthStats.individual.health);
   assert.equal(giant.health - human.health, 14);
-  assert.ok(human.birth.yearsBeforeCurrent >= 26 && human.birth.yearsBeforeCurrent <= 44, "로저 처형 20년 전 이내에 태어난다");
-  assert.ok(giant.birth.yearsBeforeCurrent >= 126 && giant.birth.yearsBeforeCurrent <= 150);
+  assert.ok(human.birth.yearsBeforeCurrent >= 40 && human.birth.yearsBeforeCurrent <= 95, "규칙 7은 한 생애가 원작 현재 안에 끝나도록 태어난다");
+  assert.ok(giant.birth.yearsBeforeCurrent >= 130 && giant.birth.yearsBeforeCurrent <= 300);
+  const rule6 = createGame("original", 42, { species: "인간" }, 3, 6);
+  assert.ok(rule6.birth.yearsBeforeCurrent >= 26 && rule6.birth.yearsBeforeCurrent <= 44, "규칙 6 기록은 로저 처형 20년 전 이내 출생을 유지한다");
   const previous = createGame("original", 42, { species: "인간" }, 3, 2);
   assert.ok(previous.birth.yearsBeforeCurrent >= 35 && previous.birth.yearsBeforeCurrent <= 85, "이전 규칙 기록은 예전 출생 범위를 유지한다");
   assert.notDeepEqual(human.birthStats.individual, createGame("original", 43, { species: "인간" }).birthStats.individual);
@@ -103,7 +105,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 7 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 8 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -504,10 +506,11 @@ test("저장 기록은 같은 삶으로 복원되고, 여러 시드가 막힘 �
     }
     assert.deepEqual(replay(saveRecord(life)), life);
     completed.add(life.ending);
-    assert.equal(life.ending, "death");
+    assert.ok(["death", "prison", "missing", "present"].includes(life.ending));
     assert.ok(life.deathCause);
+    assert.ok(life.age <= life.birth.yearsBeforeCurrent, "규칙 7의 생애는 원작 현재를 넘기지 않는다");
   }
-  assert.deepEqual(completed, new Set(["death"]));
+  assert.ok(completed.has("death") && completed.has("present"), `결말 종류: ${[...completed]}`);
   assert.throws(() => replay({ version: 1, mode: "original", seed: 1, actions: ["not-a-choice"] }));
 });
 
@@ -660,7 +663,7 @@ test("마린포드 이후 원작의 주요 사건은 짧은 시간 간격으로 
 });
 
 test("자유 모드의 상위 직책 IF는 와노국 이후 원작 장면 사이에서 열린다", () => {
-  let life = createGame("free", 0, { species: "인간" });
+  let life = createGame("free", 0, { species: "인간" }, 3, 6);
   while (!life.finished && getScene(life).id !== "canon_wano") {
     const scene = getScene(life);
     life = advance(life, scene.choices.find((choice) => !choice.disabled)?.id || null);
@@ -801,12 +804,12 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 6);
+  assert.equal(createGame("original", 0).creationVersion, 7);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
   const arts = new Set();
-  for (let seed = 0; seed < 12; seed += 1) {
+  for (let seed = 0; seed < 16; seed += 1) {
     let life = createGame("original", seed, { species: "인간" });
     const beats = [];
     while (!life.finished && getScene(life).id !== "life_after_storm") {
@@ -871,7 +874,7 @@ test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마�
 });
 
 test("출항부터 정상전쟁까지 원작 사건과 일상을 가변 간격으로 함께 보여 준다", () => {
-  let life = createGame("original", 0, { species: "인간" });
+  let life = createGame("original", 0, { species: "인간" }, 3, 6);
   let steps = 0;
   while (!life.finished && !life.seen.includes("life_marineford_news") && steps++ < 250) {
     const scene = getScene(life);
@@ -929,4 +932,24 @@ test("정상전쟁 뒤 원작 소식 사이에는 날짜 간격을 둔 일상이
     .every((entry) => /뒤/.test(entry.timeLabel)));
   assert.ok(sequence.every((entry, index) => index < 2 || !entry.id.startsWith("canon_")
     || !sequence.slice(Math.max(0, index - 2), index).every((previous) => previous.id.startsWith("canon_"))));
+});
+
+test("규칙 7은 소동·위험 사건을 섞고 모든 생애를 원작 현재 안에서 닫는다", async () => {
+  const { adventureCounts } = await import("../src/adventures.js");
+  assert.ok(adventureCounts.mishaps >= 15 && adventureCounts.dangers >= 8);
+  const endings = new Set();
+  let mishaps = 0; let dangers = 0;
+  for (let seed = 0; seed < 60; seed += 1) {
+    const life = play(seed % 2 ? "free" : "original", seed * 31 + 7, {}, { species: ["인간", "어인", "거인족"][seed % 3] }, 3, 7);
+    mishaps += life.seen.filter((id) => id.startsWith("life_mishap_")).length;
+    dangers += life.seen.filter((id) => id.startsWith("life_danger_")).length;
+    endings.add(life.ending);
+    assert.ok(life.age <= life.birth.yearsBeforeCurrent, "원작 현재 이후의 해가 없어야 한다");
+    if (life.ending === "present") assert.equal(life.journal.at(-1).id, "life_present_end");
+  }
+  assert.ok(mishaps >= 120 && dangers >= 60, `소동 ${mishaps}, 위험 ${dangers}`);
+  assert.ok(endings.has("present") && endings.has("death"));
+  const old = createGame("original", 3, { species: "인간" }, 3, 6);
+  assert.ok(!play("original", 3, {}, { species: "인간" }, 3, 6).seen.some((id) => id.startsWith("life_mishap_")), "규칙 6 기록에는 새 사건이 섞이지 않는다");
+  assert.equal(old.creationVersion, 6);
 });

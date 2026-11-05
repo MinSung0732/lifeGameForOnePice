@@ -1,5 +1,6 @@
 import { canonCrew, encounterAt, encounterScene, moveTo, routeFor, standing, travelScene, yearRoll } from "./world.js";
 import { personalBeat } from "./people.js";
+import { adventureScene } from "./adventures.js";
 import { islandEvent } from "./islands.js";
 import { fruitFor } from "./fruits.js";
 import { bountyScene } from "./bounty.js";
@@ -753,6 +754,11 @@ function sceneForAge(life) {
           personality: { loyalty: 6, caution: 4 }, apply: (state) => { state.trust += 10; return "더 큰 이름을 얻는 대신 곁의 사람들과 남았다."; } }
       ] };
   }
+  // Rule 7 closes every surviving life at the original present instead of running into unpublished years.
+  if (life.creationVersion >= 7 && age > life.birth.yearsBeforeCurrent) return { ...base, id: "life_present_end", age: life.birth.yearsBeforeCurrent,
+    urgent: true, art: "legacy", title: "원작이 멈춘 자리",
+    body: (state) => `엘바프에 닿은 밀짚모자 일당의 소식이 바다의 마지막 신문이었다. ${state.birth.name}의 기록도 여기서 펜을 놓는다. 이 뒤의 바다는 아직 아무도 그리지 않았다.`,
+    after: (state) => { state.ending = "present"; state.deathCause = "원작의 현재에 닿음"; return "원작이 그린 마지막 시간까지 살아 낸 기록이 남았다."; } };
   if (lastYear(life, age)) {
     if (life.creationVersion >= 5) {
       const day = lastDay(life);
@@ -792,6 +798,8 @@ function sceneForAge(life) {
 
   const wanted = bountyScene(life, age, base);
   if (wanted) return wanted;
+  const adventure = adventureScene(life, age, base);
+  if (adventure) return adventure;
 
   const flexible = flexibleIncident(life, age);
   if (flexible) return flexible;

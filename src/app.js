@@ -328,16 +328,22 @@ function renderEnding() {
   stopTimer();
   observation = null;
   showSection("ending");
-  const completeLife = life.rules === 3 && life.ending === "death";
-  const title = completeLife ? life.deathCause === "어린 날의 해난 사고" ? "짧게 끝난 생애" : "한 생애의 끝"
-    : life.ending === "death" ? "돌아오지 못한 삶" : life.ending === "retire" ? "넘겨준 자리" : "아직 열린 이야기";
+  // Rule 7 also closes lives in prison, lost at sea, or alive at the original present.
+  const closing = life.creationVersion >= 7 && { prison: "갇힌 채 멈춘 기록", missing: "돌아오지 않은 배", present: "원작의 현재에 닿은 삶" }[life.ending];
+  const completeLife = life.rules === 3 && (life.ending === "death" || Boolean(closing));
+  const title = closing || (completeLife ? life.deathCause === "어린 날의 해난 사고" ? "짧게 끝난 생애" : "한 생애의 끝"
+    : life.ending === "death" ? "돌아오지 못한 삶" : life.ending === "retire" ? "넘겨준 자리" : "아직 열린 이야기");
   const speciesArt = { 어인: "fishman", 밍크족: "mink", "하늘섬 사람": "sky", 거인족: "giant" }[life.birth.species];
   const art = completeLife ? ART.legacy : speciesArt ? ART[life.ending === "death" ? `${speciesArt}Crisis` : speciesArt]
     : life.ending === "death" ? ART.rescue : life.ending === "retire" ? ART.retirement : ART.harbor;
   byId("ending-title").textContent = `${life.birth.name}의 기록 · ${title}`;
   byId("ending-image").src = art.src;
   byId("ending-image").alt = art.alt;
-  byId("ending-lead").textContent = completeLife
+  byId("ending-lead").textContent = closing
+    ? life.ending === "present"
+      ? `${life.age}세, 원작이 그린 마지막 시간(${life.canonChapter}화)에 닿았습니다. 이 뒤의 바다는 아직 공개되지 않았습니다.`
+      : `${life.age}세에 ${life.deathCause}. 그 뒤의 날들은 일지에 적히지 않았습니다.`
+    : completeLife
     ? `${life.age}세에 ${life.deathCause}로 생을 마쳤습니다. 일지에는 선택한 길과 마지막 날까지 남은 사람이 기록되어 있습니다.`
     : life.ending === "death"
     ? "처음의 손실과 마지막 선택이 남긴 것을 사람들의 시선에서 기록합니다. 목표의 미래를 대신 완성하지 않습니다."

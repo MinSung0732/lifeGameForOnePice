@@ -165,11 +165,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 6) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 7) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3, 4, 5, 6].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4, 5, 6, 7].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -187,9 +187,12 @@ export function createGame(mode, seed, profile = {}, rules = 3, creationVersion 
     home: chosen.home || randomHome,
     means: chosen.means || randomMeans,
     yearsBeforeCurrent: rules === 3
-      // Rule 3: born at most 20 years before Roger's execution (24 years before the present) so canon news lands within the life;
-      // giants need about 112 years to come of age, so they reach adulthood around that era instead.
-      ? creationVersion >= 3
+      // Rule 7: a life ends by the original present at the latest, so the birth year spans a whole lifetime
+      // (humans 40~95 years before, giants 130~300) and a natural death can come before Luffy's era.
+      ? creationVersion >= 7
+        ? species === "거인족" ? 130 + random() % 171 : 40 + random() % 56
+        // Rules 3~6: born at most 20 years before Roger's execution; giants reach adulthood around that era.
+        : creationVersion >= 3
         ? species === "거인족" ? 126 + random() % 25 : 26 + random() % 19
         : creationVersion === 2
         ? species === "거인족" ? 160 + random() % 101 : 35 + random() % 51
