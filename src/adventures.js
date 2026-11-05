@@ -24,7 +24,7 @@ function wound(life, damage, cause) {
 }
 
 const MISHAPS = [
-  { id: "feast", when: atSea, title: "고기 쟁탈 연회",
+  { id: "feast", art: "mishapFeast", when: atSea, title: "고기 쟁탈 연회",
     body: (life) => `섬에 닿은 첫날 밤, 누가 시작했는지 모를 연회가 터졌다! 갑판 한가운데 놓인 해왕류 고기 한 덩이를 두고 모두가 눈빛을 번뜩였다. ${eun(life.birth.name)} 접시를 든 채 기회를 노렸다.`,
     choices: [
       { id: "dive", label: "고기 더미로 몸을 날린다", needs: { health: 45 }, risk: "건강 45 필요 · 이기면 배부름과 명성", failRisk: "건강 -10 · 동료들의 놀림",
@@ -176,7 +176,7 @@ const MISHAPS = [
 ];
 
 const DANGERS = [
-  { id: "sea_king", when: atSea, title: "해왕류의 습격",
+  { id: "sea_king", art: "dangerSeaKing", when: atSea, title: "해왕류의 습격",
     body: "잔잔하던 바다가 갑자기 솟아올랐다. 배보다 큰 해왕류가 아가리를 벌리고 뱃머리를 노렸다. 동료들의 비명이 바람에 묻혔다.",
     choices: [
       { id: "fight", label: "뱃머리에 서서 맞선다", needs: { skill: 60, health: 50 }, risk: "기술 60 · 건강 50 필요 · 성공하면 엄청난 식량", failRisk: "건강 -35 · 목숨이 위험",
@@ -214,7 +214,7 @@ const DANGERS = [
         apply: (life) => { life.health -= 10; return "열이 끓는 사흘 밤을 버텼다. 아침에 일어나자 동료들이 울면서 웃었다."; },
         fail: (life) => wound(life, 35, "독살") ? "독은 생각보다 빨랐다. 동료들이 의원을 데려왔을 때는 이미 늦었다." : "몸의 반쪽이 오래 말을 듣지 않았다. 살아남은 것만으로도 기적이라고 했다." }
     ] },
-  { id: "capture", when: (life) => outlaw(life) && life.bounty >= 30_000_000, title: "닫히는 포위망",
+  { id: "capture", art: "dangerPrison", when: (life) => outlaw(life) && life.bounty >= 30_000_000, title: "닫히는 포위망",
     body: (life) => `${formatBounty(life.bounty)}의 이름을 노린 ${pursuerFor(life.bounty).name}이 섬 전체를 에워쌌다. 항구와 숲, 하늘까지 막혔다. 확성기 너머로 투항하라는 목소리가 들렸다.`,
     choices: [
       { id: "break", label: "정면으로 포위망을 뚫는다", needs: { skill: 70, health: 50 }, risk: "기술 70 · 건강 50 필요 · 현상금 상승", bounty: 20_000_000, failRisk: "건강 -40 · 체포나 죽음",

@@ -100,7 +100,7 @@ const ARCS = {
         { id: "cover", label: "건물 안에 몸을 숨긴다", risk: "신중함이 자람", personality: { caution: 7 }, apply: () => "창틈으로 광장을 보았다. 싸움이 멎은 뒤, 몇 해 만에 하늘에서 비가 내렸다." }
       ] }
   ] },
-  jaya: { place: "모크 타운", art: "deck", scenes: [
+  jaya: { place: "모크 타운", art: "arcJaya", scenes: [
     { time: "그날 · 모크 타운 술집", title: "꿈을 비웃는 자와 웃는 자",
       body: "술집에서 이름난 해적이 하늘섬을 믿는 신참 해적들을 두들겨 팼다. 밀짚모자 소년은 끝까지 맞서지 않았다. 구석 자리의 이 빠진 사내가 사람의 꿈은 끝나지 않는다며 크게 웃었다.",
       choices: [
@@ -126,7 +126,7 @@ const ARCS = {
       body: "키 큰 사내가 해변에서 낮잠을 자다 일어났다. 해군 대장이라는 말에 섬의 공기가 얼어붙었다. 실제로 바다 한쪽이 하얗게 얼어 있었다.",
       after: (life) => { life.health -= 5; return "얼음 바람을 피해 배로 돌아왔다. 대장 하나가 바다를 얼린다는 이야기는 과장이 아니었다."; } }
   ] },
-  water_seven: { place: "워터 세븐", art: "workbench", scenes: [
+  water_seven: { place: "워터 세븐", art: "arcWater7", scenes: [
     { time: "도착 이튿날 · 뒷골목", title: "해체업자의 집",
       body: "뒷골목에서 해체업자 무리가 돈 가방을 둘러싸고 환호했다. 밀짚모자 일행의 돈이라는 말이 들리더니, 얼마 뒤 그 집이 통째로 무너지는 소리가 났다.",
       choices: [
@@ -145,7 +145,7 @@ const ARCS = {
       body: "해일이 몰려오는데도 바다 위를 달리는 열차 한 대가 역을 박차고 나갔다. 해군 기지 섬으로 가는 길이라고 했다. 역무원들은 미친 짓이라며 고개를 저었다.",
       after: (life) => { life.health -= 5; return "높은 곳으로 피해 해일을 견뎠다. 며칠 뒤 정부의 섬에서 깃발이 불탔다는 소식이 왔다."; } }
   ] },
-  sabaody_auction: { place: "샤본디 제도", art: "harbor", scenes: [
+  sabaody_auction: { place: "샤본디 제도", art: "arcSabaody", scenes: [
     { time: "그날 · 1번 그로브 경매장", title: "경매장의 총성",
       body: "인간 경매장에서 천룡인이 문어 어인을 쐈다. 모두가 고개를 숙인 순간, 밀짚모자 소년이 계단을 뛰어 내려가 천룡인을 주먹으로 날려 버렸다. 경매장이 뒤집혔다.",
       choices: [
@@ -164,7 +164,7 @@ const ARCS = {
         { id: "hide", label: "뿌리 사이에 숨어 숨을 죽인다", risk: "건강 -5", personality: { caution: 8 }, apply: (life) => { life.health -= 5; return "해가 질 때까지 움직이지 않았다. 저녁이 되자 밀짚모자 일당이 사라졌다는 소문이 돌았다."; } }
       ] }
   ] },
-  reunion: { place: "샤본디 제도", art: "harbor", scenes: [
+  reunion: { place: "샤본디 제도", art: "arcSabaody", scenes: [
     { time: "2년 뒤 · 샤본디", title: "가짜 밀짚모자의 모집",
       body: "밀짚모자 루피라고 자칭하는 사내가 샤본디에서 선원을 모았다. 현상금 4억이라고 떠들었지만 키도 얼굴도 수배서와 딴판이었다.",
       choices: [
@@ -182,7 +182,7 @@ const ARCS = {
           fail: (life) => { life.health -= 25; return "작살에 어깨를 찔렸다. 주민들이 거품 통로로 끌고 갔다."; } }
       ] }
   ] },
-  dressrosa: { place: "드레스로자", art: "deck", scenes: [
+  dressrosa: { place: "드레스로자", art: "arcDressrosa", scenes: [
     { time: "첫날 · 콜로세움", title: "불꽃 열매가 걸린 투기장",
       body: "드레스로자의 콜로세움에서 죽은 형제의 열매를 걸고 싸우는 대회가 열렸다. 관중석 너머로 진 투사들이 어디론가 끌려갔다. 거리에서는 말하는 장난감들이 사람처럼 일을 했다.",
       choices: [
@@ -214,7 +214,7 @@ const ARCS = {
         { id: "rebuild", label: "무너진 나무집을 고친다", risk: "기술 +10 · 건강 -5", personality: { loyalty: 5 }, apply: (life) => { life.skill += 10; life.health -= 5; return "망치 소리가 하루 종일 울렸다. 저녁에는 모두가 같은 모닥불 앞에 앉았다."; } }
       ] }
   ] },
-  whole_cake: { place: "홀케이크 아일랜드 외해", art: "deck", scenes: [
+  whole_cake: { place: "홀케이크 아일랜드 외해", art: "arcWholeCake", scenes: [
     { time: "다과회 날 · 외해", title: "깨진 웨딩 케이크",
       body: "홀케이크에서 열린 결혼식 다과회가 엉망이 됐다는 전보가 날아왔다. 얼마 뒤 섬 쪽 바다에서 무시무시한 굶주림의 비명이 들렸다. 케이크를 찾는 거대한 해적 여왕이 바다를 건너고 있었다.",
       choices: [
@@ -225,7 +225,7 @@ const ARCS = {
           apply: (life) => { life.supplies -= 10; return "과자 상자들이 파도를 타고 흘러갔다. 비명이 잠시 멎었다가 다른 쪽으로 멀어졌다."; } }
       ] }
   ] },
-  wano: { place: "와노국 외해", art: "lifeStorm", scenes: [
+  wano: { place: "와노국 외해", art: "arcWano", scenes: [
     { time: "불의 축제 밤 · 외해", title: "귀신섬의 불길",
       body: "닫힌 나라 와노국의 앞바다에서 밤하늘이 붉게 물들었다. 귀신섬 쪽에서 거대한 불기둥과 용의 울음소리 같은 것이 들렸다. 폭포 아래로 피난민을 태운 작은 배들이 흘러나왔다.",
       choices: [
