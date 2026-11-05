@@ -350,6 +350,8 @@ export function advance(life, action = null) {
   if (!card.choices && action !== null) throw new Error("관찰 장면에는 선택지가 없습니다.");
 
   const next = structuredClone(life);
+  // The last roll is shown once by the UI; replay recomputes it from the same seed.
+  next.lastDice = null;
   if (card.encounter) next.pendingEncounter = null;
   if (card.preCanonBeat) {
     next.preCanonStep += 1;
@@ -371,6 +373,7 @@ export function advance(life, action = null) {
   if (target) {
     const roll = diceRoll(life, card.id, chosen.id);
     const success = roll >= target;
+    next.lastDice = { roll, target, success };
     outcome = `주사위 ${roll} (${target} 이상 성공) · ${success ? "성공" : "실패"}. ${(success ? chosen.apply(next, name) : (chosen.fail || failedAttempt)(next)) || ""}`;
   } else outcome = chosen ? chosen.apply(next, name) : card.after?.(next);
   if (next.creationVersion >= 4 && chosen?.bounty) {

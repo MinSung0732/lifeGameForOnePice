@@ -188,6 +188,22 @@ function conditionText(text) {
   return (text || "").split(" · ").filter((part) => !/[+-]\d[\d,]*( 베리)?$/.test(part) && !/자람$/.test(part)).join(" · ");
 }
 
+// The dice box hints at what a failure costs instead of printing the numbers.
+function failHint(text) {
+  return (text || "").split(" · ").map((part) => {
+    const loss = part.match(/^(.+?) -(\d[\d,]*)$/);
+    if (!loss) return /현상금/.test(part) ? "현상금이 오를 수 있음" : part;
+    const [, label, amount] = loss;
+    const heavy = Number(amount.replace(/,/g, "")) >= 30;
+    if (label === "건강") return heavy ? "크게 다칠 수 있음" : "다칠 수 있음";
+    if (label === "물자") return heavy ? "물자를 많이 잃을 수 있음" : "물자를 잃을 수 있음";
+    if (label.includes("유대")) return "관계가 흔들릴 수 있음";
+    if (label.includes("신뢰")) return "평판이 떨어질 수 있음";
+    if (label === "기술") return "자신감을 잃을 수 있음";
+    return "손해를 볼 수 있음";
+  }).filter((part, index, all) => all.indexOf(part) === index).join(" · ");
+}
+
 function renderStats() {
   const grid = byId("stats-grid");
   grid.replaceChildren();
@@ -283,7 +299,7 @@ function renderGame(focusTitle = false) {
       const rule = document.createElement("small");
       rule.textContent = "조건 부족 · 1~100 굴림";
       const fail = document.createElement("small");
-      fail.textContent = `실패 시 ${choice.failRisk}`;
+      fail.textContent = `실패하면 ${failHint(choice.failRisk)}`;
       dice.append(goal, rule, fail);
       button.append(dice);
     }
@@ -345,7 +361,87 @@ function askCrewName(choice) {
 
 let playingChanges = false;
 
-// After a choice the screen dims, a card lists what changed, then it flies into the stat panel.
+// After a choice the screen dims and a card lists what changed. Each row then bursts into round particles
+// in its meter's color that fly into that stat or trait; bounty particles go to the role line.
+function changeTarget(key) {
+  if (key === "bounty") return byId("life-power");
+  return document.querySelector(key.startsWith("personality.") ? `.trait-${key.slice(12)}` : `.stat-${key}`);
+}
+
+function burst(row, target, delta) {
+  const from = row.getBoundingClientRect();
+  const to = target.getBoundingClientRect();
+  const color = getComputedStyle(target).getPropertyValue("--stat-color").trim() || (delta > 0 ? "#2f8f4e" : "#c0392b");
+  const count = Math.min(14, 6 + Math.abs(delta) / 2);
+  const flights = [];
+  for (let i = 0; i < count; i += 1) {
+    const dot = document.createElement("span");
+    dot.className = "fx-particle";
+    const size = 6 + Math.random() * 7;
+    const x = from.left + Math.random() * from.width;
+    const y = from.top + from.height / 2 + (Math.random() - 0.5) * from.height;
+    Object.assign(dot.style, { width: `${size}px`, height: `${size}px`, left: `${x - size / 2}px`, top: `${y - size / 2}px`, background: color, boxShadow: `0 0 10px ${color}` });
+    document.body.append(dot);
+    const dx = to.left + to.width * (0.2 + Math.random() * 0.6) - x;
+    const dy = to.top + to.height / 2 - y;
+    const spread = (Math.random() - 0.5) * 140;
+    const flight = dot.animate([
+      { transform: "translate(0, 0) scale(.4)", opacity: 0 },
+      { transform: `translate(${spread * 0.6}px, ${-30 - Math.random() * 50}px) scale(1.15)`, opacity: 1, offset: 0.25 },
+      { transform: `translate(${dx}px, ${dy}px) scale(.35)`, opacity: 0.9 }
+    ], { duration: 720 + Math.random() * 260, delay: i * 28, easing: "cubic-bezier(.5, 0, .75, .35)", fill: "forwards" });
+    flights.push(flight.finished.then(() => dot.remove()));
+  }
+  return Promise.all(flights).then(() => {
+    target.classList.remove("fx-hit");
+    void target.offsetWidth;
+    target.classList.add("fx-hit");
+  });
+}
+
+// A dice check gets its own beat: the die tumbles through numbers, lands on the roll, then shows the verdict.
+async function playDice({ roll, target, success }) {
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const overlay = document.createElement("div");
+  overlay.className = "fx-overlay dice-overlay";
+  const card = document.createElement("div");
+  card.className = "fx-card dice-card";
+  card.setAttribute("role", "status");
+  const goal = document.createElement("p");
+  goal.className = "fx-title";
+  goal.textContent = `주사위 1~100 · ${target} 이상이면 성공`;
+  const die = document.createElement("div");
+  die.className = "dice-face rolling";
+  die.textContent = "?";
+  const verdict = document.createElement("p");
+  verdict.className = "dice-verdict";
+  card.append(goal, die, verdict);
+  overlay.append(card);
+  document.body.append(overlay);
+  let skip;
+  const pause = (ms) => new Promise((resolve) => { const timer = setTimeout(resolve, ms); skip = () => { clearTimeout(timer); resolve(); }; });
+  let skipped = false;
+  overlay.addEventListener("click", () => { skipped = true; skip?.(); });
+  requestAnimationFrame(() => overlay.classList.add("show"));
+  if (!reduced) {
+    // Flicker through random faces, slowing down like a die losing momentum.
+    for (let delay = 45; delay < 230 && !skipped; delay *= 1.16) {
+      die.textContent = String(1 + Math.floor(Math.random() * 100));
+      await pause(delay);
+    }
+  }
+  die.classList.remove("rolling");
+  die.classList.add(success ? "success" : "fail");
+  die.textContent = String(roll);
+  verdict.className = `dice-verdict ${success ? "success" : "fail"}`;
+  verdict.textContent = success ? "성공!" : "실패";
+  skipped = false;
+  await pause(1100);
+  overlay.classList.add("leaving");
+  await pause(reduced ? 0 : 240);
+  overlay.remove();
+}
+
 async function playChanges(changes) {
   if (!changes.length) return;
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -358,15 +454,17 @@ async function playChanges(changes) {
   heading.className = "fx-title";
   heading.textContent = "이번 선택으로";
   const list = document.createElement("ul");
+  const rows = [];
   for (const { key, delta } of changes) {
     const item = document.createElement("li");
     item.className = delta > 0 ? "up" : "down";
     const name = document.createElement("span");
     name.textContent = key === "bounty" ? "현상금" : statLabel(STATS.find((entry) => entry.key === key) || { key });
     const amount = document.createElement("strong");
-    amount.textContent = key === "bounty" ? `${delta > 0 ? "+" : ""}${formatBounty(delta)}` : `${delta > 0 ? "+" : ""}${delta}`;
+    amount.textContent = key === "bounty" ? `${delta > 0 ? "+" : "-"}${formatBounty(Math.abs(delta))}` : `${delta > 0 ? "+" : ""}${delta}`;
     item.append(name, amount);
     list.append(item);
+    rows.push({ item, key, delta });
   }
   card.append(heading, list);
   overlay.append(card);
@@ -376,12 +474,15 @@ async function playChanges(changes) {
   overlay.addEventListener("click", () => skip?.());
   requestAnimationFrame(() => overlay.classList.add("show"));
   await pause(reduced ? 900 : 1300);
-  const target = byId("stats-grid").getBoundingClientRect();
-  const from = card.getBoundingClientRect();
-  card.style.transform = `translate(${target.left + target.width / 2 - (from.left + from.width / 2)}px, ${target.top + target.height / 2 - (from.top + from.height / 2)}px) scale(0.12)`;
+  if (!reduced) {
+    const bursts = rows.map(({ item, key, delta }) => { const target = changeTarget(key); return target ? burst(item, target, delta) : null; }).filter(Boolean);
+    overlay.classList.add("bursting");
+    await Promise.race([Promise.all(bursts), pause(1500)]);
+  }
   overlay.classList.add("leaving");
-  await pause(reduced ? 0 : 560);
+  await pause(reduced ? 0 : 260);
   overlay.remove();
+  document.querySelectorAll(".fx-particle").forEach((dot) => dot.remove());
 }
 
 async function advanceLife(choiceId) {
@@ -394,7 +495,10 @@ async function advanceLife(choiceId) {
     persist();
     if (chose) {
       playingChanges = true;
-      try { await playChanges(life.lastChanges); } finally { playingChanges = false; }
+      try {
+        if (life.lastDice) await playDice(life.lastDice);
+        await playChanges(life.lastChanges);
+      } finally { playingChanges = false; }
     }
     if (life.finished) renderEnding();
     else renderGame(true);
