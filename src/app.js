@@ -1,4 +1,4 @@
-import { powerFxForChoice } from "./power-fx.js";
+import { fruitFxKind, powerFxForChoice } from "./power-fx.js";
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, collectMilestones, createGame, getScene, personalitySummary, replay, saveRecord } from "./game.js";
 import { crewNews, crewVesselKind, eraStart, presentAge, stretched } from "./world.js";
 import { peopleSummary } from "./people.js";
@@ -740,7 +740,7 @@ function initMotion(toggle) {
     document.documentElement.dataset.motion = motionOn ? "on" : "off";
     if (!toggle) return;
     toggle.setAttribute("aria-pressed", String(motionOn));
-    toggle.textContent = motionOn ? "애니메이션 켜기" : "애니메이션 끄기";
+    toggle.textContent = motionOn ? "애니메이션 끄기" : "애니메이션 켜기";
   };
   toggle?.addEventListener("click", () => {
     motionOn = !motionOn;
@@ -1333,12 +1333,8 @@ function flyCardTo(card, target, maxOffset = 140) {
 async function playMilestones(milestones) {
   if (!milestones.length) return;
   renderLifeStrip();
-  if (!motionOn) {
-    const first = milestones[0];
-    diceResult(first.kind === "bounty" ? "bounty" : first.kind === "fruit" ? "fruit" : first.kind.startsWith("haki-") ? "haki" : "great");
-    return;
-  }
-  const reduced = false;
+  // Acquired powers must remain visible even when animation is disabled.
+  const reduced = !motionOn;
   for (let idx = 0; idx < milestones.length; idx += 1) {
     const item = milestones[idx];
     let card;
@@ -1466,10 +1462,17 @@ async function advanceLife(choiceId) {
         const hasMilestones = Boolean(milestones.length);
 
         if (chose && life.lastDice) await playDice(life.lastDice, hasChanges || hasMilestones);
-        if (chose && hasChanges) statsUpdated = await playChanges(life.lastChanges, life.lastOutcome, chosenLabel, powerFx, hasMilestones);
+        if (chose && hasChanges) {
+          try {
+            statsUpdated = await playChanges(life.lastChanges, life.lastOutcome, chosenLabel, powerFx, hasMilestones);
+          } catch (error) {
+            console.error("선택 결과 연출 오류:", error);
+          }
+        }
         if (hasMilestones) await playMilestones(milestones);
-      } catch {
-        // Keep game progression alive even if a visual animation fails.
+      } catch (error) {
+        // Keep progression alive and report an animation failure for diagnosis.
+        console.error("성장 알림 연출 오류:", error);
       } finally {
         clearTimeout(watchdog);
         playingChanges = false;
