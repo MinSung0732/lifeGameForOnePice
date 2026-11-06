@@ -1,6 +1,6 @@
 import { CANON_CHAPTER, scenes } from "./story.js";
 import { FLEX_IDS, FLEX_IDS_V5, V9_DEFERRED, V11_DEFERRED, V14_REPLACED, branchScene, marinefordNews, yearlyScene } from "./life-story.js";
-import { ERA_WAR, encounterScene, eraStart, moveTo, presentAge, standing, stretched, yearRoll } from "./world.js";
+import { ERA_WAR, encounterScene, eraStart, followsCaptain, moveTo, presentAge, standing, stretched, yearRoll } from "./world.js";
 import { canonAge, canonCount, canonIfAfter, canonScene, canonCrewDestination } from "./canon-events.js";
 import { preCanonAge, preCanonCount, preCanonScene, preCanonCrewDestination } from "./canon-before.js";
 import { canonGapFor, canonInterludeScene } from "./canon-interludes.js";
@@ -298,7 +298,7 @@ export function createGame(mode, seed, profile = {}, rules = 3, creationVersion 
     homebound: false, canonCrew: null, rankTier: 0, careerStartAge: null, lastRankOfferAge: -100,
     lastMarineOfferAge: -100, lastPirateOfferAge: -100, lastCivilianOfferAge: -100,
     lastCrewOfferAge: -100, lastRevolutionOfferAge: -100, injustice: false,
-    routeIndex: -1, travelHistory: [birth.home], pendingEncounter: null, pendingBranch: false,
+    routeIndex: -1, travelHistory: [birth.home], pendingEncounter: null, pendingBranch: false, crewFollowFrom: null,
     people: {}, trustBy: {}, worldBranch: null, alliance: false, coalition: false, rival: false,
     canonStep: 0, bounty: 0, eternalPose: null, lastHuntAge: -100, lastPublicActAge: -100,
     reputation: 0, arrestCount: 0, arrestBounty: 0,
@@ -442,6 +442,17 @@ function typedName(text) {
   return name;
 }
 
+function followCanonCaptain(state, enteringAfterWar = false) {
+  if (!followsCaptain(state) || state.canonCrew !== "밀짚모자 일당"
+    || state.path !== "pirate" || state.independent || state.retired
+    || ["pending", "held", "transferred"].includes(state.people?.canonContacts?.luffy?.custody)) return null;
+  const destination = state.seen.includes("life_marineford_news") || enteringAfterWar
+    ? canonCrewDestination(state) : preCanonCrewDestination(state);
+  if (!destination || state.location === destination) return null;
+  moveTo(state, destination);
+  return destination;
+}
+
 export function advance(life, action = null) {
   const view = getScene(life);
   if (!view) throw new Error("이미 끝난 생애입니다.");
@@ -501,7 +512,7 @@ export function advance(life, action = null) {
   // A career move that later renames the role (a village job, a liaison post) still keeps the carried rank's title.
   if (next.carriedRank && (next.homebound || next.canonCrew && (next.mode === "original" || next.creationVersion >= 21))) {
     next.rankTier = 0;
-    if (!next.homebound) next.role = next.creationVersion >= 21 && next.canonCrew === "밀짚모자 일당" ? "동료" : "견습 선원";
+    if (!next.homebound) next.role = followsCaptain(next) && next.canonCrew === "밀짚모자 일당" ? "동료" : "견습 선원";
     delete next.carriedRank;
   }
   if (next.carriedRank) {
@@ -536,18 +547,8 @@ export function advance(life, action = null) {
   if (next.creationVersion >= 4 && chosen?.bounty) {
     next.bounty += typeof chosen.bounty === "function" ? chosen.bounty(life) : chosen.bounty;
   }
-  // Canon crewmates follow the ship unless the crew is scattered or its captain is imprisoned.
-  if (next.creationVersion >= 21 && next.canonCrew === "밀짚모자 일당"
-    && next.path === "pirate" && !next.independent && !next.retired
-    && !["pending", "held", "transferred"].includes(next.people?.canonContacts?.luffy?.custody)) {
-    const destination = next.seen.includes("life_marineford_news")
-      || card.id === "life_marineford_news"
-      ? canonCrewDestination(next) : preCanonCrewDestination(next);
-    if (destination && next.location !== destination) {
-      moveTo(next, destination);
-      outcome = `${outcome || ""} 동료들과 함께 ${destination}에 도착했다.`.trim();
-    }
-  }
+  const captainDestination = followCanonCaptain(next, card.id === "life_marineford_news");
+  if (captainDestination) outcome = `${outcome || ""} 동료들과 함께 ${captainDestination}에 도착했다.`.trim();
   const result = personalize(outcome || "", life.birth.name, life.creationVersion);
   if (next.rules >= 2) {
     for (const stat of STATS) next[stat.key] = Math.max(0, Math.min(next.rules === 3 ? stat.max : stat.key === "health" ? 3 : 5, next[stat.key]));
@@ -587,11 +588,14 @@ export function advance(life, action = null) {
 
 export function saveRecord(life) {
   return { version: SAVE_VERSION, mode: life.mode, seed: life.seed, profile: life.profile, rules: life.rules,
-    creationVersion: life.creationVersion, actions: [...life.actions] };
+    creationVersion: life.creationVersion, actions: [...life.actions],
+    ...(Number.isInteger(life.crewFollowFrom) ? { crewFollowFrom: life.crewFollowFrom } : {}) };
 }
 
 export function replay(record) {
-  if (!record || record.version !== SAVE_VERSION || !Array.isArray(record.actions) || record.actions.length > (record.rules === 3 ? 600 : scenes.length)) {
+  if (!record || record.version !== SAVE_VERSION || !Array.isArray(record.actions) || record.actions.length > (record.rules === 3 ? 600 : scenes.length)
+    || record.crewFollowFrom !== undefined && (!Number.isInteger(record.crewFollowFrom)
+      || record.crewFollowFrom < 0 || record.crewFollowFrom > record.actions.length || record.creationVersion !== 20)) {
     throw new Error("저장 기록 형식이 맞지 않습니다.");
   }
   const rules = record.rules === undefined ? 1 : record.rules;
@@ -599,7 +603,15 @@ export function replay(record) {
     record.creationVersion === undefined ? 1 : record.creationVersion);
   for (const action of record.actions) {
     if (action !== null && typeof action !== "string") throw new Error("선택 기록 형식이 맞지 않습니다.");
+    if (record.crewFollowFrom === life.actions.length) {
+      life.crewFollowFrom = record.crewFollowFrom;
+      followCanonCaptain(life);
+    }
     life = advance(life, action);
+  }
+  if (record.crewFollowFrom === life.actions.length) {
+    life.crewFollowFrom = record.crewFollowFrom;
+    followCanonCaptain(life);
   }
   return life;
 }
