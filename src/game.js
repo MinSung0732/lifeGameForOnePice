@@ -1,8 +1,8 @@
 import { CANON_CHAPTER, scenes } from "./story.js";
 import { FLEX_IDS, FLEX_IDS_V5, V9_DEFERRED, V11_DEFERRED, V14_REPLACED, branchScene, marinefordNews, yearlyScene } from "./life-story.js";
-import { ERA_WAR, encounterScene, eraStart, presentAge, standing, stretched, yearRoll } from "./world.js";
-import { canonAge, canonCount, canonIfAfter, canonScene } from "./canon-events.js";
-import { preCanonAge, preCanonCount, preCanonScene } from "./canon-before.js";
+import { ERA_WAR, encounterScene, eraStart, moveTo, presentAge, standing, stretched, yearRoll } from "./world.js";
+import { canonAge, canonCount, canonIfAfter, canonScene, canonCrewDestination } from "./canon-events.js";
+import { preCanonAge, preCanonCount, preCanonScene, preCanonCrewDestination } from "./canon-before.js";
 import { canonGapFor, canonInterludeScene } from "./canon-interludes.js";
 import { childhoodScene } from "./childhood.js";
 import { canonRelationshipSummary, pendingCanonContactScene } from "./canon-relationships.js";
@@ -241,11 +241,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 20) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 21) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -535,6 +535,18 @@ export function advance(life, action = null) {
   }
   if (next.creationVersion >= 4 && chosen?.bounty) {
     next.bounty += typeof chosen.bounty === "function" ? chosen.bounty(life) : chosen.bounty;
+  }
+  // Canon crewmates follow the ship unless the crew is scattered or its captain is imprisoned.
+  if (next.creationVersion >= 21 && next.canonCrew === "밀짚모자 일당"
+    && next.path === "pirate" && !next.independent && !next.retired
+    && !["pending", "held", "transferred"].includes(next.people?.canonContacts?.luffy?.custody)) {
+    const destination = next.seen.includes("life_marineford_news")
+      || card.id === "life_marineford_news"
+      ? canonCrewDestination(next) : preCanonCrewDestination(next);
+    if (destination && next.location !== destination) {
+      moveTo(next, destination);
+      outcome = `${outcome || ""} 동료들과 함께 ${destination}에 도착했다.`.trim();
+    }
   }
   const result = personalize(outcome || "", life.birth.name, life.creationVersion);
   if (next.rules >= 2) {
