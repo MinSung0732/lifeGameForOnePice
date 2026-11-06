@@ -15,8 +15,9 @@
       <a class="wordmark" href="./" aria-label="한 사람의 바다 시작 화면">한 사람의 바다</a>
       <span class="edition">다섯 출생 시범판</span>
       <div class="sound">
-        <button id="sound-toggle" class="text-button" type="button" aria-pressed="false">♪ 배경음 켜기</button>
-        <input id="sound-volume" type="range" min="0" max="1" step="0.05" aria-label="배경음 크기" hidden>
+        <button id="motion-toggle" class="text-button" type="button" aria-pressed="true">애니메이션 켜기</button>
+        <button id="sound-toggle" class="text-button" type="button" aria-pressed="true">♪ 배경음 켜기</button>
+        <input id="sound-volume" type="range" min="0" max="1" step="0.05" aria-label="배경음 크기">
       </div>
       <button id="journal-open" class="text-button" type="button" hidden>생애 일지</button>
     </header>
@@ -90,6 +91,40 @@
         </div>
       </section>
 
+      <section id="birth" class="intro birth" aria-labelledby="birth-title" hidden>
+        <div class="intro-hero">
+          <p id="birth-eyebrow" class="eyebrow">출생 기록</p>
+          <h1 id="birth-title" tabindex="-1"></h1>
+          <p id="birth-lead" class="lead"></p>
+          <figure class="intro-art birth-art"><img id="birth-image" src="./design/assets/birth-harbor.webp" alt="" width="1672" height="941"></figure>
+        </div>
+        <div class="intro-setup">
+          <dl class="ending-facts">
+            <div><dt>이름 · 성별</dt><dd id="birth-name"></dd></div>
+            <div><dt>종족</dt><dd id="birth-species"></dd></div>
+            <div><dt>태어난 곳</dt><dd id="birth-home"></dd></div>
+            <div><dt>가정 형편</dt><dd id="birth-means"></dd></div>
+            <div><dt>세계선</dt><dd id="birth-mode"></dd></div>
+            <div><dt>출생 시기</dt><dd id="birth-era"></dd></div>
+          </dl>
+          <div class="growth-panels open">
+            <aside class="stats-panel" aria-labelledby="birth-stats-title">
+              <h2 id="birth-stats-title">초기 능력 <small id="birth-stat-note"></small></h2>
+              <div id="birth-stats-grid" class="stats-grid"></div>
+            </aside>
+            <aside class="stats-panel personality-panel" aria-labelledby="birth-personality-title">
+              <div class="personality-heading"><h2 id="birth-personality-title">타고난 성향</h2><strong id="birth-personality-summary"></strong></div>
+              <div id="birth-personality-grid" class="stats-grid"></div>
+            </aside>
+          </div>
+          <div class="intro-actions">
+            <button id="birth-confirm" class="primary-button" type="button">이 삶으로 시작하기 <span aria-hidden="true">↗</span></button>
+            <button id="birth-reroll" class="secondary-button" type="button">다시 추첨하기</button>
+            <button id="birth-back" class="text-button" type="button">설정으로 돌아가기</button>
+          </div>
+        </div>
+      </section>
+
       <section id="game" class="game" aria-labelledby="scene-title" hidden>
         <div class="game-topline">
           <p id="scene-location" class="eyebrow"></p>
@@ -133,9 +168,11 @@
           </aside>
         </div>
 
-        <div class="scene-layout">
-          <figure class="scene-art">
+        <div id="scene-layout" class="scene-layout">
+          <figure id="scene-art" class="scene-art">
             <img id="scene-image" src="./design/assets/birth-harbor.webp" alt="" width="1672" height="941">
+            <div id="scene-fx" class="scene-fx" aria-hidden="true"></div>
+            <span id="scene-badge" class="scene-badge" hidden></span>
           </figure>
           <article class="scene-copy">
             <p id="scene-chapter" class="eyebrow"></p>
@@ -154,33 +191,39 @@
       </section>
 
       <section id="ending" class="ending" aria-labelledby="ending-title" hidden>
-        <p class="eyebrow">한 생애의 기록</p>
-        <h1 id="ending-title"></h1>
-        <figure class="ending-art"><img id="ending-image" src="./design/assets/harbor-now.webp" alt="" width="1672" height="941"></figure>
-        <p id="ending-lead" class="lead"></p>
-        <div id="ending-poster" class="wanted-poster" hidden aria-label="마지막 수배서">
-          <span>WANTED</span><strong id="poster-name"></strong><small>DEAD OR ALIVE</small><b id="poster-bounty"></b>
+        <div class="ending-hero">
+          <p class="eyebrow">한 생애의 기록</p>
+          <h1 id="ending-title"></h1>
+          <p id="ending-lead" class="lead"></p>
+          <div class="ending-visual">
+            <figure class="ending-art"><img id="ending-image" src="./design/assets/harbor-now.webp" alt="" width="1672" height="941"></figure>
+            <div id="ending-poster" class="wanted-poster" hidden aria-label="마지막 수배서">
+              <span>WANTED</span><strong id="poster-name"></strong><small>DEAD OR ALIVE</small><b id="poster-bounty"></b>
+            </div>
+          </div>
+          <div class="ending-actions">
+            <button id="ending-journal" class="secondary-button" type="button">생애 일지 보기</button>
+            <button id="ending-new" class="primary-button" type="button">다른 삶 시작하기 <span aria-hidden="true">↗</span></button>
+          </div>
         </div>
-        <dl class="ending-facts">
-          <div><dt>태어난 곳</dt><dd id="ending-birth"></dd></div>
-          <div><dt>모드</dt><dd id="ending-mode"></dd></div>
-          <div><dt>마지막 소속</dt><dd id="ending-work"></dd></div>
-          <div><dt>개인 목표</dt><dd id="ending-goal"></dd></div>
-          <div><dt>악마의 열매</dt><dd id="ending-fruit"></dd></div>
-          <div><dt>패기</dt><dd id="ending-haki"></dd></div>
-          <div><dt>마지막으로 익힌 힘</dt><dd id="ending-last-power"></dd></div>
-          <div><dt>종합 성향</dt><dd id="ending-personality"></dd></div>
-          <div class="wide" id="ending-fates-row" hidden><dt>삶을 바꾼 사건</dt><dd id="ending-fates"></dd></div>
-          <div class="wide"><dt>남긴 인연</dt><dd id="ending-bonds"></dd></div>
-          <div class="wide"><dt>거쳐 온 항로</dt><dd id="ending-route"></dd></div>
-        </dl>
-        <section class="ending-timeline" aria-labelledby="ending-timeline-title">
-          <h2 id="ending-timeline-title">걸어온 길</h2>
-          <ol id="ending-timeline"></ol>
-        </section>
-        <div class="ending-actions">
-          <button id="ending-journal" class="secondary-button" type="button">생애 일지 보기</button>
-          <button id="ending-new" class="primary-button" type="button">다른 삶 시작하기 <span aria-hidden="true">↗</span></button>
+        <div class="ending-details">
+          <dl class="ending-facts">
+            <div><dt>태어난 곳</dt><dd id="ending-birth"></dd></div>
+            <div><dt>모드</dt><dd id="ending-mode"></dd></div>
+            <div><dt>마지막 소속</dt><dd id="ending-work"></dd></div>
+            <div><dt>개인 목표</dt><dd id="ending-goal"></dd></div>
+            <div><dt>악마의 열매</dt><dd id="ending-fruit"></dd></div>
+            <div><dt>패기</dt><dd id="ending-haki"></dd></div>
+            <div><dt>마지막으로 익힌 힘</dt><dd id="ending-last-power"></dd></div>
+            <div><dt>종합 성향</dt><dd id="ending-personality"></dd></div>
+            <div class="wide" id="ending-fates-row" hidden><dt>삶을 바꾼 사건</dt><dd id="ending-fates"></dd></div>
+            <div class="wide"><dt>남긴 인연</dt><dd id="ending-bonds"></dd></div>
+            <div class="wide"><dt>거쳐 온 항로</dt><dd id="ending-route"></dd></div>
+          </dl>
+          <section class="ending-timeline" aria-labelledby="ending-timeline-title">
+            <h2 id="ending-timeline-title">걸어온 길</h2>
+            <ol id="ending-timeline"></ol>
+          </section>
         </div>
       </section>
     </main>

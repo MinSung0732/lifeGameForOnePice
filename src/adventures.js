@@ -1,7 +1,7 @@
 import { formatBounty, pursuerFor } from "./bounty.js";
 import { yearRoll } from "./world.js";
 import { rollTier } from "./fates.js";
-import { FRUIT_POWER, POWER_CHOICES } from "./power-choices.js";
+import { FRUIT_POWER, POWER_CHOICES, fruitSynergy } from "./power-choices.js";
 
 // Rule 7: loud, comic One Piece-style mishaps plus dangers that can end a life mid-way.
 // Every roll is seeded, so a save replays to the same outcome.
@@ -322,15 +322,34 @@ export function withPower(life, key, choices) {
   const set = life.creationVersion >= 15 && POWER_CHOICES[key];
   if (!set) return choices;
   const haki = Math.max(life.haki.observation, life.haki.armament, life.haki.conqueror);
+  const fruitName = life.devilFruit?.replace(/\(.*\)$/, "");
+  const syn = life.creationVersion >= 20 && fruitName ? fruitSynergy(fruitName, key) : null;
+  const fruitBonus = syn?.tier === "bad"
+    ? syn.delta + 4 * Math.max(0, life.fruitMastery - 1)
+    : 12 * Math.max(1, life.fruitMastery) + (syn?.delta || 0);
   const extra = [
-    life.devilFruit && set.fruit && ["fruit", set.fruit, 12 * Math.max(1, life.fruitMastery)],
+    life.devilFruit && set.fruit && ["fruit", set.fruit, fruitBonus],
     haki && set.haki && ["haki", set.haki, 12 * haki],
     !life.devilFruit && set.nonuser && ["nonuser", set.nonuser, 0]
   ].filter(Boolean);
-  const power = FRUIT_POWER[life.devilFruit] || "열매의 힘을 끌어내";
-  return [...choices, ...extra.map(([kind, choice, bonus]) => ({ id: `power_${kind}`, label: choice.label, personality: choice.personality,
-    risk: `${choice.hint} · 크게 얻거나 크게 잃음`,
-    apply: (state) => rollTier(state, `${key}:${kind}`, choice, bonus).text.replaceAll("{power}", power) }))];
+  const power = FRUIT_POWER[fruitName] || FRUIT_POWER[life.devilFruit] || "열매의 힘을 끌어내";
+  return [...choices, ...extra.map(([kind, choice, bonus]) => ({
+    id: `power_${kind}`,
+    label: choice.label,
+    personality: choice.personality,
+    risk: kind === "fruit" && syn?.tier === "good" ? `열매 상성 유리 (${syn.tag}) · ${choice.hint}`
+      : kind === "fruit" && syn?.tier === "bad" ? `열매 상성 불리 (${syn.tag}) · 역효과 위험`
+      : `${choice.hint} · 크게 얻거나 크게 잃음`,
+    apply: (state) => {
+      const res = rollTier(state, `${key}:${kind}`, choice, bonus);
+      const baseText = res.text.replaceAll("{power}", power);
+      if (kind === "fruit" && syn?.note) {
+        if (syn.tier === "good" && res.tier !== "bad") return `${baseText} ${syn.note}`;
+        if (syn.tier === "bad") return res.tier === "bad" ? `${baseText} ${syn.note}` : `${baseText} (${syn.tag} 탓에 역효과가 날 뻔했으나 숙련도로 간신히 억눌렀다.)`;
+      }
+      return baseText;
+    }
+  }))];
 }
 
 export function withTrait(life, choices) {

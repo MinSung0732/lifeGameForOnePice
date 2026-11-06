@@ -1,6 +1,7 @@
 import { ERA_WAR, eraStart, presentAge, storyBefore, stretched, canonCrew, openCanonCrews, encounterAt, encounterScene, moveTo, routeFor, standing, travelScene, yearRoll } from "./world.js";
 import { personalBeat } from "./people.js";
 import { adventureScene, withTrait } from "./adventures.js";
+import { fruitSynergy } from "./power-choices.js";
 import { takenText } from "./canon-timeline.js";
 import { oldEraScene } from "./canon-old-era.js";
 import { islandEvent } from "./islands.js";
@@ -306,9 +307,16 @@ const scenes = [
   { id: "life_power_trial", age: at(45, 240), art: "lifeStorm", title: "갑판 아래의 소리", body: "정박한 배 아래에서 무너지는 소리가 났다. 갇힌 일꾼을 찾으려면 급히 움직여야 했다. 한 사람의 힘만으로 끝낼 일은 아니었다.", choices: [
     { id: "observe", label: "견문색으로 위치를 찾는다", when: (life) => life.haki.observation > 0, risk: "견문색 사용 · 지역의 신뢰 +10", apply: (life) => { life.trust += 10; return "작은 숨소리가 들리는 쪽을 짚어 동료들에게 알렸다. 일꾼을 꺼낼 길이 열렸다."; } },
     { id: "armor", label: "무장색으로 무너지는 판자를 버틴다", when: (life) => life.haki.armament > 0, risk: "무장색 사용 · 건강 -10 · 지역의 신뢰 +10", apply: (life) => { life.health -= 10; life.trust += 10; return "버티는 동안 동료들이 일꾼을 꺼냈다. 몸에 피로가 남았다."; } },
-    { id: "fruit", label: (life) => life.creationVersion >= 3 ? "열매의 힘으로 무너지는 판자를 붙잡는다" : "열매의 힘으로 매듭을 조인다", when: (life) => Boolean(life.devilFruit), risk: "열매 숙련 2 또는 물자 40이 버팀의 기준 · 매듭이 풀릴 수 있음", apply: (life) => {
-      if (life.fruitMastery < 2 && life.supplies < 40) { life.health -= 10; return "밧줄이 급히 풀렸다. 동료들이 대신 판자를 받치며 일꾼을 꺼냈다."; }
-      life.trust += 10; return life.creationVersion >= 3 ? "열매의 힘이 판자를 붙잡았다. 동료들이 그 아래에서 일꾼을 꺼냈다." : "조여진 밧줄이 판자를 붙잡았다. 동료들이 그 아래에서 일꾼을 꺼냈다.";
+    { id: "fruit", label: (life) => life.creationVersion >= 3 ? "열매의 힘으로 무너지는 판자를 붙잡는다" : "열매의 힘으로 매듭을 조인다", when: (life) => Boolean(life.devilFruit), risk: (life) => {
+      const syn = life.creationVersion >= 20 ? fruitSynergy(life.devilFruit, "mishap_ship_leak") : null;
+      return syn?.tier === "good" ? `열매 상성 유리 (${syn.tag}) · 열매 숙련 2 또는 물자 40`
+        : syn?.tier === "bad" ? `열매 상성 불리 (${syn.tag}) · 선창 내부 역효과 위험`
+        : "열매 숙련 2 또는 물자 40이 버팀의 기준 · 매듭이 풀릴 수 있음";
+    }, apply: (life) => {
+      const syn = life.creationVersion >= 20 ? fruitSynergy(life.devilFruit, "mishap_ship_leak") : null;
+      if (syn?.tier === "bad") { life.health -= 12; life.supplies -= 8; return `좁은 선창에서 능력을 펼치다 역효과가 터졌다. ${syn.note}`; }
+      if (life.fruitMastery < 2 && life.supplies < 40 && syn?.tier !== "good") { life.health -= 10; return "밧줄이 급히 풀렸다. 동료들이 대신 판자를 받치며 일꾼을 꺼냈다."; }
+      life.trust += 10; return life.creationVersion >= 3 ? `열매의 힘이 판자를 붙잡았다. 동료들이 그 아래에서 일꾼을 꺼냈다.${syn?.tier === "good" ? ` ${syn.note}` : ""}` : "조여진 밧줄이 판자를 붙잡았다. 동료들이 그 아래에서 일꾼을 꺼냈다.";
     } },
     { id: "team", label: "동료와 도구를 모아 구조한다", cost: 10, risk: "물자 10 필요 · 기술 40이 지지대 설치의 기준", apply: (life) => {
       life.supplies -= 10;

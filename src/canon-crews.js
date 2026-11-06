@@ -4,7 +4,7 @@ import { storyBefore, yearRoll } from "./world.js";
 import { rollTier } from "./fates.js";
 
 // from/to are years before the original present, inclusive. Roles are what the protagonist would see.
-const P = (name, role, from, to = 0) => ({ name, role, from, to });
+const P = (name, role, from, to = 0, minPreStep = 0, minPostStep = 0) => ({ name, role, from, to, minPreStep, minPostStep });
 export const ROSTERS = {
   "로저 해적단": [P("골 D. 로저", "선장", 30, 25), P("실버즈 레일리", "부선장", 30, 25), P("스코퍼 가반", "간부", 30, 25),
     P("코즈키 오뎅", "객원 선원", 27, 25), P("크로커스", "선의", 29, 25), P("샹크스", "견습 선원", 30, 25), P("버기", "견습 선원", 30, 25)],
@@ -15,9 +15,10 @@ export const ROSTERS = {
   "백수 해적단": [P("카이도", "총독", 30, 1), P("킹", "대간부", 25, 1), P("퀸", "대간부", 25, 1), P("잭", "대간부", 12, 1)],
   "붉은 머리 해적단": [P("샹크스", "선장", 20, 0), P("벤 베크만", "부선장", 20, 0), P("라키 루", "간부", 20, 0), P("야솝", "저격수", 13, 0)],
   "태양 해적단": [P("피셔 타이거", "선장", 15, 12), P("징베", "간부", 15, 12), P("아론", "간부", 15, 12), P("아라딘", "선의", 15, 12)],
-  "밀짚모자 일당": [P("몽키 D. 루피", "선장", 2, 0), P("롤로노아 조로", "전투원", 2, 0), P("나미", "항해사", 2, 0), P("우솝", "저격수", 2, 0),
-    P("상디", "요리사", 2, 0), P("토니토니 쵸파", "선의", 2, 0), P("니코 로빈", "고고학자", 2, 0), P("프랑키", "조선공", 2, 0),
-    P("브룩", "음악가", 2, 0), P("징베", "조타수", 1, 0)],
+  "밀짚모자 일당": [P("몽키 D. 루피", "선장", 2, 0), P("롤로노아 조로", "전투원", 2, 0, 2), P("나미", "항해사", 2, 0, 3),
+    P("우솝", "저격수", 2, 0, 4), P("상디", "요리사", 2, 0, 5), P("토니토니 쵸파", "선의", 2, 0, 15),
+    P("니코 로빈", "고고학자", 2, 0, 21), P("프랑키", "조선공", 2, 0, 34), P("브룩", "음악가", 2, 0, 36),
+    P("징베", "조타수", 0, 0, 0, 11)],
   해군: [P("콩", "해군 원수", 60, 23), P("센고쿠", "해군 원수", 22, 2), P("사카즈키", "해군 원수", 1, 0),
     P("몽키 D. 가프", "본부 중장", 40, 0), P("츠루", "본부 중장", 40, 0), P("쿠잔", "해군 대장", 25, 2), P("볼사리노", "해군 대장", 25, 0),
     P("잇쇼", "해군 대장", 1, 0), P("스모커", "해군 장교", 8, 0)],
@@ -33,7 +34,15 @@ function withParticle(name, particle) {
 }
 
 const before = (life, age = life.age) => storyBefore(life, age);
-const inEra = (life, person) => before(life) <= person.from && before(life) >= person.to;
+const inEra = (life, person) => {
+  const b = before(life);
+  if (b > person.from || b < person.to) return false;
+  if (person.minPreStep && !life.seen?.includes("life_marineford_news")
+    && life.preCanonStep !== undefined && life.preCanonStep < person.minPreStep) return false;
+  if (person.minPostStep && (life.seen?.includes("life_marineford_news")
+    ? (life.canonStep ?? 99) < person.minPostStep : life.preCanonStep !== undefined)) return false;
+  return true;
+};
 
 // Canon names around the protagonist, top of the organization first; empty when the era has none.
 export function rosterFor(life, size) {

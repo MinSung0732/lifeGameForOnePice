@@ -1,6 +1,6 @@
 // Quiet sea ambience made live with Web Audio: waves, distant gulls, and an original shanty-style tune.
 // No audio files ship with the game; nothing plays until the player turns it on.
-const STORE_KEY = "one-sea-sound";
+const STORE_KEY = "one-sea-sound-v2";
 
 // Each mood keeps the same voices and changes key, scale, pace and weather.
 const MOODS = {
@@ -42,8 +42,8 @@ let timers = [];
 const settings = load();
 
 function load() {
-  try { return { on: false, volume: 0.5, ...JSON.parse(localStorage.getItem(STORE_KEY) || "{}") }; }
-  catch { return { on: false, volume: 0.5 }; }
+  try { return { on: true, volume: 0.5, ...JSON.parse(localStorage.getItem(STORE_KEY) || "{}") }; }
+  catch { return { on: true, volume: 0.5 }; }
 }
 function save() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(settings)); } catch { /* private mode keeps it for this visit */ }
@@ -200,14 +200,23 @@ export function diceTick() {
 }
 
 // great: a rising major arpeggio; success: two bright notes; fail: a low falling thud.
-const STINGS = { great: [[0, 0], [2, 0.09], [4, 0.18], [7, 0.27], [9, 0.36]], success: [[4, 0], [7, 0.12]], fail: [[-3, 0], [-6, 0.2]] };
+const STINGS = {
+  great: [[0, 0], [2, 0.09], [4, 0.18], [7, 0.27], [9, 0.36]],
+  success: [[4, 0], [7, 0.12]],
+  fail: [[-3, 0], [-6, 0.2]],
+  bounty: [[-7, 0], [0, 0.08], [4, 0.18], [7, 0.28]],
+  haki: [[-7, 0], [0, 0.06], [7, 0.13], [11, 0.22]],
+  fruit: [[0, 0], [3, 0.08], [6, 0.16], [9, 0.24], [12, 0.33]],
+  absorb: [[7, 0], [11, 0.05]]
+};
 export function diceResult(kind) {
-  if (!soundOn()) return;
+  if (!soundOn() || !STINGS[kind]) return;
   const now = ctx.currentTime;
   for (const [degree, delay] of STINGS[kind]) {
     note(degreeHz(kind === "fail" ? "danger" : "calm", degree), now + delay, kind === "great" && delay > 0.3 ? 0.9 : 0.3, 0.07);
   }
-  if (kind === "fail") drum(now);
+  if (kind === "fail" || kind === "haki") drum(now);
+  if (kind === "bounty") { drum(now); drum(now + 0.16); }
   if (kind === "great") drum(now + 0.36);
 }
 
@@ -222,7 +231,7 @@ export function setMood(next) {
 export function initMusic(toggle, volume) {
   const show = () => {
     toggle.setAttribute("aria-pressed", String(settings.on));
-    toggle.textContent = settings.on ? "♪ 배경음 끄기" : "♪ 배경음 켜기";
+    toggle.textContent = settings.on ? "♪ 배경음 켜기" : "♪ 배경음 끄기";
     volume.hidden = !settings.on;
   };
   volume.value = settings.volume;
@@ -237,11 +246,12 @@ export function initMusic(toggle, volume) {
     save();
     if (ctx && settings.on) master.gain.setTargetAtTime(settings.volume, ctx.currentTime, 0.1);
   });
-  if (settings.on) {
-    const wake = (event) => { if (event.target !== toggle && settings.on) start(); };
-    document.addEventListener("pointerdown", wake, { once: true });
-    document.addEventListener("keydown", wake, { once: true });
-  }
+  const wake = (event) => {
+    if (event.target === toggle || !settings.on) return;
+    if (!ctx || ctx.state !== "running") start();
+  };
+  document.addEventListener("pointerdown", wake);
+  document.addEventListener("keydown", wake);
   document.addEventListener("visibilitychange", () => {
     if (!ctx || !settings.on) return;
     document.hidden ? ctx.suspend() : ctx.resume();

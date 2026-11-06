@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, createGame, getContentStats, getScene, personalitySummary, replay, saveRecord } from "../src/game.js";
+import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, collectMilestones, createGame, getContentStats, getScene, personalitySummary, replay, saveRecord } from "../src/game.js";
 import { createObservation, tickObservation } from "../src/observation.js";
 import { scenes } from "../src/story.js";
 import { degreeHz, moodFor } from "../src/music.js";
@@ -14,7 +14,9 @@ import { PRE_CANON_BEAT_COUNT, preCanonScene } from "../src/canon-before.js";
 import { canonGapFor } from "../src/canon-interludes.js";
 import { FLEX_IDS, FLEX_IDS_V5, lifeScenes, yearlyScene } from "../src/life-story.js";
 import { canonBondScene } from "../src/canon-bonds.js";
-import { attachCanonContact } from "../src/canon-relationships.js";
+import { rosterFor } from "../src/canon-crews.js";
+import { attachCanonContact, pendingCanonContactScene } from "../src/canon-relationships.js";
+import { peopleSummary } from "../src/people.js";
 
 function play(mode, seed, picks = {}, profile = { species: "인간" }, rules = 3, version = 3) {
   let life = createGame(mode, seed, profile, rules, version);
@@ -664,7 +666,11 @@ test("새 규칙은 주사위 시도, 섬별 신뢰, 다시 오는 인물, 섬 �
 });
 
 test("새 생애에는 원작에 등장한 열매만 나오고 이전 생애는 옛 추첨을 유지한다", () => {
-  const canonNames = new Set(["고무고무 열매", "이글이글 열매", "꽃꽃 열매", "수술수술 열매", "동강동강 열매", "어둠어둠 열매", "고요고요 열매"]);
+  const canonNames = new Set([
+    "고무고무 열매", "이글이글 열매", "꽃꽃 열매", "수술수술 열매", "동강동강 열매", "어둠어둠 열매", "고요고요 열매",
+    "쿠릉쿠릉 열매", "얼음얼음 열매", "모래모래 열매", "번쩍번쩍 열매", "뭉게뭉게 열매", "눈눈 열매", "가스가스 열매",
+    "흔들흔들 열매", "실실 열매", "떡떡 열매", "도르도르 열매", "새새 열매 모델 불사조"
+  ]);
   for (let seed = 0; seed < 50; seed += 1) {
     for (const mode of ["original", "free"]) {
       const life = createGame(mode, seed, { species: "인간" });
@@ -1223,6 +1229,10 @@ test("규칙 15: 열매·패기·비능력자마다 다른 선택지가 붙고, 
   const fruit = withPower({ ...life, devilFruit: "고무고무 열매", fruitMastery: 2 }, "danger_sea_king", [])[0];
   const text = fruit.apply(structuredClone({ ...life, devilFruit: "고무고무 열매", fruitMastery: 2 }));
   assert.doesNotMatch(text, /\{power\}/);
+  const goodSyn = withPower({ ...life, devilFruit: "얼음얼음 열매", fruitMastery: 2 }, "danger_sea_king", [])[0];
+  const badSyn = withPower({ ...life, devilFruit: "모래모래 열매", fruitMastery: 2 }, "danger_sea_king", [])[0];
+  assert.match(goodSyn.risk, /열매 상성 유리/);
+  assert.match(badSyn.risk, /열매 상성 불리/);
   // A rolled choice far above its target is a great success; the popup gets its tier.
   const tiers = new Set();
   for (let seed = 0; seed < 80 && tiers.size < 3; seed += 1) {
@@ -1361,4 +1371,60 @@ test("rule 20 gives low-ranked marines canon supervisor and earned-friend scenes
   later.people = { canonContacts: { luffy: { score: 40, meetings: 3, captureAttempts: 0 } } };
   assert.equal(canonBondScene(later, later.age + 1, { age: later.age + 1 })?.id, "life_bond_luffy_30",
     "earned Straw Hat affinity remains claimable after the war-era boundary");
+});
+
+test("collectMilestones detects affiliation, devil fruit, haki, bounty, and relationship changes", () => {
+  const before = createGame("free", 1, { species: "인간" });
+  assert.deepEqual(collectMilestones(before, before), []);
+  const after = {
+    ...before,
+    job: "해적",
+    affiliation: "자체 해적단",
+    role: "선장",
+    devilFruit: "이글이글 열매",
+    haki: { observation: 1, armament: 0, conqueror: 2 },
+    bounty: 30_000_000,
+    people: {
+      mate: { name: "도윈", bond: 60, fate: "곁", together: true },
+      rival: { name: "그레브", fate: "적" },
+      ward: { name: "피오", fate: "후계" },
+      canonContacts: { luffy: { score: 25, meetings: 1, lastOrder: 1 } }
+    }
+  };
+  const milestones = collectMilestones(before, after);
+  assert.deepEqual(milestones.map((item) => item.kind), ["rank", "fruit", "haki-conqueror", "haki-observation", "bounty", "bond", "canon-bond"]);
+  assert.equal(milestones[0].targetId, "life-role");
+  assert.equal(milestones[4].to, 30_000_000);
+  assert.equal(milestones[5].targetId, "life-crew");
+  assert.equal(milestones[6].targetId, "life-relationships");
+
+  const summary = peopleSummary({ ...after, age: 50, careerStartAge: 19, canonCrew: "흰 수염 해적단", affiliation: "흰 수염 해적단" });
+  assert.match(summary, /옛 친구 도윈/);
+  assert.match(summary, /에드워드 뉴게이트\(선장\)/);
+  assert.doesNotMatch(summary, /그레브|피오/);
+
+  const loguetownCrew = {
+    ...before,
+    age: before.birth.yearsBeforeCurrent - 2,
+    path: "pirate",
+    canonCrew: "밀짚모자 일당",
+    affiliation: "밀짚모자 일당",
+    preCanonStep: 8,
+    people: { canonContacts: { luffy: { score: 35, meetings: 1 } } }
+  };
+  assert.deepEqual(
+    rosterFor(loguetownCrew, 10).map((p) => p.name),
+    ["몽키 D. 루피", "롤로노아 조로", "나미", "우솝", "상디"],
+    "at Loguetown only the five East Blue Straw Hats have joined"
+  );
+  const invite = pendingCanonContactScene({ ...loguetownCrew, canonCrew: null, affiliation: "독립 해적단" });
+  assert.match(invite.choices[0].apply({ ...loguetownCrew, canonCrew: null }), /고잉 메리호/);
+  assert.deepEqual(
+    rosterFor({ ...loguetownCrew, preCanonStep: 21 }, 10).map((p) => p.name),
+    ["몽키 D. 루피", "롤로노아 조로", "나미", "우솝", "상디", "토니토니 쵸파", "니코 로빈"]
+  );
+  assert.deepEqual(
+    rosterFor({ ...loguetownCrew, preCanonStep: 36 }, 10).map((p) => p.name),
+    ["몽키 D. 루피", "롤로노아 조로", "나미", "우솝", "상디", "토니토니 쵸파", "니코 로빈", "프랑키", "브룩"]
+  );
 });

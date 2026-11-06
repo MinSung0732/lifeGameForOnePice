@@ -241,7 +241,12 @@ function strawHatInvite(life) {
           Object.assign(state, { path: "pirate", job: "해적", affiliation: "밀짚모자 일당", canonCrew: "밀짚모자 일당", role: "동료",
             independent: false, rankTier: 0, leftHome: true, homebound: false });
           state.careerStartAge ??= state.age + 1;
-          return "그날 밤 사우전드 써니호의 갑판에 이름이 하나 더 새겨졌다. 원작에 없던 동료가 탄 배는 같은 바다를 조금 다르게 달리기 시작했다.";
+          const ship = (state.preCanonStep ?? 99) >= 34 || state.seen?.includes("canon_before_merry")
+            || state.seen?.includes("canon_before_bounty_300m") || state.seen?.includes("life_marineford_news")
+            ? "사우전드 써니호"
+            : (state.preCanonStep ?? 99) >= 4 || state.seen?.includes("canon_before_usopp")
+              ? "고잉 메리호" : "루피의 작은 배";
+          return `그날 밤 ${ship}의 갑판에 이름이 하나 더 새겨졌다. 원작에 없던 동료가 탄 배는 같은 바다를 조금 다르게 달리기 시작했다.`;
         } },
       { id: "decline", label: "웃으며 고개를 젓는다", risk: "관계는 그대로 · 친구와의 유대 +5", personality: { loyalty: 5, caution: 3 },
         apply: (state) => { state.friendBond += 5; return "루피는 아쉬운 얼굴도 잠깐, 그럼 다음에 또 보자며 고기를 한 입 크게 베어 물었다."; } }

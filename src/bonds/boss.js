@@ -486,7 +486,7 @@ export default [
         outcomes: {
           great: { text: "조로까지 끼어들어 셋이 해가 뜰 때까지 훈련했다. 온몸이 쑤셨지만 다음 싸움에서는 물러서지 않았다.", effects: { skill: 14, friendBond: 8, health: -6 } },
           good: { text: "루피는 신이 나서 몇 번이고 덤볐다. 나는 몇 번이고 나가떨어졌다.", effects: { skill: 7, health: -6 } },
-          bad: { text: "첫날부터 무리하다 갈비뼈가 상했다. 쵸파에게 둘 다 크게 혼났다.", effects: { health: -14, friendBond: 4 } }
+          bad: { text: "첫날부터 무리하다 갈비뼈가 상했다. 나미에게 둘 다 크게 혼났다.", effects: { health: -14, friendBond: 4 } }
         } },
       { id: "thanks", label: "고맙다고만 하고 함께 바다를 본다", hint: "말없이 마음을 나눈다",
         check: { stat: "friendBond", against: 45 }, personality: { empathy: 6 },

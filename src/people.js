@@ -1,4 +1,6 @@
-import { moveTo, ro, routeFor, yearRoll } from "./world.js";
+import { moveTo, ro, routeFor, storyBefore, yearRoll } from "./world.js";
+import { ROSTERS, rosterFor } from "./canon-crews.js";
+import BOSS_SCENES from "./bonds/boss.js";
 
 // Original (non-canon) people who return across one life. Only creation rule 3 uses them, so older saves replay unchanged.
 const MATE_NAMES = ["도윈", "세라", "하닉", "비엔", "타샤", "에스카", "로웰", "안시"];
@@ -287,11 +289,31 @@ export function personalBeat(life, age, base) {
 }
 
 const MATE_FATES = { 곁: "끝까지 곁에 있던 동료", "다른 길": "다른 깃발 아래의 친구", 적: "등을 돌린 옛 친구", 화해: "늦게 화해한 옛 친구", 잃음: "바다에서 잃은 동료" };
-const RIVAL_FATES = { 적: "끝내 풀지 못한 원한", 휴전: "휴전한 맞수", 패배: "물리친 맞수", 존중: "승부를 인정한 맞수", "빚진 사람": "목숨을 구해 준 맞수", "바다에 잠김": "바다에 잠긴 맞수" };
-const WARD_FATES = { 곁: "데려온 아이", 맡김: "맡겨 둔 아이", 지나침: "지나친 아이", 후계: "뒤를 이은 아이", "자기 길": "자기 길을 간 아이", 용서: "늦게 용서해 준 아이", 원망: "끝내 등을 돌린 아이", 놓아줌: "쫓다가 놓아준 아이", 추적자: "쫓는 쪽이 된 아이" };
+
+function canonPeersSummary(life) {
+  if (life.canonCrew === "밀짚모자 일당") {
+    const strawHats = rosterFor(life, 10);
+    return strawHats.length ? `상사·동료: ${strawHats.map((p) => `${p.name}(${p.role})`).join(", ")}` : "";
+  }
+  const list = ROSTERS[life.canonCrew || life.affiliation] || (life.path === "marine" ? ROSTERS.해군 : null);
+  if (!list) return "";
+  const seenBosses = new Set(BOSS_SCENES.filter((s) => life.seen?.includes(`life_boss_${s.id}`)).map((s) => s.person));
+  const startBefore = storyBefore(life, life.careerStartAge || 19);
+  const endBefore = storyBefore(life, life.age);
+  const met = list.filter((p) => seenBosses.has(p.name));
+  const era = list.filter((p) => !seenBosses.has(p.name) && p.from >= endBefore && p.to <= startBefore);
+  const limit = life.path === "marine" && !life.canonCrew
+    ? Math.max(met.length, (life.rankTier || 0) >= 4 ? 3 : (life.rankTier || 0) >= 2 ? 2 : 1) : 4;
+  const peers = [...met, ...era].slice(0, limit);
+  return peers.length ? `상사·동료: ${peers.map((p) => `${p.name}(${p.role})`).join(", ")}` : "";
+}
 
 export function peopleSummary(life) {
-  const { mate, rival, ward } = life.people || {};
-  return [mate && `${mate.name}: ${mate.together && mate.fate === "곁" ? "끝까지 같은 배를 탄 동료" : MATE_FATES[mate.fate]}`,
-    rival && `${rival.name}: ${RIVAL_FATES[rival.fate]}`, ward && `${ward.name}: ${WARD_FATES[ward.fate]}`].filter(Boolean).join(" · ");
+  const { mate } = life.people || {};
+  const friendLine = mate
+    ? `옛 친구 ${mate.name}(${mate.together && mate.fate === "곁" ? "끝까지 같은 배를 탄 동료" : MATE_FATES[mate.fate]})`
+    : life.friendName
+      ? `옛 친구 ${life.friendName}(${life.friendBond >= 50 ? "이어진 우정" : life.friendBond > 1 ? "남은 기억" : "서로 다른 길"})`
+      : "";
+  return [friendLine, canonPeersSummary(life)].filter(Boolean).join(" · ");
 }

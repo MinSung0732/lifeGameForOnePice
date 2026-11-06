@@ -5,7 +5,7 @@ import { canonAge, canonCount, canonIfAfter, canonScene } from "./canon-events.j
 import { preCanonAge, preCanonCount, preCanonScene } from "./canon-before.js";
 import { canonGapFor, canonInterludeScene } from "./canon-interludes.js";
 import { childhoodScene } from "./childhood.js";
-import { pendingCanonContactScene } from "./canon-relationships.js";
+import { canonRelationshipSummary, pendingCanonContactScene } from "./canon-relationships.js";
 import { twist } from "./twists.js";
 
 export const SAVE_VERSION = 1;
@@ -541,4 +541,79 @@ export function getContentStats() {
     canon: scenes.filter((card) => card.canon).length,
     byAct: [1, 2, 3, 4].map((act) => scenes.filter((card) => card.act === act).length)
   };
+}
+
+export function collectMilestones(before, after) {
+  const list = [];
+  if (after.affiliation !== before.affiliation || after.role !== before.role) {
+    const first = before.affiliation === "무소속" && before.role === "없음";
+    list.push({
+      kind: "rank",
+      eyebrow: after.affiliation !== before.affiliation ? "새로운 소속" : "직책 변화",
+      title: `${after.affiliation} · ${after.role}`,
+      sub: first ? `${after.job}의 길로 첫발을 내디뎠다` : `${before.affiliation} (${before.role}) → ${after.affiliation} (${after.role})`,
+      targetId: "life-role"
+    });
+  }
+  if (!before.devilFruit && after.devilFruit) {
+    list.push({
+      kind: "fruit",
+      eyebrow: "악마의 열매 각성",
+      title: after.devilFruit,
+      sub: "바다의 저주와 함께 몸에 새로운 힘이 깃들었다",
+      targetId: "life-power"
+    });
+  }
+  for (const [key, label] of [["conqueror", "패왕색 패기"], ["armament", "무장색 패기"], ["observation", "견문색 패기"]]) {
+    const prev = before.haki?.[key] || 0;
+    const next = after.haki?.[key] || 0;
+    if (next > prev) {
+      list.push({
+        kind: `haki-${key}`,
+        eyebrow: prev === 0 ? "패기 각성" : "패기 단련",
+        title: `${label} ${next}단계`,
+        sub: prev === 0 ? "잠들어 있던 기세가 깨어났다" : `${label}의 숙련도가 한 단계 깊어졌다 (${prev} → ${next})`,
+        targetId: "life-power"
+      });
+    }
+  }
+  if (after.bounty > before.bounty) {
+    list.push({
+      kind: "bounty",
+      name: after.birth.name,
+      from: before.bounty,
+      to: after.bounty,
+      targetId: "life-power"
+    });
+  }
+  if (!before.people?.mate && after.people?.mate) {
+    list.push({
+      kind: "bond",
+      eyebrow: "새로운 인연",
+      title: `${after.people.mate.name} · 소꿉친구`,
+      sub: "먼 바다에서도 잊지 못할 약속을 나눈 친구가 생겼다",
+      targetId: "life-crew"
+    });
+  } else if (!before.people?.mate?.together && after.people?.mate?.together) {
+    list.push({
+      kind: "bond",
+      eyebrow: "동료 합류",
+      title: `${after.people.mate.name} 합류`,
+      sub: "어릴 적 친구가 같은 깃발 아래로 들어왔다",
+      targetId: "life-crew"
+    });
+  }
+  const prevCanon = canonRelationshipSummary(before);
+  const nextCanon = canonRelationshipSummary(after);
+  if (nextCanon && nextCanon !== prevCanon) {
+    const [who, rel, ...rest] = nextCanon.split(" / ")[0].split(" · ");
+    list.push({
+      kind: "canon-bond",
+      eyebrow: "원작 인물 인연",
+      title: `${who} · ${rel}`,
+      sub: [...rest, "원작 인물과의 관계가 기록됐다"].filter(Boolean).join(" · "),
+      targetId: "life-relationships"
+    });
+  }
+  return list;
 }
