@@ -24,6 +24,7 @@ test("Haki effects require the named skill even after a failed attempt", () => {
   assert.equal(powerFxForChoice(character(1), "power_haki", "[패기] 견문색으로 기척을 읽는다")?.kind, "haki-observation");
   assert.equal(powerFxForChoice(character(0, 1), "power_haki", "[패기] 무장색으로 칼날을 막는다")?.kind, "haki-armament");
   assert.equal(powerFxForChoice(character(0, 0, 1), "power_haki", "[패기] 패왕색을 터뜨린다")?.kind, "haki-conqueror");
+  assert.notEqual(powerFxForChoice(character(1, 1, 1), "power_haki", "[패기] 패기로 추격대를 압도한다", "무장색과 견문색으로 돌파했다")?.kind, "haki-conqueror");
 });
 
 test("fruit animations require an actual devil fruit", () => {
