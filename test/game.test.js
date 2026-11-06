@@ -1889,3 +1889,44 @@ test("원작 인물 전투력의 시대별 성장, 플레이어 전력 비교 �
   assert.ok(postBeat, "사후 원작 소식 장면이 생성되어야 한다");
   assert.match(postBeat.body, /구금|수감|구출 계획/, "샤본디 재집결 소식에서도 루피 수감 상태가 반영되어야 한다");
 });
+
+test("UI 소스코드 구문 오류 방지 및 일상 막간 고위험/고보상 위기·단련 사건 검증", async () => {
+  const { execSync } = await import("node:child_process");
+  // 1. src/app.js를 포함한 모든 소스코드 구문 오류 검증 (새 삶 시작하기 등 초기화 중단 방지)
+  assert.doesNotThrow(() => {
+    execSync("node -c src/app.js", { stdio: "pipe" });
+  }, "src/app.js에 구문 오류(중복 선언 등)가 없어야 한다");
+
+  // 2. 버전 20 일상 막간 고위험/고보상 및 체력 소모 위기 검증
+  const { canonInterludeScene, canonGapFor } = await import("../src/canon-interludes.js");
+  const testLife = createGame("free", 7, { species: "인간" }, 3, 20);
+  testLife.canonGapRemaining = 2;
+  testLife.path = "pirate";
+  testLife.leftHome = true;
+  testLife.homebound = false;
+
+  const gapsV20 = Array.from({ length: 10 }, (_, i) => canonGapFor(testLife, "before", i));
+  assert.ok(new Set(gapsV20).size >= 3, "간격 패턴이 단조롭지 않아야 한다");
+  assert.ok(gapsV20.every((g, idx) => g > 0 || gapsV20[idx - 1] > 0), "연속 0간격이 없어야 한다");
+
+  // 일상 막간에서 위험/기회 사건이 생성될 수 있는지 확인
+  let foundHealthRisk = false;
+  let foundHighReward = false;
+  for (let slot = 0; slot < 30; slot += 1) {
+    testLife.canonDailyIndex = slot;
+    testLife.canonGapRemaining = 1;
+    const interlude = canonInterludeScene(testLife);
+    if (interlude && interlude.choices) {
+      for (const c of interlude.choices) {
+        if (/건강 -(1[0-9]|2[0-9]|3[0-9])/.test(c.risk) || (c.failRisk && /건강 -(1[0-9]|2[0-9]|3[0-9])/.test(c.failRisk))) {
+          foundHealthRisk = true;
+        }
+        if (/기술 \+(1[0-9])/.test(c.risk) || /물자 \+(2[0-9]|3[0-9])/.test(c.risk)) {
+          foundHighReward = true;
+        }
+      }
+    }
+  }
+  assert.ok(foundHealthRisk, "버전 20 일상 막간에는 건강이 깎일 수 있는 실제 위험 선택지가 포함되어야 한다");
+  assert.ok(foundHighReward, "버전 20 일상 막간에는 큰 스탯/물자 변화를 주는 유의미한 선택지가 포함되어야 한다");
+});

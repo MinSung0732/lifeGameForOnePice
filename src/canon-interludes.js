@@ -187,9 +187,120 @@ const MOMENTS_V11 = [
       { id: "worry", label: "가족에게 조심하라는 편지를 쓴다", risk: "양육자와의 유대가 오를 수 있음", personality: { caution: 4 }, apply: (s) => { s.bond += 5; return "답장에는 오히려 이쪽 걱정이 가득했다."; } }] }
 ];
 
+const MOMENTS_V20 = [
+  {
+    title: "갑작스러운 급변 폭풍", art: "lifeStorm",
+    body: (life) => `${life.location} 인근 해역에서 기상이 급변하며 거대한 용오름과 폭풍우가 몰아쳤다. 바닷물이 갑판을 집어삼킬 듯 솟구쳤다.`,
+    choices: [
+      { id: "brave_helm", label: "위험을 무릅쓰고 키를 직접 잡고 폭풍을 정면 돌파한다",
+        needs: { skill: 50, health: 45 },
+        risk: "기술 50 · 건강 45 필요 · 성공 시 항해 기술 +12 · 실패 시 건강 -20",
+        failRisk: "건강 -20 · 파도에 휩쓸림",
+        personality: { ambition: 7, freedom: 5, caution: -4 },
+        apply: (s) => { s.skill += 12; s.trust += 8; return "거센 돌풍을 노련한 조타로 뚫어냈다. 갑판 위 선원들이 환호성을 질렀다."; },
+        fail: (s) => { s.health = Math.max(10, s.health - 20); return "거대한 파도가 갑판을 덮쳤다. 돛대에 부딪혀 늑골을 다쳤지만 간신히 배를 지켜냈다."; } },
+      { id: "shelter_hold", label: "돛을 모두 접고 선창으로 피신해 파도가 지나가길 기다린다",
+        risk: "물자 -10 · 건강 +5 · 안전한 선택",
+        personality: { caution: 6, freedom: -3 },
+        apply: (s) => { s.supplies -= 10; s.health += 5; return "안전을 택했지만 파도에 실려 온 바닷물로 식량 일부가 상했다."; } }
+    ]
+  },
+  {
+    title: "굶주린 소형 해왕류의 습격", art: "dangerSeaBeast",
+    body: "항해 중 바다 밑에서 솟구쳐 오른 해왕류가 뱃전을 물어뜯으려 했다. 갑판의 선원들이 무기를 챙기며 비명을 질렀다.",
+    choices: [
+      { id: "slay_beast", label: "선두에 서서 무기를 들고 해왕류와 정면 격돌한다",
+        needs: { skill: 55, health: 50 },
+        risk: "기술 55 · 건강 50 필요 · 성공 시 식량/물자 +25 · 실패 시 건강 -20",
+        failRisk: "건강 -20 · 부상 위험",
+        personality: { ambition: 8, caution: -5 },
+        apply: (s) => {
+          s.supplies += 25; s.skill += 10;
+          if (s.path === "marine") s.reputation = (s.reputation || 0) + 10;
+          return "거대한 턱을 내리치고 해왕류를 쓰러뜨렸다. 선창 가득 고기를 확보했다.";
+        },
+        fail: (s) => { s.health = Math.max(10, s.health - 20); return "괴수의 지느러미에 맞아 바다로 날아갈 뻔했다. 동료들이 간신히 끌어올렸지만 중상을 입었다."; } },
+      { id: "bait_distract", label: "작은 작살과 미끼를 던져 바깥으로 유인한다",
+        cost: 8,
+        risk: "물자 -8 · 기술 +5",
+        personality: { caution: 5, empathy: 3 },
+        apply: (s) => { s.supplies -= 8; s.skill += 5; return "미끼를 던져 괴수의 주의를 끄는 사이 배를 전속력으로 빼냈다."; } }
+    ]
+  },
+  {
+    title: "괴질과 괴혈병의 습격", art: "workbench",
+    body: "긴 항해 끝에 선원들 사이에 잇몸이 무너지고 열이 끓는 괴질이 번졌다. 약통은 빠르게 비어 가고 있었다.",
+    choices: [
+      { id: "sacrifice_nurse", label: "자신의 체력을 깎으며 밤낮으로 환자들을 간호한다",
+        risk: "건강 -15 · 친구와의 유대 +18 · 신뢰 +10",
+        personality: { empathy: 9, loyalty: 6 },
+        apply: (s) => { s.health = Math.max(10, s.health - 15); s.friendBond += 18; s.trust += 10; return "몸을 사리지 않은 헌신 덕에 선원들이 모두 목숨을 건졌다. 병상에서 일어난 이들이 눈물을 글썽였다."; } },
+      { id: "strict_ration", label: "다음 섬의 약재상에 닿을 때까지 엄격히 통제하고 버틴다",
+        cost: 10,
+        risk: "물자 -10 · 건강 -8",
+        personality: { caution: 7 },
+        apply: (s) => { s.supplies -= 10; s.health = Math.max(10, s.health - 8); return "엄격한 통제 속에서 간신히 다음 섬까지 버텼다. 모두의 체력이 크게 깎였다."; } }
+    ]
+  },
+  {
+    title: "한계를 시험하는 극한의 선상 단련", art: "workbenchHakiTraining",
+    body: (life) => `${life.location} 앞바다에서 파도를 맞으며 스스로의 한계를 시험할 기회가 왔다. 평범한 단련으로는 도달할 수 없는 영역이었다.`,
+    choices: [
+      { id: "break_limits", label: "뼈와 근육이 비명을 지를 때까지 온 힘을 다해 수련한다",
+        risk: "건강 -12 · 기술 +15 · 야망 +8",
+        personality: { ambition: 9, caution: -6 },
+        apply: (s) => { s.health = Math.max(10, s.health - 12); s.skill += 15; return "피땀 흘린 수련 끝에 주먹과 발끝에 새로운 감각이 깃들었다. 신체와 기술이 비약적으로 단련됐다."; } },
+      { id: "steady_drill", label: "무리하지 않고 기본 동작만 반복하며 컨디션을 조절한다",
+        risk: "건강 +8 · 기술 +4",
+        personality: { caution: 5 },
+        apply: (s) => { s.health += 8; s.skill += 4; return "무리한 부상을 피하며 몸의 균형을 안정적으로 유지했다."; } }
+    ]
+  },
+  {
+    title: "심해로 침몰한 보물선 탐사", art: "deck",
+    body: "암초 너머 가라앉은 난파선의 잔해가 보였다. 어두운 수심 아래 반짝이는 궤짝들이 손짓하고 있었다.",
+    choices: [
+      { id: "deep_dive", label: "폐활량의 한계를 걸고 거친 수압 속으로 잠수한다",
+        needs: { health: 50, skill: 45 },
+        risk: "건강 50 · 기술 45 필요 · 성공 시 물자 +30 · 실패 시 건강 -18",
+        failRisk: "건강 -18 · 익사 위기",
+        personality: { ambition: 8, freedom: 5, caution: -6 },
+        apply: (s) => { s.supplies += 30; s.skill += 8; return "심해의 부서진 상자에서 막대한 금은보화와 보급품을 건져 올렸다!"; },
+        fail: (s) => { s.health = Math.max(10, s.health - 18); return "수압과 산소 부족으로 기절 직전 동료들에게 끌어올려졌다. 바닷물만 잔뜩 마시고 폐를 다쳤다."; } },
+      { id: "hook_salvage", label: "갈고리 밧줄만 내려 닿는 것만 조심스럽게 건진다",
+        risk: "물자 +8 · 기술 +4",
+        personality: { caution: 5 },
+        apply: (s) => { s.supplies += 8; s.skill += 4; return "안전하게 밧줄을 걸어 작은 궤짝 하나를 건졌다."; } }
+    ]
+  },
+  {
+    title: "암초 지대의 벼랑 끝 항해", art: "deck",
+    body: "칼날처럼 솟은 암초 지대가 앞길을 가로막았다. 돌아가면 며칠이 걸리지만 한 줄기 좁은 물길이 눈에 띄었다.",
+    choices: [
+      { id: "razor_cut", label: "선체의 파손을 각오하고 최단거리 수로를 뚫는다",
+        needs: { skill: 55 },
+        risk: "기술 55 필요 · 성공 시 기술 +14 · 실패 시 건강 -18, 물자 -15",
+        failRisk: "건강 -18 · 물자 -15",
+        personality: { ambition: 7, freedom: 6, caution: -5 },
+        apply: (s) => { s.skill += 14; return "날카로운 암초 사이를 깃털처럼 빠져나갔다. 전설적인 조타 솜씨였다."; },
+        fail: (s) => { s.health = Math.max(10, s.health - 18); s.supplies -= 15; return "배 밑바닥이 암초에 부딪히며 부서졌다. 파편에 다리를 다치고 침수를 메우느라 고생했다."; } },
+      { id: "wide_detour", label: "시간이 걸리더라도 널찍한 외해로 크게 돌아간다",
+        cost: 8,
+        risk: "물자 -8 · 건강 +4",
+        personality: { caution: 6 },
+        apply: (s) => { s.supplies -= 8; s.health += 4; return "항해는 길어졌지만 배와 선원 모두 무사했다."; } }
+    ]
+  }
+];
+
 // Some arcs follow closely; others leave space for several ordinary scenes.
 export function canonGapFor(life, phase, step) {
   const salt = phase === "before" ? 0x31b7c5a9 : 0x7da4e26f;
+  if (life.creationVersion >= 20) {
+    const raw = [1, 0, 1, 2, 0, 1, 1, 0, 2, 1][yearRoll(life.seed ^ salt, step) % 10];
+    const prevRaw = step > 0 ? [1, 0, 1, 2, 0, 1, 1, 0, 2, 1][yearRoll(life.seed ^ salt, step - 1) % 10] : 1;
+    return raw === 0 && (step === 0 || prevRaw === 0) ? 1 : raw;
+  }
   if (life.creationVersion >= 10) return [1, 2, 1, 3, 2, 1, 2, 0, 3, 1][yearRoll(life.seed ^ salt, step) % 10];
   if (phase === "before") return [0, 1, 2, 0, 3, 1][yearRoll(life.seed ^ salt, step) % 6];
   const gap = [1, 2, 3, 1, 0, 2, 1, 3][yearRoll(life.seed ^ salt, step) % 8];
@@ -208,15 +319,16 @@ export function canonInterludeScene(life) {
           personality: { caution: 3 }, apply: (state) => { state.trust += 5; return "다음 바늘이 움직일 때까지 이곳 사람들의 일을 도왔다."; } }] };
   }
   const v11 = life.creationVersion >= 11;
+  const v20 = life.creationVersion >= 20;
   if (v11) {
     // Every few slots the era lets a mishap, danger or a recurring person's scene through.
-    const roll = yearRoll(life.seed ^ 0x2d4f81b3, life.canonDailyIndex) % 5;
+    const roll = yearRoll(life.seed ^ 0x2d4f81b3, life.canonDailyIndex) % (v20 ? 4 : 5);
     const slotBase = { age: life.age, act: 3, species: "all", yearly: true, canonDaily: true, timeLabel: `${time} · ${life.location}` };
-    const event = roll === 0 ? eraAdventure(life, life.canonDailyIndex, slotBase) : roll === 1 ? personalBeat(life, life.age, slotBase) : null;
+    const event = (roll === 0 || (v20 && roll === 2)) ? eraAdventure(life, life.canonDailyIndex, slotBase) : roll === 1 ? personalBeat(life, life.age, slotBase) : null;
     if (event) return { ...event, canonDaily: true, timeLabel: `${time} · ${life.location}` };
   }
   const recent = life.journal.slice(-10).map((entry) => entry.title);
-  const pool = v11 ? [...MOMENTS, ...MOMENTS_V11] : MOMENTS;
+  const pool = v20 ? [...MOMENTS_V20, ...MOMENTS, ...MOMENTS_V11] : v11 ? [...MOMENTS, ...MOMENTS_V11] : MOMENTS;
   // Rule 11 also avoids any daily already seen in this life until the pool runs out.
   const seenTitles = v11 ? new Set(life.journal.map((entry) => entry.title)) : new Set();
   let index = yearRoll(life.seed ^ 0x5cd98e41, life.canonDailyIndex) % pool.length;

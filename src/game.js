@@ -1,6 +1,6 @@
 import { CANON_CHAPTER, scenes } from "./story.js";
 import { FLEX_IDS, FLEX_IDS_V5, V9_DEFERRED, V11_DEFERRED, V14_REPLACED, branchScene, marinefordNews, yearlyScene } from "./life-story.js";
-import { ERA_WAR, encounterScene, eraStart, standing, stretched, yearRoll } from "./world.js";
+import { ERA_WAR, encounterScene, eraStart, presentAge, standing, stretched, yearRoll } from "./world.js";
 import { canonAge, canonCount, canonIfAfter, canonScene } from "./canon-events.js";
 import { preCanonAge, preCanonCount, preCanonScene } from "./canon-before.js";
 import { canonGapFor, canonInterludeScene } from "./canon-interludes.js";
@@ -338,7 +338,7 @@ function sceneCard(life) {
     );
     if (ifDue) {
       const rank = yearlyScene(stretched(life) ? life : { ...life, age: life.birth.yearsBeforeCurrent - 1 });
-      if (rank.id === "life_free_rank") return rank;
+      if (rank.id === "life_free_rank") return { ...rank, age: Math.min(presentAge(life), typeof rank.age === "function" ? rank.age(life) : rank.age) };
     }
     if (life.canonStep > 0 && age === life.age) return authored;
     const milestone = canonScene(life);

@@ -1304,8 +1304,6 @@ async function playMilestones(milestones) {
   }
   const reduced = false;
   for (const item of milestones) {
-    const overlay = document.createElement("div");
-    overlay.className = "fx-overlay milestone-overlay";
     let card;
     let bountyNode = null;
     if (item.kind === "bounty") {

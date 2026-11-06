@@ -646,7 +646,7 @@ export function eraAdventure(life, slot, base) {
     }
   }
   if (life.creationVersion >= 20 && life.path && !life.homebound) {
-    if (slot - (life.lastDutySlot ?? -99) >= 12 && yearRoll(life.seed ^ 0x4b1e, slot) % 3 === 0) {
+    if (slot - (life.lastDutySlot ?? -99) >= 8 && yearRoll(life.seed ^ 0x4b1e, slot) % 2 === 0) {
       const duties = DUTIES.filter((entry) => fresh(entry, "life_duty_"));
       if (duties.length) {
         const duty = pick(duties, life, slot + 3000, 0x7a2f);
