@@ -1,5 +1,6 @@
 import { yearRoll } from "./world.js";
 import { rosterFor } from "./canon-crews.js";
+import { canonRelationshipEntries } from "./canon-relationships.js";
 
 // Display-only roster of the people around the protagonist. It is derived from the life's
 // seed, affiliation, rank and bounty, so it needs no saved state and old saves show it too.
@@ -63,4 +64,34 @@ export function crewFor(life) {
 export function crewLine(life) {
   const members = crewFor(life);
   return members.length ? members.map((member) => `${member.name}(${member.role})`).join(" · ") : "아직 혼자다";
+}
+
+export function relationshipGroups(life) {
+  const mate = life.people?.mate;
+  const bonds = [];
+  const addBond = (name, role) => {
+    if (name && !bonds.some((person) => person.name === name)) bonds.push({ name, role });
+  };
+  if (mate) {
+    const status = mate.fate === "잃음" ? "소식이 끊김" : mate.fate === "다른 길" ? "서로 다른 길"
+      : mate.fate === "적" ? "적대" : mate.fate === "화해" ? "화해"
+        : mate.together ? "동행 중" : "동행 전";
+    addBond(mate.name, `소꿉친구 · ${status}`);
+  } else if (life.friendName && life.friendName !== "옛 친구") {
+    addBond(life.friendName, "옛 친구");
+  }
+  if (life.people?.rival) addBond(life.people.rival.name, "라이벌");
+  if (life.people?.ward) addBond(life.people.ward.name, "제자 · 후계");
+  for (const contact of canonRelationshipEntries(life)) addBond(contact.name, contact.role);
+
+  const crew = [];
+  const factions = [];
+  for (const member of crewFor(life)) {
+    if (member.role === "산하 선단") {
+      factions.push({ name: member.name, role: "산하 해적단" });
+    } else if (member.name !== mate?.name || mate.together && mate.fate === "곁") {
+      crew.push(member);
+    }
+  }
+  return { bonds, crew, factions };
 }
