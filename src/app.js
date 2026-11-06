@@ -2,8 +2,8 @@ import { fruitFxKind, powerFxForChoice } from "./power-fx.js";
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, collectMilestones, createGame, getScene, personalitySummary, replay, saveRecord } from "./game.js";
 import { crewNews, crewVesselKind, eraStart, presentAge, stretched } from "./world.js";
 import { peopleSummary } from "./people.js";
-import { canonRelationshipLine, canonRelationshipSummary } from "./canon-relationships.js";
-import { crewLine } from "./crew.js";
+import { canonRelationshipSummary } from "./canon-relationships.js";
+import { relationshipGroups } from "./crew.js";
 import { canonCount, canonStatus } from "./canon-events.js";
 import { formatBounty } from "./bounty.js";
 import { fateLegacy } from "./fates.js";
@@ -119,7 +119,7 @@ function scheduleObservation() {
   }
   const now = performance.now();
   if (!observation || observation.sceneId !== scene.id) observation = createObservation(scene, now);
-  const running = !paused && !document.hidden && !byId("journal").open;
+  const running = !paused && !document.hidden && !byId("journal").open && !byId("relations-dialog").open;
   observation = tickObservation(observation, now, speed, running);
   const percent = Math.round(observation.elapsed / observation.duration * 100);
   const seconds = Math.ceil((observation.duration - observation.elapsed) / (1000 * speed));
@@ -188,8 +188,65 @@ function renderLifeStrip() {
   byId("life-power").textContent = `${powerSummary()}${life.creationVersion >= 4 && life.bounty ? ` · 현상금 ${formatBounty(life.bounty)}` : ""}`;
   byId("life-goal").textContent = life.goal;
   renderReputation();
-  byId("life-crew").textContent = byId("life-crew").title = crewLine(life);
-  byId("life-relationships").textContent = byId("life-relationships").title = canonRelationshipLine(life);
+  renderRelationshipsOverview();
+}
+
+function renderRelationshipsOverview() {
+  const { bonds, crew, factions } = relationshipGroups(life);
+  byId("relations-bonds-count").textContent = `${bonds.length}명`;
+  byId("relations-crew-count").textContent = `${crew.length}명`;
+  byId("relations-factions-count").textContent = `${factions.length}개`;
+  byId("relations-factions-metric").hidden = !factions.length;
+  byId("life-relationships").title = bonds.map((p) => p.name).join(" · ") || "아직 기록된 인연 없음";
+  byId("life-crew").title = crew.map((p) => p.name).join(" · ") || "현재 함께하는 사람 없음";
+  const preview = [
+    bonds.length && `인연: ${bonds.slice(0, 2).map((p) => p.name).join(", ")}${bonds.length > 2 ? " 외" : ""}`,
+    crew.length && `동료: ${crew.slice(0, 2).map((p) => p.name).join(", ")}${crew.length > 2 ? " 외" : ""}`,
+    factions.length && `산하 세력 ${factions.length}개`
+  ].filter(Boolean);
+  byId("relations-preview").textContent = preview.join(" · ") || "아직 기록된 인연이나 동료가 없습니다.";
+}
+
+function selectRelationshipsTab(tab, focus = false) {
+  const available = ["bonds", "crew", ...(byId("relations-tab-factions").hidden ? [] : ["factions"])];
+  const chosen = available.includes(tab) ? tab : "bonds";
+  for (const key of ["bonds", "crew", "factions"]) {
+    const active = chosen === key;
+    byId(`relations-tab-${key}`).setAttribute("aria-selected", String(active));
+    byId(`relations-tab-${key}`).tabIndex = active ? 0 : -1;
+    byId(`relations-pane-${key}`).hidden = !active;
+  }
+  if (focus) byId(`relations-tab-${chosen}`).focus();
+}
+
+function openRelationshipsDialog() {
+  if (!life) return;
+  stopTimer();
+  const groups = relationshipGroups(life);
+  for (const key of ["bonds", "crew", "factions"]) {
+    const list = byId(`relations-list-${key}`);
+    list.replaceChildren();
+    byId(`relations-tab-${key}-count`).textContent = String(groups[key].length);
+    if (!groups[key].length) {
+      const empty = document.createElement("li");
+      empty.className = "relations-empty";
+      empty.textContent = key === "bonds" ? "아직 기록된 인연이 없습니다."
+        : key === "crew" ? "현재 함께 활동하는 사람이 없습니다." : "아직 산하 세력이 없습니다.";
+      list.append(empty);
+    }
+    for (const person of groups[key]) {
+      const row = document.createElement("li");
+      const name = document.createElement("strong");
+      name.textContent = person.name;
+      const role = document.createElement("small");
+      role.textContent = person.role;
+      row.append(name, role);
+      list.append(row);
+    }
+  }
+  byId("relations-tab-factions").hidden = !groups.factions.length;
+  selectRelationshipsTab("bonds");
+  byId("relations-dialog").showModal();
 }
 
 function reputationDesc(rep) {
@@ -1653,6 +1710,22 @@ function selectedProfile() {
   return profile;
 }
 
+byId("relations-open").addEventListener("click", openRelationshipsDialog);
+byId("relations-close").addEventListener("click", () => byId("relations-dialog").close());
+byId("relations-dialog").addEventListener("close", scheduleObservation);
+for (const key of ["bonds", "crew", "factions"]) {
+  const tab = byId(`relations-tab-${key}`);
+  tab.addEventListener("click", () => selectRelationshipsTab(key));
+  tab.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const available = ["bonds", "crew", ...(byId("relations-tab-factions").hidden ? [] : ["factions"])];
+    const index = available.indexOf(key);
+    const next = event.key === "Home" ? 0 : event.key === "End" ? available.length - 1
+      : (index + (event.key === "ArrowRight" ? 1 : available.length - 1)) % available.length;
+    selectRelationshipsTab(available[next], true);
+  });
+}
 byId("growth-toggle").addEventListener("click", () => {
   const open = byId("growth-toggle").getAttribute("aria-expanded") !== "true";
   byId("growth-toggle").setAttribute("aria-expanded", String(open));
