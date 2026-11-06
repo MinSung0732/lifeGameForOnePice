@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#f5f1e7">
   <meta name="description" content="원피스 세계의 다섯 출생지에서 한 사람의 삶을 살아 보는 비공식 웹게임 시범판">
   <title>한 사람의 바다</title>
-  <link rel="stylesheet" href="./styles.css?v=20261107-6">
-  <script type="module" src="./src/app.js?v=20261107-5"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261107-7">
+  <script type="module" src="./src/app.js?v=20261107-6"></script>
 </head>
 <body>
   <div class="page-shell">
@@ -239,14 +239,6 @@
               <strong id="crew-news"></strong>
               <canvas id="crew-fx" class="crew-fx" width="38" height="14" aria-hidden="true"></canvas>
             </p>
-            <div class="life-crew">
-              <span>곁의 사람</span>
-              <strong id="life-crew"></strong>
-            </div>
-            <div class="life-relationships">
-              <span>원작 인물 관계</span>
-              <strong id="life-relationships"></strong>
-            </div>
           </div>
         </aside>
 
@@ -260,6 +252,18 @@
             <div class="personality-heading"><h2 id="personality-title">성격</h2><strong id="personality-summary"></strong></div>
             <div id="personality-grid" class="stats-grid"></div>
           </aside>
+          <section class="relations-panel" aria-labelledby="relations-title">
+            <div class="relations-heading">
+              <h2 id="relations-title">인물과 세력</h2>
+              <button id="relations-open" class="text-button" type="button" aria-haspopup="dialog" aria-controls="relations-dialog">상세 보기 ↗</button>
+            </div>
+            <div class="relations-summary" aria-label="현재 관계 요약">
+              <div class="relations-metric" id="life-relationships"><span>인연</span><strong id="relations-bonds-count">0명</strong></div>
+              <div class="relations-metric" id="life-crew"><span>동료</span><strong id="relations-crew-count">0명</strong></div>
+              <div class="relations-metric" id="relations-factions-metric" hidden><span>세력</span><strong id="relations-factions-count">0개</strong></div>
+            </div>
+            <p id="relations-preview" class="relations-preview">아직 기록된 인연이 없습니다.</p>
+          </section>
         </div>
 
         <div id="scene-layout" class="scene-layout">
@@ -335,6 +339,26 @@
     </div>
     <div id="journal-current"></div>
     <div id="journal-past"></div>
+  </dialog>
+  <dialog id="relations-dialog" class="relations-dialog" aria-labelledby="relations-dialog-title">
+    <div class="relations-dialog-head">
+      <div><p class="eyebrow">함께한 사람들</p><h2 id="relations-dialog-title">인연과 동료</h2></div>
+      <button id="relations-close" class="text-button" type="button">닫기</button>
+    </div>
+    <div class="relations-tabs" role="tablist" aria-label="인물 및 세력 분류">
+      <button id="relations-tab-bonds" type="button" role="tab" aria-controls="relations-pane-bonds" aria-selected="true">인연 <span id="relations-tab-bonds-count">0</span></button>
+      <button id="relations-tab-crew" type="button" role="tab" aria-controls="relations-pane-crew" aria-selected="false" tabindex="-1">동료 <span id="relations-tab-crew-count">0</span></button>
+      <button id="relations-tab-factions" type="button" role="tab" aria-controls="relations-pane-factions" aria-selected="false" tabindex="-1" hidden>세력 <span id="relations-tab-factions-count">0</span></button>
+    </div>
+    <section id="relations-pane-bonds" class="relations-pane" role="tabpanel" aria-labelledby="relations-tab-bonds" tabindex="0">
+      <ul id="relations-list-bonds" class="relations-list"></ul>
+    </section>
+    <section id="relations-pane-crew" class="relations-pane" role="tabpanel" aria-labelledby="relations-tab-crew" tabindex="0" hidden>
+      <ul id="relations-list-crew" class="relations-list"></ul>
+    </section>
+    <section id="relations-pane-factions" class="relations-pane" role="tabpanel" aria-labelledby="relations-tab-factions" tabindex="0" hidden>
+      <ul id="relations-list-factions" class="relations-list"></ul>
+    </section>
   </dialog>
   <noscript><p class="noscript">이 게임을 플레이하려면 브라우저에서 JavaScript를 켜야 합니다.</p></noscript>
   <script>
