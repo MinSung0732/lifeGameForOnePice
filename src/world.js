@@ -359,9 +359,9 @@ const CANON_ROUTES_V22 = {
     { dest: "이스트 블루 · 로그 타운", dist: "원거리", cost: 28, note: "위대한 항로 입구로 향하는 항구" }
   ],
   "셸즈 타운": [
-    { dest: "오렌지 마을", dist: "단거리", cost: 10, note: "이웃 항로의 정박지" },
-    { dest: "시럽 마을", dist: "중거리", cost: 18, note: "해안의 조용한 마을" },
-    { dest: "이스트 블루 · 로그 타운", dist: "원거리", cost: 26, note: "그랜드 라인 출항 준비" }
+    { dest: "이스트 블루 · 푸샤 마을", dist: "단거리", cost: 10, note: "루피의 고향이 있는 바다" },
+    { dest: "오렌지 마을", dist: "중거리", cost: 18, note: "이웃 항로의 정박지" },
+    { dest: "시럽 마을", dist: "원거리", cost: 26, note: "해안의 조용한 마을" }
   ],
   "오렌지 마을": [
     { dest: "셸즈 타운", dist: "단거리", cost: 10, note: "해군 기지로 돌아가는 길" },
@@ -427,7 +427,7 @@ export const ROUTES_V22 = Object.fromEntries(Object.entries(ROUTES_V20).map(([pl
 Object.assign(ROUTES_V22, CANON_ROUTES_V22);
 
 export function routeOptionsFor(life, place = life.location) {
-  const key = place === "위대한 항로 · 알라바스타 나노하나" ? "알라바스타 · 나노하나" : place;
+  const key = life.creationVersion >= 22 && place === "위대한 항로 · 알라바스타 나노하나" ? "알라바스타 · 나노하나" : place;
   return (life.creationVersion >= 22 ? ROUTES_V22 : ROUTES_V20)[key];
 }
 function specialRouteReady(life, route) {
