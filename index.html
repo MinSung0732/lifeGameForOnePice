@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#f5f1e7">
   <meta name="description" content="원피스 세계의 다섯 출생지에서 한 사람의 삶을 살아 보는 비공식 웹게임 시범판">
   <title>한 사람의 바다</title>
-  <link rel="stylesheet" href="./styles.css?v=20261107-7">
-  <script type="module" src="./src/app.js?v=20261107-6"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261107-8">
+  <script type="module" src="./src/app.js?v=20261107-7"></script>
 </head>
 <body>
   <div class="page-shell">
@@ -349,6 +349,11 @@
       <button id="relations-tab-bonds" type="button" role="tab" aria-controls="relations-pane-bonds" aria-selected="true">인연 <span id="relations-tab-bonds-count">0</span></button>
       <button id="relations-tab-crew" type="button" role="tab" aria-controls="relations-pane-crew" aria-selected="false" tabindex="-1">동료 <span id="relations-tab-crew-count">0</span></button>
       <button id="relations-tab-factions" type="button" role="tab" aria-controls="relations-pane-factions" aria-selected="false" tabindex="-1" hidden>세력 <span id="relations-tab-factions-count">0</span></button>
+    </div>
+    <div class="relations-search-row">
+      <label for="relations-search">인물 검색</label>
+      <input id="relations-search" type="search" autocomplete="off" placeholder="이름 또는 관계로 검색" aria-controls="relations-pane-bonds relations-pane-crew relations-pane-factions">
+      <p id="relations-filter-count" role="status" aria-live="polite"></p>
     </div>
     <section id="relations-pane-bonds" class="relations-pane" role="tabpanel" aria-labelledby="relations-tab-bonds" tabindex="0">
       <ul id="relations-list-bonds" class="relations-list"></ul>
