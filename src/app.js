@@ -507,14 +507,15 @@ function renderRouteMap() {
   svg.append(el("text", { x: 210, y: 28, class: "route-chart-muted" }, "현재 위치"));
   svg.append(el("text", { x: 377, y: 16, class: "route-chart-muted" }, "연결 항로"));
   if (chart.previous) line(68, 83, 226, 83, true);
-  chart.connections.forEach((_, index) => line(226, 83, 373, [36, 87, 138][index]));
+  const connectionHeights = chart.connections.length > 3 ? [34, 73, 110, 147] : [36, 87, 138];
+  chart.connections.forEach((_, index) => line(226, 83, 373, connectionHeights[index]));
   if (chart.previous) mark(68, 83, chart.previous, "previous", 68, 111);
   else svg.append(el("text", { x: 68, y: 89, class: "route-chart-muted", "text-anchor": "middle" }, "출항 전"));
   mark(226, 83, chart.current, "current", 226, 116);
   if (!chart.connections.length) {
     svg.append(el("text", { x: 382, y: 92, class: "route-chart-muted" }, "연결 정보 없음"));
   } else chart.connections.forEach((place, index) => {
-    const y = [36, 87, 138][index];
+    const y = connectionHeights[index];
     mark(373, y, place, "next", 389, y + 4, "start");
   });
 }
