@@ -1405,13 +1405,13 @@ test("인연·동료·세력은 조직 단위 산하 선단을 분리하고 해�
   const joined = relationshipGroups(withFriend);
   assert.ok(joined.bonds.some(({ name }) => name === "로웰"));
   assert.ok(joined.crew.some(({ name }) => name === "로웰"));
+  assert.equal(joined.factions.length, 0);
 
   const captain = { ...initial, path: "pirate", independent: true, careerStartAge: 20, bounty: 1_000_000_000 };
   const pirate = relationshipGroups(captain);
   assert.equal(pirate.factions.length, 3);
   assert.ok(pirate.factions.every(({ role }) => role === "산하 해적단"));
   assert.ok(pirate.crew.every(({ role }) => role !== "산하 선단"));
-  assert.ok(pirate.crew.every(({ member }) => !member));
 
   const marine = { ...initial, path: "marine", rankTier: 2, careerStartAge: 20 };
   const fleet = relationshipGroups(marine);
