@@ -282,6 +282,7 @@ const scenes = [
     { id: "hide", label: "흔적을 덮고 떠난다", risk: "물자 유지 · 지역의 신뢰 -10", personality: { loyalty: -8, caution: -4 }, apply: (life) => {
       life.trust -= 10;
       if (life.creationVersion >= 20 && life.leftHome && !life.homebound) {
+        if (life.creationVersion >= 21 && life.canonCrew === "밀짚모자 일당") return "숨긴 실수는 동료들 사이로 퍼졌다. 다음 항해를 앞두고 신뢰가 흔들렸다.";
         const nextPlace = sailToNextPort(life);
         return `다음 항구 ${nextPlace}에서 소문이 먼저 도착했다. 변명은 신뢰를 되돌리지 못했다.`;
       }
@@ -384,6 +385,7 @@ const scenes = [
     { id: "trade", label: "필요한 거래만 마치고 떠난다", risk: "물자 +10 · 관계 변화 없음", personality: { caution: 6, freedom: 4 }, apply: (life) => {
       life.supplies += 10;
       if (life.creationVersion >= 20 && life.leftHome && !life.homebound) {
+        if (life.creationVersion >= 21 && life.canonCrew === "밀짚모자 일당") return "거래를 끝내고 동료들의 배로 돌아왔다. 다음 기항지는 선장의 결정을 따른다.";
         const nextPlace = sailToNextPort(life);
         return `서로의 장부를 맞추고 조용히 출항해 ${nextPlace}에 닻을 내렸다.`;
       }
@@ -773,6 +775,7 @@ const annualDecisions = [
     { id: "leave", label: "판단을 미루고 떠난다", risk: "물자 +10 · 지역의 신뢰 -10", personality: { freedom: 4, loyalty: -4 }, apply: (life) => {
       life.supplies += 10; life.trust -= 10;
       if (life.creationVersion >= 20 && life.leftHome && !life.homebound) {
+        if (life.creationVersion >= 21 && life.canonCrew === "밀짚모자 일당") return "급한 일은 끝냈지만 항구에는 의문이 남았다. 동료들과 배로 돌아와 출항 준비를 도왔다.";
         const nextPlace = sailToNextPort(life);
         return `급한 일은 끝냈지만 항구에는 의문이 남았다. 배는 서둘러 ${nextPlace}로 향했다.`;
       }
