@@ -317,6 +317,10 @@ function sceneCard(life) {
   if (pendingContact) return pendingContact;
   if (life.pendingEncounter) return encounterScene(life);
   if (life.pendingBranch) return branchScene(life);
+  if (life.creationVersion >= 20 && life.path && !life.leftHome && !life.homebound && !life.seen.includes("life_leave_home")) {
+    const leaveCard = scenes.find((s) => s.id === "life_leave_home");
+    if (leaveCard) return leaveCard;
+  }
   if (life.creationVersion >= 5) {
     if (age === life.age) return authored;
     const interlude = canonInterludeScene(life);

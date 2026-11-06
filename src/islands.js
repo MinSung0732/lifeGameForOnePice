@@ -1,4 +1,4 @@
-import { storyBefore } from "./world.js";
+import { sailToNextPort, storyBefore } from "./world.js";
 // Island events adapted from what the original story has shown about each place and period.
 // `from`/`to` are years before the original present (larger = earlier); the player's own part is this game's fiction.
 const ISLAND_EVENTS = [
@@ -84,7 +84,14 @@ const ISLAND_EVENTS = [
       { id: "help", label: "주민들의 대피를 돕는다", risk: "건강 -10 · 지역의 신뢰 +20", personality: { empathy: 8, loyalty: 4 },
         apply: (life) => { life.health -= 10; life.trust += 20; return "마지막 골목의 노인을 업고 계단을 올랐다. 해일은 발아래에서 부서졌다."; } },
       { id: "leave", label: "해일 전에 섬을 떠난다", cost: 10, risk: "물자 -10", personality: { caution: 7 },
-        apply: (life) => { life.supplies -= 10; return "먼바다에서 섬을 덮치는 파도를 보았다."; } }
+        apply: (life) => {
+          life.supplies -= 10;
+          if (life.creationVersion >= 20) {
+            const nextPlace = sailToNextPort(life);
+            return `먼바다에서 섬을 덮치는 파도를 보았다. 거센 해일을 피해 배는 ${nextPlace}에 무사히 닻을 내렸다.`;
+          }
+          return "먼바다에서 섬을 덮치는 파도를 보았다.";
+        } }
     ] },
   { id: "celestial_parade", place: "샤본디 제도", title: "천룡인의 행차",
     body: "길 위의 모두가 무릎을 꿇었다. 천룡인이 노예를 끌고 지나갔고, 앞을 막은 아이 하나가 그 걸음 앞에 얼어붙어 있었다.", choices: [

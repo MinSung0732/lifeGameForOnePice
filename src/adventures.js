@@ -1,5 +1,5 @@
 import { formatBounty, pursuerFor } from "./bounty.js";
-import { yearRoll } from "./world.js";
+import { sailToNextPort, yearRoll } from "./world.js";
 import { rollTier } from "./fates.js";
 import { FRUIT_POWER, POWER_CHOICES, fruitSynergy } from "./power-choices.js";
 
@@ -260,7 +260,14 @@ const DANGERS = [
         apply: (life) => { life.trust += 20; life.health -= 10; if (life.creationVersion >= 20) life.reputation = (life.reputation || 0) + 10; return "보름 동안 물을 끓이고 약을 날랐다. 열병이 물러간 날 항구가 처음으로 종을 울렸다."; },
         fail: (life) => wound(life, 30, "항구의 열병") ? "환자를 돌보던 손이 먼저 뜨거워졌다. 항구 사람들은 그 이름을 종탑에 새겼다." : "열병에 걸려 한 달을 앓았다. 그래도 돌본 환자들이 번갈아 간호해 주었다." },
       { id: "leave", label: "배를 띄워 섬을 떠난다", risk: "지역의 신뢰 -10 · 안전", personality: { caution: 8, empathy: -5 },
-        apply: (life) => { life.trust -= 10; return "멀어지는 항구에서 종소리가 들리지 않았다. 그 침묵이 오래 마음에 남았다."; } }
+        apply: (life) => {
+          life.trust -= 10;
+          if (life.creationVersion >= 20) {
+            const nextPlace = sailToNextPort(life);
+            return `멀어지는 항구에서 종소리가 들리지 않았다. 그 침묵을 뒤로하고 배는 ${nextPlace}에 닿았다.`;
+          }
+          return "멀어지는 항구에서 종소리가 들리지 않았다. 그 침묵이 오래 마음에 남았다.";
+        } }
     ] },
   { id: "base_raid", art: (life) => life?.creationVersion >= 20 ? "marineBaseRaid" : "deck", when: (life) => life.path === "marine" && !life.homebound, title: "기지를 덮친 해적",
     body: "한밤중에 이름난 해적단이 기지를 기습했다. 상관은 부상으로 쓰러졌고, 남은 병사들의 시선이 이쪽으로 모였다.",
@@ -287,6 +294,236 @@ const DANGERS = [
     ] }
 ];
 
+export const DUTIES = [
+  // 1. Marine Duties
+  {
+    id: "marine_patrol_intercept",
+    art: (life) => life?.creationVersion >= 20 ? "marinePatrolBoat" : "deck",
+    when: (life) => life.path === "marine" && !life.homebound && (life.rankTier || 0) <= 1,
+    title: "연안 초계 중 만난 해적선",
+    body: "연안 초계 도중 상선을 위협하던 작은 해적선을 발견했다. 상대는 경고 방송을 무시하고 방향을 틀어 도주하려 했다.",
+    choices: [
+      { id: "board", label: "포위망을 좁혀 해적선에 진입해 나포한다", needs: { skill: 30, health: 30 },
+        risk: "기술 30 · 건강 30 필요 · 해적 수감 실적 획득", failRisk: "건강 -15",
+        personality: { loyalty: 6, ambition: 5 },
+        apply: (life) => {
+          life.arrestCount = (life.arrestCount || 0) + 1;
+          life.arrestBounty = (life.arrestBounty || 0) + 5_000_000;
+          life.reputation = (life.reputation || 0) + 8;
+          life.trust += 10;
+          return "선내에 진입해 저항하던 해적들을 제압하고 나포했다. 선장의 수배서와 함께 본부에 인도했다.";
+        },
+        fail: (life) => { life.health -= 15; return "도주하는 배에서 쏜 쇠뇌에 다쳤다. 해적선은 놓쳤지만 상선은 안전하게 지켜냈다."; }
+      },
+      { id: "block", label: "마을 방향으로 도주하지 못하게 기동로를 차단한다",
+        risk: "민간 피해 방지 · 신뢰 상승",
+        personality: { caution: 5, loyalty: 5 },
+        apply: (life) => {
+          life.trust += 15;
+          life.reputation = (life.reputation || 0) + 5;
+          life.skill += 5;
+          return "도주로를 막아 민간 선박을 지켰다. 해적들은 해안 경비대에 나포되었다.";
+        }
+      }
+    ]
+  },
+  {
+    id: "marine_corsair_clash",
+    art: (life) => life?.creationVersion >= 20 ? "harborStandoff" : "deck",
+    when: (life) => life.path === "marine" && !life.homebound && (life.rankTier || 0) >= 1 && (life.rankTier || 0) <= 2,
+    title: "항로를 어지럽히는 무장 해적단",
+    body: "수천만 베리의 현상금이 걸린 해적단이 군함의 순찰 구역에 진입했다. 적선의 포문이 일제히 열렸다.",
+    choices: [
+      { id: "assault", label: "포탄을 뚫고 적선 갑판으로 도약해 수괴를 벤다", needs: { skill: 45, health: 40 },
+        risk: "기술 45 · 건강 40 필요 · 고액 수배범 체포", failRisk: "건강 -25",
+        personality: { ambition: 8, loyalty: 6 },
+        apply: (life) => {
+          life.arrestCount = (life.arrestCount || 0) + 1;
+          life.arrestBounty = (life.arrestBounty || 0) + 20_000_000;
+          life.reputation = (life.reputation || 0) + 15;
+          life.skill += 5;
+          return "치열한 백병전 끝에 악명 높은 수배범을 굴복시켰다. 수병들이 승리의 함성을 질렀다.";
+        },
+        fail: (life) => { life.health -= 25; return "적 선장의 칼에 깊은 상처를 입었다. 동료들의 엄호 사격 덕에 간신히 후퇴했다."; }
+      },
+      { id: "bombard", label: "조타실과 돛대를 집중 포격해 기동을 멈춘다", needs: { skill: 40 },
+        risk: "기술 40 필요 · 안전한 제압", failRisk: "물자 -15",
+        personality: { caution: 7, loyalty: 5 },
+        apply: (life) => {
+          life.arrestCount = (life.arrestCount || 0) + 1;
+          life.arrestBounty = (life.arrestBounty || 0) + 15_000_000;
+          life.reputation = (life.reputation || 0) + 10;
+          life.supplies += 10;
+          return "정밀한 포격으로 적선의 기동을 마비시킨 뒤 전원 수감했다. 본부에서 실적을 기록했다.";
+        },
+        fail: (life) => { life.supplies -= 15; return "포탄이 빗나가며 적선이 짙은 안개 속으로 도주했다."; }
+      }
+    ]
+  },
+  {
+    id: "marine_fleet_siege",
+    art: (life) => life?.creationVersion >= 20 ? "deckCommand" : "deck",
+    when: (life) => life.path === "marine" && !life.homebound && (life.rankTier || 0) >= 2,
+    title: "연합 해적단의 항구 포위망",
+    body: "복수의 해적단이 연합하여 중요 보급 항구를 봉쇄했다. 본부의 증원군은 하루 뒤에나 도착할 예정이었다.",
+    choices: [
+      { id: "lead_charge", label: "직접 지휘선을 이끌고 적 연합 기함을 강습한다", needs: { skill: 58, health: 45 },
+        risk: "기술 58 · 건강 45 필요 · 대규모 군공", failRisk: "건강 -30",
+        personality: { ambition: 9, loyalty: 7 },
+        apply: (life) => {
+          life.arrestCount = (life.arrestCount || 0) + 2;
+          life.arrestBounty = (life.arrestBounty || 0) + 50_000_000;
+          life.reputation = (life.reputation || 0) + 22;
+          life.trust += 15;
+          return "적 기함의 지휘부를 와해시키며 연합 선단을 격파했다. 본부 장성들이 군공을 높이 평가했다.";
+        },
+        fail: (life) => { life.health -= 30; return "적의 집중 포화에 기함이 손상되었다. 항구 방어선으로 철수해야 했다."; }
+      },
+      { id: "defend_port", label: "항구 방어포대를 정비하고 민간인 피난을 엄호한다",
+        risk: "지역의 신뢰 대폭 상승 · 명성 획득",
+        personality: { empathy: 8, caution: 6 },
+        apply: (life) => {
+          life.trust += 25;
+          life.reputation = (life.reputation || 0) + 15;
+          life.health -= 10;
+          return "해적들의 파상공세를 끝까지 막아내 항구를 사수했다. 주민들이 영웅이라 칭송했다.";
+        }
+      }
+    ]
+  },
+
+  // 2. Pirate Duties
+  {
+    id: "pirate_convoy_raid",
+    art: (life) => life?.creationVersion >= 20 ? "harborBountyInspection" : "deck",
+    when: (life) => life.path === "pirate" && !life.homebound && (life.rankTier || 0) <= 1,
+    title: "탐욕스러운 귀족의 보물선",
+    body: "과중한 세금과 귀금속을 싣고 본국으로 향하는 귀족의 수송선이 시야에 들어왔다. 경비병들이 긴장한 채 총을 겨눴다.",
+    choices: [
+      { id: "plunder", label: "경비대를 제압하고 보물 창고를 전부 턴다", needs: { skill: 35, health: 30 },
+        bounty: 15_000_000,
+        risk: "기술 35 · 건강 30 필요 · 현상금 상승 및 악명 축적", failRisk: "건강 -15",
+        personality: { ambition: 8, freedom: 6, empathy: -4 },
+        apply: (life) => {
+          life.supplies += 25;
+          life.reputation = (life.reputation || 0) - 12;
+          return "상선의 금고를 털고 깃발을 흔들었다. 해군 수배서에 악명 높은 이름이 굵게 새겨졌다.";
+        },
+        fail: (life) => { life.health -= 15; return "경비대의 총격에 부상을 입고 물러났다. 전리품은 거의 건지지 못했다."; }
+      },
+      { id: "chivalry", label: "세금 상자만 가로채고 서민 선원들은 다치지 않게 풀어준다", needs: { skill: 35 },
+        bounty: 10_000_000,
+        risk: "기술 35 필요 · 현상금 상승 및 의적 명성", failRisk: "물자 -10",
+        personality: { empathy: 8, freedom: 7, loyalty: 5 },
+        apply: (life) => {
+          life.supplies += 15;
+          life.trust += 12;
+          life.reputation = (life.reputation || 0) + 15;
+          return "부당한 세금만 가로채고 선원들을 풀어주었다. 다음 항구에서 의적이라는 소문이 퍼졌다.";
+        },
+        fail: (life) => { life.supplies -= 10; return "선원들을 배려하다 탈출 시간을 놓쳐 해군 함선의 추격을 받았다."; }
+      }
+    ]
+  },
+  {
+    id: "pirate_rival_showdown",
+    art: (life) => life?.creationVersion >= 20 ? "harborStandoff" : "deck",
+    when: (life) => life.path === "pirate" && !life.homebound && (life.rankTier || 0) >= 1,
+    title: "외해에서 마주친 라이벌 해적단",
+    body: "바다의 패권을 다투는 라이벌 해적단과 좁은 해협에서 맞닥뜨렸다. 상대 선장이 갑판에서 칼을 겨누며 도발했다.",
+    choices: [
+      { id: "clash", label: "앞장서서 상대 선장을 꺾고 깃발을 꺾는다", needs: { skill: 52, health: 45 },
+        bounty: 35_000_000,
+        risk: "기술 52 · 건강 45 필요 · 거액 현상금 도약", failRisk: "건강 -25",
+        personality: { ambition: 9, freedom: 6 },
+        apply: (life) => {
+          life.skill += 5;
+          life.supplies += 20;
+          if ((life.reputation || 0) < 0) life.reputation = (life.reputation || 0) - 15;
+          else life.reputation = (life.reputation || 0) + 18;
+          return "적장을 쓰러뜨리고 바다의 지배권을 증명했다. 신문에 새 현상금이 대서특필되었다.";
+        },
+        fail: (life) => { life.health -= 25; return "상대 선장의 일격에 밀려 갑판 아래로 굴러떨어졌다. 무승부로 물러섰다."; }
+      },
+      { id: "seize_vessel", label: "적선의 화물을 압류하고 부하들을 굴복시킨다",
+        risk: "물자 대폭 확보 · 선단 평판 상승",
+        personality: { ambition: 7, caution: 5 },
+        apply: (life) => {
+          life.supplies += 30;
+          life.friendBond += 10;
+          return "적선 전체를 무력화하고 항복을 받아냈다. 선원들이 우리 배의 실력을 환호했다.";
+        }
+      }
+    ]
+  },
+
+  // 3. Liberator Duties
+  {
+    id: "liberator_slave_rescue",
+    art: (life) => life?.creationVersion >= 20 ? "dangerPrison" : "deck",
+    when: (life) => life.path === "liberator" && !life.homebound,
+    title: "노예 호송대의 족쇄",
+    body: "천룡인에게 바칠 노예들이 갇힌 지하 창고의 위치가 입수됐다. 경비병들이 교대하는 틈은 십 분 남짓이었다.",
+    choices: [
+      { id: "strike", label: "철창을 자르고 사람들을 안전가옥으로 피신시킨다", needs: { skill: 40, health: 35 },
+        risk: "기술 40 · 건강 35 필요 · 구호 명성과 신뢰 상승", failRisk: "건강 -20",
+        personality: { empathy: 9, freedom: 8 },
+        apply: (life) => {
+          life.rescued = (life.rescued || 0) + 3;
+          life.trust += 20;
+          life.reputation = (life.reputation || 0) + 18;
+          return "족쇄를 끊어내고 갇혀 있던 이들을 바다 너머로 탈출시켰다. 감사의 눈물이 손등에 떨어졌다.";
+        },
+        fail: (life) => { life.health -= 20; return "철창을 자르는 소리에 경비대가 들이닥쳤다. 부상자를 업고 간신히 탈출했다."; }
+      },
+      { id: "diversion", label: "부두에 연막탄을 터뜨려 혼란 속에서 탈출로를 연다", needs: { skill: 35 },
+        risk: "기술 35 필요 · 안전한 공작", failRisk: "물자 -10",
+        personality: { caution: 7, empathy: 6 },
+        apply: (life) => {
+          life.trust += 15;
+          life.reputation = (life.reputation || 0) + 12;
+          life.skill += 5;
+          return "경비대의 시선을 돌려 한 명도 다치지 않고 탈출로를 확보했다.";
+        },
+        fail: (life) => { life.supplies -= 10; return "연막이 바람에 흩어지며 계획이 반쯤 틀어졌다. 일부 인원만 피신시켰다."; }
+      }
+    ]
+  },
+
+  // 4. Civilian Duties
+  {
+    id: "civilian_salvage_mission",
+    art: (life) => life?.creationVersion >= 20 ? "workbench" : "deck",
+    when: (life) => life.path === "civilian" && !life.homebound,
+    title: "암초에 좌초된 대형 무역선",
+    body: "암초에 걸려 기울어지는 상선에서 구조 신호가 올랐다. 선체가 두 동강 나기 전에 부력을 확보해야 했다.",
+    choices: [
+      { id: "engineer", label: "조선 기술과 임시 가설재로 선체를 떠받친다", needs: { skill: 40 },
+        risk: "기술 40 필요 · 기술과 조합 평판 대폭 상승", failRisk: "물자 -10",
+        personality: { caution: 7, ambition: 5 },
+        apply: (life) => {
+          life.skill += 10;
+          life.trust += 20;
+          life.reputation = (life.reputation || 0) + 15;
+          life.supplies += 20;
+          return "선체 밑바닥을 지지하고 안전하게 독으로 예인했다. 상단주가 막대한 보상금을 전했다.";
+        },
+        fail: (life) => { life.supplies -= 10; return "가설재가 조류에 쓸려나갔다. 배는 침몰했지만 인명은 구했다."; }
+      },
+      { id: "crew_evac", label: "화물보다 먼저 사람들을 구명정으로 대피시킨다",
+        risk: "지역의 신뢰 상승 · 인명 구조",
+        personality: { empathy: 8, loyalty: 6 },
+        apply: (life) => {
+          life.trust += 25;
+          life.reputation = (life.reputation || 0) + 12;
+          life.health -= 5;
+          return "단 한 명의 실종자도 없이 선원 전원을 구출했다. 부두 전체가 안도했다.";
+        }
+      }
+    ]
+  }
+];
+
 const pick = (pool, life, age, salt) => pool[yearRoll(life.seed ^ salt, age) % pool.length];
 
 export function adventureScene(life, age, base) {
@@ -302,6 +539,26 @@ export function adventureScene(life, age, base) {
         choices: withPower(life, `danger_${entry.id}`, entry.choices).map((choice) => ({ ...choice,
           apply: (state) => { state.lastDangerAge = age; return choice.apply(state); },
           ...(choice.fail ? { fail: (state) => { state.lastDangerAge = age; return choice.fail(state); } } : {}) })) };
+    }
+  }
+  if (life.creationVersion >= 20 && life.path && !life.homebound) {
+    const dutyGap = giant(life) ? 20 : 3;
+    if (age - (life.lastDutyAge ?? -100) >= dutyGap) {
+      const duties = DUTIES.filter((entry) => fresh(entry, "life_duty_"));
+      if (duties.length) {
+        const duty = pick(duties, life, age, 0x3d7b);
+        return {
+          ...base, id: `life_duty_${duty.id}`, urgent: true,
+          art: typeof duty.art === "function" ? duty.art(life) : duty.art,
+          title: duty.title,
+          body: typeof duty.body === "function" ? duty.body(life) : duty.body,
+          choices: withTrait(life, withPower(life, `duty_${duty.id}`, duty.choices)).map((choice) => ({
+            ...choice,
+            apply: (state) => { state.lastDutyAge = age; return choice.apply(state); },
+            ...(choice.fail ? { fail: (state) => { state.lastDutyAge = age; return choice.fail(state); } } : {})
+          }))
+        };
+      }
     }
   }
   if (yearRoll(life.seed ^ 0x2b8e6d14, age) % 3 !== 0) return null;
@@ -388,6 +645,25 @@ export function eraAdventure(life, slot, base) {
           ...(choice.fail ? { fail: (state) => { state.lastDangerSlot = slot; return choice.fail(state); } } : {}) })) };
     }
   }
+  if (life.creationVersion >= 20 && life.path && !life.homebound) {
+    if (slot - (life.lastDutySlot ?? -99) >= 12 && yearRoll(life.seed ^ 0x4b1e, slot) % 3 === 0) {
+      const duties = DUTIES.filter((entry) => fresh(entry, "life_duty_"));
+      if (duties.length) {
+        const duty = pick(duties, life, slot + 3000, 0x7a2f);
+        return {
+          ...base, id: `life_duty_${duty.id}`, urgent: true,
+          art: typeof duty.art === "function" ? duty.art(life) : duty.art,
+          title: duty.title,
+          body: typeof duty.body === "function" ? duty.body(life) : duty.body,
+          choices: withTrait(life, withPower(life, `duty_${duty.id}`, duty.choices)).map((choice) => ({
+            ...choice,
+            apply: (state) => { state.lastDutySlot = slot; return choice.apply(state); },
+            ...(choice.fail ? { fail: (state) => { state.lastDutySlot = slot; return choice.fail(state); } } : {})
+          }))
+        };
+      }
+    }
+  }
   const options = MISHAPS.filter((entry) => fresh(entry, "life_mishap_"));
   if (!options.length) return null;
   const entry = pick(options, life, slot + 5000, 0x5e2f8a61);
@@ -395,4 +671,4 @@ export function eraAdventure(life, slot, base) {
     body: typeof entry.body === "function" ? entry.body(life) : entry.body, choices: withTrait(life, withPower(life, `mishap_${entry.id}`, entry.choices)) };
 }
 
-export const adventureCounts = { mishaps: MISHAPS.length, dangers: DANGERS.length };
+export const adventureCounts = { mishaps: MISHAPS.length, dangers: DANGERS.length, duties: DUTIES.length };

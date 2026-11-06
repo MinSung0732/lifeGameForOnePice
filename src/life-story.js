@@ -1,4 +1,4 @@
-import { ERA_WAR, eraStart, presentAge, storyBefore, stretched, canonCrew, openCanonCrews, encounterAt, encounterScene, moveTo, routeFor, standing, travelScene, yearRoll } from "./world.js";
+import { ERA_WAR, eraStart, presentAge, storyBefore, stretched, canonCrew, openCanonCrews, encounterAt, encounterScene, moveTo, routeFor, sailToNextPort, standing, travelScene, yearRoll } from "./world.js";
 import { personalBeat } from "./people.js";
 import { adventureScene, withTrait } from "./adventures.js";
 import { fruitSynergy } from "./power-choices.js";
@@ -279,7 +279,14 @@ const scenes = [
   ] },
   { id: "life_setback", age: at(28, 155), art: "lifeStorm", title: "실수한 항해", body: "항해 기록과 실제 물길이 어긋났다. 짐 일부가 젖고 다른 배의 일정도 밀렸다. 책임을 피하기 어려웠다.", choices: [
     { id: "admit", label: "실수를 밝히고 다시 조사한다", cost: 10, risk: "물자 -10 · 지역의 신뢰 +10 · 기술 +10", personality: { loyalty: 7, caution: 5 }, apply: (life) => { life.supplies -= 10; life.trust += 10; life.skill += 10; return "손해를 메우는 데 오래 걸렸지만 같은 실수를 피할 기록이 남았다."; } },
-    { id: "hide", label: "흔적을 덮고 떠난다", risk: "물자 유지 · 지역의 신뢰 -10", personality: { loyalty: -8, caution: -4 }, apply: (life) => { life.trust -= 10; return "다음 항구에서 소문이 먼저 도착했다. 변명은 신뢰를 되돌리지 못했다."; } }
+    { id: "hide", label: "흔적을 덮고 떠난다", risk: "물자 유지 · 지역의 신뢰 -10", personality: { loyalty: -8, caution: -4 }, apply: (life) => {
+      life.trust -= 10;
+      if (life.creationVersion >= 20 && life.leftHome && !life.homebound) {
+        const nextPlace = sailToNextPort(life);
+        return `다음 항구 ${nextPlace}에서 소문이 먼저 도착했다. 변명은 신뢰를 되돌리지 못했다.`;
+      }
+      return "다음 항구에서 소문이 먼저 도착했다. 변명은 신뢰를 되돌리지 못했다.";
+    } }
   ] },
   { id: "life_fruit_payment", age: at(29, 163), art: "fruit", title: "항해의 대가", when: (life) => life.seed % 3 === 1 && !life.devilFruit && (life.creationVersion === 1 || !life.homebound)
     && (life.creationVersion < 4 || fruitForCard(life, 29, 163)), body: (life) => life.creationVersion >= 4
@@ -374,7 +381,14 @@ const scenes = [
   ] },
   { id: "life_friendly_port", age: at(43, 231), when: (life) => life.creationVersion === 1 || !life.homebound, art: "workbench", title: "먼저 건넨 손", body: "새 기항지의 사람들은 낯선 배에 쉽게 창고를 열지 않았다. 작은 배의 고장을 함께 고치자 서로의 이름을 묻기 시작했다.", choices: [
     { id: "help", label: "수리를 도우며 천천히 친해진다", cost: 10, risk: "물자 -10 · 지역의 신뢰 +10", personality: { empathy: 8, loyalty: 5 }, apply: (life) => { life.supplies -= 10; life.trust += 10; return "작업이 끝나자 항구 사람들이 다음 물때를 알려 주었다."; } },
-    { id: "trade", label: "필요한 거래만 마치고 떠난다", risk: "물자 +10 · 관계 변화 없음", personality: { caution: 6, freedom: 4 }, apply: (life) => { life.supplies += 10; return "서로의 장부를 맞추고 조용히 출항했다."; } }
+    { id: "trade", label: "필요한 거래만 마치고 떠난다", risk: "물자 +10 · 관계 변화 없음", personality: { caution: 6, freedom: 4 }, apply: (life) => {
+      life.supplies += 10;
+      if (life.creationVersion >= 20 && life.leftHome && !life.homebound) {
+        const nextPlace = sailToNextPort(life);
+        return `서로의 장부를 맞추고 조용히 출항해 ${nextPlace}에 닻을 내렸다.`;
+      }
+      return "서로의 장부를 맞추고 조용히 출항했다.";
+    } }
   ] },
   { id: "life_route", age: at(44, 235), when: (life) => life.creationVersion === 1 || !life.homebound, art: (life) => life?.creationVersion >= 20 ? "harborDeparture" : "deck", title: "새 항로", body: "새 항로의 지도를 얻었다. 익숙한 곳에 남거나 어려운 길을 시험할 수 있었다.", choices: [
     { id: "new", label: "새 항로를 조사한다", cost: (life) => life.skill < 60 ? 10 : 0, risk: "기술 60이 기록 해독의 기준 · 물자 투입 가능", apply: (life) => { if (life.skill < 60) { life.supplies -= 10; return "길을 잘못 읽어 물자를 잃었다. 다음에는 더 많은 기록이 필요했다."; } life.skill += 10; life.trust += 10; return "위험한 구간을 기록해 다른 배에도 전했다."; } },
@@ -756,7 +770,14 @@ const annualDecisions = [
   ] },
   { title: "서로 다른 증언", body: "항구에서 같은 사건을 두고 다른 말이 나왔다. 누구의 말도 바로 확인할 수 없었다.", choices: [
     { id: "check", label: "현장을 다시 확인한다", risk: "기술 +10 · 지역의 신뢰 +10", personality: { caution: 5, loyalty: 3 }, apply: (life) => { life.skill += 10; life.trust += 10; return "흔적을 다시 보니 처음 들은 이야기와 달랐다."; } },
-    { id: "leave", label: "판단을 미루고 떠난다", risk: "물자 +10 · 지역의 신뢰 -10", personality: { freedom: 4, loyalty: -4 }, apply: (life) => { life.supplies += 10; life.trust -= 10; return "급한 일은 끝냈지만 항구에는 의문이 남았다."; } }
+    { id: "leave", label: "판단을 미루고 떠난다", risk: "물자 +10 · 지역의 신뢰 -10", personality: { freedom: 4, loyalty: -4 }, apply: (life) => {
+      life.supplies += 10; life.trust -= 10;
+      if (life.creationVersion >= 20 && life.leftHome && !life.homebound) {
+        const nextPlace = sailToNextPort(life);
+        return `급한 일은 끝냈지만 항구에는 의문이 남았다. 배는 서둘러 ${nextPlace}로 향했다.`;
+      }
+      return "급한 일은 끝냈지만 항구에는 의문이 남았다.";
+    } }
   ] },
   { title: "새로 온 일꾼", body: "낯선 사람이 같은 일을 배우러 왔다. 당장 손이 필요한 날이었다.", choices: [
     { id: "teach", label: "일의 순서를 가르친다", risk: "지역의 신뢰 +10 · 후계자와의 인연", personality: { empathy: 5, loyalty: 5 }, apply: (life) => { life.trust += 10; life.successor = true; return "시간은 더 걸렸지만 다음 작업부터 손이 맞았다."; } },

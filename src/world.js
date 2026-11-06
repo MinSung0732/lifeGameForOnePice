@@ -364,6 +364,28 @@ export function moveTo(life, place) {
   life.travelHistory.push(place);
 }
 
+// Moves a ship to the next adjacent or logical port on its route when leaving an island.
+export function sailToNextPort(life) {
+  const cur = life.location;
+  const v20Routes = ROUTES_V20[cur];
+  let dest;
+  if (v20Routes && v20Routes.length > 0) {
+    dest = v20Routes[0].dest;
+  } else {
+    const route = routeFor(life);
+    const curIdx = route.indexOf(cur);
+    dest = curIdx >= 0 && curIdx + 1 < route.length ? route[curIdx + 1] : (route[0] !== cur ? route[0] : (route[1] || "쌍둥이 언덕"));
+  }
+  if (!life.leftHome) {
+    life.leftHome = true;
+    life.homebound = false;
+  }
+  if (dest && dest !== cur) {
+    moveTo(life, dest);
+  }
+  return life.location;
+}
+
 // "로" after a vowel or ㄹ, "으로" after any other final consonant.
 export function ro(word) {
   const code = word.codePointAt(word.length - 1) - 0xac00;

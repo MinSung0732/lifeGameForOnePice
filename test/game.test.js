@@ -6,7 +6,7 @@ import { createObservation, tickObservation } from "../src/observation.js";
 import { scenes } from "../src/story.js";
 import { degreeHz, moodFor } from "../src/music.js";
 import { OLD_ERA } from "../src/canon-old-era.js";
-import { crewVesselKind, encounterAt, eraStart, isNewWorld, presentAge, ROUTES_V20, storyBefore, travelScene } from "../src/world.js";
+import { crewVesselKind, encounterAt, eraStart, isNewWorld, presentAge, ROUTES_V20, sailToNextPort, storyBefore, travelScene } from "../src/world.js";
 import { fruitFor } from "../src/fruits.js";
 import { bountyScene, formatBounty, marinePatrolScene, pursuerFor } from "../src/bounty.js";
 import { CANON_BEAT_COUNT, canonScene } from "../src/canon-events.js";
@@ -18,6 +18,7 @@ import { rosterFor } from "../src/canon-crews.js";
 import { attachCanonContact, canonRelationshipLine, pendingCanonContactScene } from "../src/canon-relationships.js";
 import { FATES } from "../src/fates.js";
 import { peopleSummary } from "../src/people.js";
+import { DUTIES } from "../src/adventures.js";
 
 function play(mode, seed, picks = {}, profile = { species: "인간" }, rules = 3, version = 3) {
   let life = createGame(mode, seed, profile, rules, version);
@@ -1726,7 +1727,8 @@ test("대규모 서사 개편: 일관된 화자 시점, 순수인간 특화, 원
   dressrosaLife.age = 45;
   dressrosaLife.index = 999;
   dressrosaLife.preCanonStep = preCanonCount(dressrosaLife);
-  dressrosaLife.seen = ["life_marineford_news", ...allOldEra];
+  dressrosaLife.leftHome = true;
+  dressrosaLife.seen = ["life_marineford_news", "life_leave_home", ...allOldEra];
   dressrosaLife.fates = { ...allFatesDone };
   dressrosaLife.path = "pirate";
   dressrosaLife.role = "선장";
@@ -1738,4 +1740,69 @@ test("대규모 서사 개편: 일관된 화자 시점, 순수인간 특화, 원
   dressrosaLife.health = 80;
   const earlyIfScene = getScene(dressrosaLife);
   assert.equal(earlyIfScene.id, "life_free_rank", "드레스로자 시점에서 높은 현상금/신뢰 보유 시 조기 사황 IF가 열려야 한다");
+});
+
+test("항로 이동 및 출항 연동, 일상 막간 선택지 다양화, 진급 실적 사건(해군 수감·해적 악명/의적) 검증", () => {
+  // 1. sailToNextPort 이동 검증
+  const travelLife = createGame("free", 42, { species: "인간" }, 3, 20);
+  travelLife.location = "워터 세븐";
+  travelLife.leftHome = true;
+  const nextDest = sailToNextPort(travelLife);
+  assert.equal(nextDest, "샤본디 제도", "워터 세븐에서 출항 시 다음 기항지는 샤본디 제도여야 한다");
+  assert.equal(travelLife.location, "샤본디 제도", "life.location이 샤본디 제도로 갱신되어야 한다");
+  assert.ok(travelLife.travelHistory.includes("샤본디 제도"), "지나온 항로에 샤본디 제도가 기록되어야 한다");
+
+  // 2. 직업 선택 직후 섬 밖으로(life_leave_home) 즉시 연결 검증
+  const careerLife = createGame("free", 100, { species: "인간" }, 3, 20);
+  careerLife.path = "marine";
+  careerLife.leftHome = false;
+  careerLife.homebound = false;
+  const leaveHomeScene = getScene(careerLife);
+  assert.equal(leaveHomeScene.id, "life_leave_home", "직업을 선택하고 아직 출항하지 않은 생애는 섬 밖으로 장면이 즉시 열려야 한다");
+  const advancedLife = advance(careerLife, null);
+  assert.ok(advancedLife.leftHome, "섬 밖으로 장면 진행 후 leftHome이 true가 되어야 한다");
+  assert.equal(advancedLife.location, "리버스 마운틴", "출항 후 첫 기항지가 리버스 마운틴으로 갱신되어야 한다");
+  assert.ok(advancedLife.travelHistory.includes("리버스 마운틴"), "항로 기록에 첫 기항지가 포함되어야 한다");
+
+  // 3. 일상 막간(canon daily interludes) 고유 선택지 검증
+  const interludeLife = createGame("original", 777, { species: "인간" }, 3, 20);
+  interludeLife.age = 22;
+  interludeLife.leftHome = true;
+  interludeLife.canonGapRemaining = 5;
+  interludeLife.canonDailyIndex = 3;
+  const interludeScene = getScene(interludeLife);
+  if (interludeScene && interludeScene.canonDaily && interludeScene.choices) {
+    const choiceLabels = interludeScene.choices.map((c) => c.label);
+    assert.ok(choiceLabels.length >= 2, "일상 막간 장면에 2개 이상의 선택지가 있어야 한다");
+    // 고유 선택지가 들어있으므로 기존의 단일 반복 선택지만 있는 것이 아니어야 함
+    assert.ok(!choiceLabels.every((lbl) => lbl === "곁의 사람과 오늘 일을 함께 정한다" || lbl === "다음 일을 위한 도구를 먼저 챙긴다"),
+      "상황에 맞는 맥락형 선택지가 제공되어야 한다");
+  }
+
+  // 4. 진급 실적 임무(DUTIES) 및 해군/해적 실적 연동 검증
+  assert.ok(DUTIES.length >= 4, "해군, 해적, 혁명군, 민간인 임무가 4종 이상 정의되어 있어야 한다");
+  const marineDuty = DUTIES.find((d) => d.id === "marine_patrol_intercept");
+  assert.ok(marineDuty, "연안 초계 해적선 임무가 존재해야 한다");
+  const testMarine = createGame("free", 50, { species: "인간" }, 3, 20);
+  testMarine.path = "marine";
+  testMarine.rankTier = 0;
+  testMarine.role = "수병";
+  testMarine.skill = 35;
+  testMarine.health = 50;
+  const boardChoice = marineDuty.choices.find((c) => c.id === "board");
+  boardChoice.apply(testMarine);
+  assert.equal(testMarine.arrestCount, 1, "해적 나포 시 수감 실적이 1명 증가해야 한다");
+  assert.equal(testMarine.arrestBounty, 5_000_000, "해적 나포 시 수감 현상금이 기록되어야 한다");
+  assert.ok(testMarine.reputation >= 8, "해적 토벌로 명성이 상승해야 한다");
+
+  // 5. 실적 충족 시 상사 진급 제안(life_rank_1) 검증
+  testMarine.leftHome = true;
+  testMarine.careerStartAge = 18;
+  testMarine.age = 23;
+  testMarine.lastRankOfferAge = -100;
+  testMarine.seen = ["life_leave_home", "life_first_station"];
+  const rankScene = rankOpportunity(testMarine, 23, { age: 23, act: 2, species: "all" });
+  assert.ok(rankScene, "수감 실적과 명성을 갖춘 수병에게 상사 진급 제안이 나와야 한다");
+  assert.equal(rankScene.id, "life_rank_1_23", "상사 진급 제안 장면 ID가 일치해야 한다");
+  assert.equal(rankScene.title, "상사의 제안", "상사의 제안 타이틀이 일치해야 한다");
 });
