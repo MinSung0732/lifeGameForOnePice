@@ -6,7 +6,7 @@ import { createObservation, tickObservation } from "../src/observation.js";
 import { scenes } from "../src/story.js";
 import { degreeHz, moodFor } from "../src/music.js";
 import { OLD_ERA } from "../src/canon-old-era.js";
-import { crewVesselKind, encounterAt, eraStart, isNewWorld, presentAge, ROUTES_V20, sailToNextPort, storyBefore, travelScene } from "../src/world.js";
+import { crewVesselKind, encounterAt, encounterScene, eraStart, isNewWorld, presentAge, ROUTES_V20, ROUTES_V22, routeOptionsFor, sailToNextPort, storyBefore, travelScene } from "../src/world.js";
 import { fruitFor } from "../src/fruits.js";
 import { bountyScene, formatBounty, marinePatrolScene, pursuerFor } from "../src/bounty.js";
 import { CANON_BEAT_COUNT, canonAge, canonScene } from "../src/canon-events.js";
@@ -20,6 +20,86 @@ import { FATES } from "../src/fates.js";
 import { peopleSummary } from "../src/people.js";
 import { DUTIES } from "../src/adventures.js";
 import { routeChartFor, routeMapLabel } from "../src/route-map.js";
+
+test("22번 항로는 임의 지명 접근을 줄이고 주요 원작 장소를 연결한다", () => {
+  const old = createGame("free", 21, { species: "인간" }, 3, 21);
+  const fresh = createGame("free", 21, { species: "인간" }, 3, 22);
+  const custom = (network) => new Set(Object.values(network).flat().map(({ dest }) => dest)
+    .filter((name) => name.includes("(임의 지명)")));
+  assert.equal(custom(ROUTES_V20).size, 25);
+  assert.equal(custom(ROUTES_V22).size, 4);
+  assert.deepEqual(routeOptionsFor(old, "자야 · 모크 타운"), ROUTES_V20["자야 · 모크 타운"],
+    "21번 세이브는 종전의 선택지를 그대로 유지");
+  assert.deepEqual(routeOptionsFor(fresh, "자야 · 모크 타운"), ROUTES_V22["자야 · 모크 타운"]);
+
+  for (const place of ["위대한 항로 상공 · 스카이피아", "스릴러 바크", "에니에스 로비",
+    "아마존 릴리 외해", "바라티에", "오렌지 마을", "셸즈 타운", "시럽 마을",
+    "아론 파크", "이스트 블루 · 푸샤 마을"]) {
+    assert.ok(Object.values(ROUTES_V22).some((links) => links.some(({ dest }) => dest === place)),
+      `${place}은(는) 다른 항구에서 들어오는 항로가 있어야 한다`);
+  }
+  assert.equal(routeOptionsFor(old, "위대한 항로 · 알라바스타 나노하나"), undefined,
+    "기존 출생지 별칭 처리로 21번 세이브가 달라지면 안 된다");
+  assert.equal(routeOptionsFor(fresh, "위대한 항로 · 알라바스타 나노하나"),
+    ROUTES_V22["알라바스타 · 나노하나"]);
+});
+
+test("22번 특수 항로는 조건과 도착 후 이벤트를 지킨다", () => {
+  const base = createGame("free", 77, { species: "인간" }, 3, 22);
+  Object.assign(base, { path: "pirate", independent: true, canonCrew: null, role: "선장",
+    leftHome: true, homebound: false, supplies: 80, health: 70, skill: 40 });
+  const voyage = (place) => travelScene({ ...base, location: place }, base.age);
+
+  const sky = voyage("자야 · 모크 타운").choices.find(({ id }) => id === "far");
+  assert.match(sky.label, /노크 업 스트림/);
+  assert.equal(sky.available(base), false, "충분한 기술 없이 상승 해류에 오를 수 없음");
+  const prepared = { ...base, skill: 65, location: "자야 · 모크 타운" };
+  assert.equal(sky.available(prepared), true);
+  const flown = structuredClone(prepared);
+  sky.apply(flown);
+  assert.equal(flown.location, "위대한 항로 상공 · 스카이피아");
+  assert.equal(flown.pendingEncounter, "sky_arrival_v22");
+  assert.equal(encounterScene(flown).art, "arcSkypiea");
+  assert.equal(encounterScene(flown).choices.length, 2);
+
+  const docks = voyage("워터 세븐");
+  const court = docks.choices.find(({ id }) => id === "far");
+  const fog = docks.choices.find(({ id }) => id === "detour");
+  assert.match(court.label, /해상 열차/);
+  assert.match(fog.label, /삼각지대/);
+  assert.equal(court.available(base), false);
+  assert.equal(court.available({ ...base, path: "marine" }), true);
+  const inside = { ...base, path: "marine", location: "워터 세븐" };
+  court.apply(inside);
+  assert.equal(inside.location, "에니에스 로비");
+  assert.equal(inside.pendingEncounter, "enies_arrival_v22");
+  const drifting = { ...base, location: "워터 세븐" };
+  fog.apply(drifting);
+  assert.equal(drifting.location, "스릴러 바크");
+  assert.equal(drifting.pendingEncounter, "thriller_arrival_v22");
+
+  const calm = voyage("샤본디 제도").choices.find(({ id }) => id === "far");
+  assert.equal(calm.available(base), false);
+  const seasoned = { ...base, location: "샤본디 제도", skill: 65 };
+  calm.apply(seasoned);
+  assert.equal(seasoned.location, "아마존 릴리 외해");
+  assert.equal(seasoned.pendingEncounter, "calm_arrival_v22");
+  assert.match(encounterScene(seasoned).body, /상륙/);
+
+  const east = { ...base, location: "이스트 블루 · 로그 타운" };
+  const dining = travelScene(east, east.age).choices.find(({ id }) => id === "mid");
+  dining.apply(east);
+  assert.equal(east.location, "바라티에");
+  assert.equal(east.pendingEncounter, "baratie_arrival_v22");
+
+  const old = createGame("free", 77, { species: "인간" }, 3, 21);
+  Object.assign(old, { path: "pirate", independent: true, leftHome: true, homebound: false, location: "자야 · 모크 타운", supplies: 80 });
+  const oldVoyage = travelScene(old, old.age);
+  assert.match(oldVoyage.choices.find(({ id }) => id === "far").label, /임의 지명/);
+  assert.ok(!oldVoyage.choices.some(({ id }) => id === "detour" && id === "sky_arrival_v22"));
+  assert.equal(encounterAt({ ...old, location: "위대한 항로 상공 · 스카이피아" }), null,
+    "21번 세이브에는 새 도착 이벤트가 끼어들지 않는다");
+});
 
 test("지도 라벨은 영역별 길이에 맞춰 줄이고 원본 지명은 변경하지 않는다", () => {
   const longName = "거품여울 군도(임의 지명)";
@@ -38,7 +118,7 @@ test("미니맵은 실제 항해 기록·항로 연결만 사용하고 모르는
   assert.equal(map.current, "샤본디 제도");
   assert.equal(map.previous, "워터 세븐");
   assert.equal(map.zone, "crossing");
-  assert.deepEqual(map.connections, ROUTES_V20["샤본디 제도"].map(({ dest }) => dest));
+  assert.deepEqual(map.connections, ROUTES_V22["샤본디 제도"].map(({ dest }) => dest).slice(0, 3));
   assert.deepEqual(visited.travelHistory, ["이스트 블루 · 로그 타운", "워터 세븐", "샤본디 제도", "샤본디 제도"], "지도 표시가 저장 기록을 수정하면 안 된다");
 
   const sky = routeChartFor({ ...sea, location: "위대한 항로 상공 · 스카이피아",
@@ -917,7 +997,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 21);
+  assert.equal(createGame("original", 0).creationVersion, 22);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
