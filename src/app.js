@@ -32,20 +32,55 @@ function showStorageMessage(message) {
   globalWarning.hidden = !message;
 }
 
-function loadLibrary() {
+function safeReplay(record) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
+    return replay(record);
+  } catch {
+    if (!record || record.version !== 1 || !Array.isArray(record.actions)) throw new Error("저장 기록 형식이 맞지 않습니다.");
+    const rules = record.rules === undefined ? 1 : record.rules;
+    let state = createGame(record.mode, record.seed, record.profile === undefined ? {} : record.profile, rules,
+      record.creationVersion === undefined ? 1 : record.creationVersion);
+    const validActions = [];
+    for (const action of record.actions) {
+      if (action !== null && typeof action !== "string") break;
+      try {
+        state = advance(state, action);
+        validActions.push(action);
+      } catch {
+        break;
+      }
+    }
+    record.actions = validActions;
+    return state;
+  }
+}
+
+function loadLibrary() {
+  let raw = null;
+  try {
+    raw = localStorage.getItem(STORAGE_KEY);
+  } catch {
+    storageUnavailable = true;
+    showStorageMessage("브라우저 저장 공간에 접근할 수 없습니다. 이번 플레이는 브라우저를 닫으면 저장되지 않습니다.");
+    return;
+  }
+  if (!raw) return;
+  try {
     const saved = JSON.parse(raw);
     if (saved.version !== 1 || !Array.isArray(saved.lives) ||
       !Number.isInteger(saved.active) || saved.active < -1 || saved.active >= saved.lives.length) {
       throw new Error("저장 목록 형식이 맞지 않습니다.");
     }
-    if (saved.active >= 0) replay(saved.lives[saved.active]);
+    if (saved.active >= 0) {
+      try {
+        safeReplay(saved.lives[saved.active]);
+      } catch {
+        saved.active = -1;
+      }
+    }
     library = saved;
   } catch {
-    storageUnavailable = true;
-    showStorageMessage("기존 저장 기록을 읽을 수 없습니다. 기록을 보호하기 위해 이번 플레이는 브라우저를 닫으면 저장되지 않습니다.");
+    library = { version: 1, active: -1, lives: [] };
   }
 }
 
@@ -130,7 +165,7 @@ function renderIntro() {
   byId("resume").hidden = !hasActive;
   if (hasActive) {
     try {
-      const savedLife = replay(library.lives[library.active]);
+      const savedLife = safeReplay(library.lives[library.active]);
       byId("resume").textContent = savedLife.finished ? "마지막 삶 돌아보기" : "기록 이어보기";
     } catch {
       byId("resume").hidden = true;
@@ -1303,7 +1338,8 @@ async function playMilestones(milestones) {
     return;
   }
   const reduced = false;
-  for (const item of milestones) {
+  for (let idx = 0; idx < milestones.length; idx += 1) {
+    const item = milestones[idx];
     let card;
     let bountyNode = null;
     if (item.kind === "bounty") {
@@ -1430,6 +1466,8 @@ async function advanceLife(choiceId) {
         if (chose && life.lastDice) await playDice(life.lastDice, hasChanges || hasMilestones);
         if (chose && hasChanges) statsUpdated = await playChanges(life.lastChanges, life.lastOutcome, chosenLabel, powerFx, hasMilestones);
         if (hasMilestones) await playMilestones(milestones);
+      } catch {
+        // Keep game progression alive even if a visual animation fails.
       } finally {
         playingChanges = false;
         const leftover = document.querySelector(".fx-overlay");
@@ -1545,7 +1583,7 @@ function openJournal() {
     library.lives.forEach((record, index) => {
       if (activeLife && index === library.active) return;
       try {
-        const pastLife = replay(record);
+        const pastLife = safeReplay(record);
         const button = document.createElement("button");
         button.type = "button";
         button.className = "past-life";
@@ -1656,7 +1694,8 @@ byId("birth-confirm").addEventListener("click", () => {
 
 byId("resume").addEventListener("click", () => {
   devPreset = false;
-  life = replay(library.lives[library.active]);
+  life = safeReplay(library.lives[library.active]);
+  persist();
   observation = null;
   if (life.finished) renderEnding();
   else renderGame(true);

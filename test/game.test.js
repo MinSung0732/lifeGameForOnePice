@@ -1892,10 +1892,33 @@ test("원작 인물 전투력의 시대별 성장, 플레이어 전력 비교 �
 
 test("UI 소스코드 구문 오류 방지 및 일상 막간 고위험/고보상 위기·단련 사건 검증", async () => {
   const { execSync } = await import("node:child_process");
+  const { readFileSync } = await import("node:fs");
   // 1. src/app.js를 포함한 모든 소스코드 구문 오류 검증 (새 삶 시작하기 등 초기화 중단 방지)
   assert.doesNotThrow(() => {
     execSync("node -c src/app.js", { stdio: "pipe" });
   }, "src/app.js에 구문 오류(중복 선언 등)가 없어야 한다");
+
+  // 1-2. playMilestones 내 idx 루프 변수 선언 및 직책 획득 후 다음 장면/저장 복원 정상 동작 검증
+  const appCode = readFileSync("src/app.js", "utf8");
+  const playMilestonesBlock = appCode.slice(appCode.indexOf("async function playMilestones"), appCode.indexOf("async function advanceLife"));
+  assert.match(playMilestonesBlock, /for\s*\(\s*let\s+idx\s*=\s*0\s*;\s*idx\s*<\s*milestones\.length/, "playMilestones 루프에서 idx 변수가 정의되어야 한다");
+  assert.match(appCode, /function safeReplay\(record\)/, "이전 버전 저장 기록 충돌 시에도 유효 선택까지 복구하는 safeReplay가 정의되어야 한다");
+
+  let careerLife = createGame("free", 11, { species: "인간" }, 3, 20);
+  while (!careerLife.finished && careerLife.role === "없음") {
+    const sc = getScene(careerLife);
+    const ch = sc.choices.find((c) => !c.disabled);
+    const before = careerLife;
+    careerLife = advance(careerLife, ch ? ch.id : null);
+    if (careerLife.role !== "없음") {
+      const ms = collectMilestones(before, careerLife);
+      assert.ok(ms.some((m) => m.kind === "rank"), "첫 직책 획득 시 rank 마일스톤이 생성되어야 한다");
+      const nextSc = getScene(careerLife);
+      assert.ok(nextSc && nextSc.title, "첫 직책 획득 직후 다음 장면 이벤트가 정상 생성되어야 한다");
+      const replayed = replay(saveRecord(careerLife));
+      assert.equal(replayed.role, careerLife.role, "첫 직책 획득 직후 저장 기록이 유실 없이 복원되어야 한다");
+    }
+  }
 
   // 2. 버전 20 일상 막간 고위험/고보상 및 체력 소모 위기 검증
   const { canonInterludeScene, canonGapFor } = await import("../src/canon-interludes.js");
