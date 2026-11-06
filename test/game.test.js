@@ -2131,6 +2131,7 @@ test("선장은 항로를 선택하고 선원은 선장과 항해사의 항로�
   crewTrip.choices[0].apply(prepared);
   assert.equal(prepared.location, "자야 · 모크 타운", "선원의 선택으로 원작 항로를 앞질러 가지 않는다");
 
+  assert.deepEqual(travelScene({ ...base, role: "선장" }, base.age).choices.map((choice) => choice.id), ["sail", "prepare"], "이전 직책이 남아도 밀짚모자 선원은 선장이 아니다");
   const captain = { ...base, independent: true, role: "선장", canonCrew: null, affiliation: "독립 해적단" };
   assert.ok(travelScene(captain, captain.age).choices.some((choice) => choice.id === "far"));
   const former = { ...base, creationVersion: 20 };
