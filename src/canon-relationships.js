@@ -683,12 +683,12 @@ export function canonRelationshipChanged(life) {
     ["pending", "held", "transferred", "escaped"].includes(entry.custody));
 }
 
-export function canonRelationshipSummary(life) {
-  if (!enabled(life)) return "";
+// Return every recorded contact for the relationship dialog; the compact line still shows three.
+export function canonRelationshipEntries(life) {
+  if (!enabled(life)) return [];
   return Object.entries(life.people?.canonContacts || {})
     .filter(([, entry]) => entry.meetings > 0)
     .sort((a, b) => (b[1].lastOrder || 0) - (a[1].lastOrder || 0))
-    .slice(0, 3)
     .map(([key, entry]) => {
       const person = CHARACTERS[key];
       const custody = entry.custody === "pending" ? " · 임시 구금"
@@ -696,8 +696,12 @@ export function canonRelationshipSummary(life) {
         : entry.custody === "transferred" ? " · 본부 수감"
           : entry.custody === "escaped" ? " · 도주" : "";
       const value = `${entry.score >= 0 ? "+" : ""}${entry.score}`;
-      return `${person?.display || key} · ${relationWord(entry.score)} ${value}${custody} · ${entry.meetings}회`;
-    }).join(" / ");
+      return { name: person?.display || key, role: `${relationWord(entry.score)} ${value}${custody} · ${entry.meetings}회` };
+    });
+}
+
+export function canonRelationshipSummary(life) {
+  return canonRelationshipEntries(life).slice(0, 3).map(({ name, role }) => `${name} · ${role}`).join(" / ");
 }
 
 export function canonRelationshipLine(life) {
