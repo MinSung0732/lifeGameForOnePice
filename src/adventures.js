@@ -298,7 +298,7 @@ export const DUTIES = [
   // 1. Marine Duties
   {
     id: "marine_patrol_intercept",
-    art: (life) => life?.creationVersion >= 20 ? "marinePatrolBoat" : "deck",
+    art: (life) => life?.creationVersion >= 20 ? "specialMarineDeck" : "deck",
     when: (life) => life.path === "marine" && !life.homebound && (life.rankTier || 0) <= 1,
     title: "연안 초계 중 만난 해적선",
     body: "연안 초계 도중 상선을 위협하던 작은 해적선을 발견했다. 상대는 경고 방송을 무시하고 방향을 틀어 도주하려 했다.",

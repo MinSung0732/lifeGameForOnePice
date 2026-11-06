@@ -1953,3 +1953,61 @@ test("UI 소스코드 구문 오류 방지 및 일상 막간 고위험/고보상
   assert.ok(foundHealthRisk, "버전 20 일상 막간에는 건강이 깎일 수 있는 실제 위험 선택지가 포함되어야 한다");
   assert.ok(foundHighReward, "버전 20 일상 막간에는 큰 스탯/물자 변화를 주는 유의미한 선택지가 포함되어야 한다");
 });
+
+test("열매 먹기, 패기 습득, 현상금 획득 시 마일스톤 생성 및 다음 장면 아트 무결성 검증", async () => {
+  const { ART, createGame, getScene, advance, collectMilestones, saveRecord, replay } = await import("../src/game.js");
+  const { DUTIES } = await import("../src/adventures.js");
+  const { readFileSync } = await import("node:fs");
+
+  // 1. 모든 DUTIES의 art 키가 ART에 유효하게 등록되어 있는지 검증
+  const dummy = createGame("free", 1);
+  for (const duty of DUTIES) {
+    const artKey = typeof duty.art === "function" ? duty.art(dummy) : duty.art;
+    assert.ok(artKey && ART[artKey] && ART[artKey].src, `DUTY ${duty.id}의 art(${artKey})가 ART에 존재해야 한다`);
+  }
+
+  // 2. 열매 먹기(fruit) 마일스톤 및 후속 장면 생성 검증
+  let fruitLife = createGame("free", 3, { species: "인간" }, 3, 20);
+  let fruitEaten = false;
+  for (let step = 0; step < 60 && !fruitLife.finished; step += 1) {
+    const sc = getScene(fruitLife);
+    if (!sc) break;
+    const eatChoice = sc.choices.find((c) => c.id === "eat");
+    if (eatChoice) {
+      const before = fruitLife;
+      fruitLife = advance(fruitLife, "eat");
+      const ms = collectMilestones(before, fruitLife);
+      assert.ok(ms.some((m) => m.kind === "fruit" && m.targetId === "life-power"), "열매 섭취 시 fruit 마일스톤이 생성되어야 한다");
+      const nextSc = getScene(fruitLife);
+      assert.ok(nextSc && nextSc.art && nextSc.art.src, "열매 섭취 후 다음 장면의 art가 유효해야 한다");
+      fruitEaten = true;
+      break;
+    }
+    const ch = sc.choices.find((c) => !c.disabled);
+    fruitLife = advance(fruitLife, ch ? ch.id : null);
+  }
+  assert.ok(fruitEaten, "열매 먹기 이벤트가 성공적으로 발생하고 검증되어야 한다");
+
+  // 3. 패기(haki) 습득 마일스톤 검증
+  const beforeHaki = createGame("free", 5, { species: "인간" }, 3, 20);
+  const afterHaki = structuredClone(beforeHaki);
+  afterHaki.haki = { observation: 1, armament: 1, conqueror: 1 };
+  const hakiMs = collectMilestones(beforeHaki, afterHaki);
+  assert.equal(hakiMs.filter((m) => m.kind.startsWith("haki-")).length, 3, "견문색/무장색/패왕색 3종 마일스톤이 생성되어야 한다");
+  assert.ok(hakiMs.every((m) => m.targetId === "life-power"), "패기 마일스톤의 targetId는 life-power여야 한다");
+
+  // 4. 현상금(bounty) 마일스톤 검증
+  const beforeBounty = createGame("free", 5, { species: "인간" }, 3, 20);
+  const afterBounty = structuredClone(beforeBounty);
+  afterBounty.bounty = 30_000_000;
+  const bountyMs = collectMilestones(beforeBounty, afterBounty);
+  assert.ok(bountyMs.some((m) => m.kind === "bounty" && m.to === 30_000_000 && m.targetId === "life-power"), "현상금 증가 시 bounty 마일스톤이 생성되어야 한다");
+
+  // 5. index.html 캐시 버스팅 및 app.js 방어 애니메이션 코드 검증
+  const htmlCode = readFileSync("index.html", "utf8");
+  assert.match(htmlCode, /src="\.?\/src\/app\.js\?v=/, "index.html에 브라우저 캐시 방지 쿼리스트링이 포함되어야 한다");
+
+  const appCode = readFileSync("src/app.js", "utf8");
+  assert.match(appCode, /function flyCardTo/, "flyCardTo가 정의되어 있어야 한다");
+  assert.match(appCode, /anim\?\.finished/, "flyCardTo에서 finished 프로퍼티 방어 처리가 되어 있어야 한다");
+});

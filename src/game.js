@@ -398,7 +398,7 @@ export function getScene(life) {
     id: card.id, act: card.act, age, title: card.title,
     manual: Boolean(card.manual || life.creationVersion >= 4 && card.canon && !card.choices), timeLabel: card.timeLabel || null,
     body: personalize(typeof card.body === "function" ? card.body(life) : card.body, life.birth.name, life.creationVersion),
-    art: ART[artKey], canon: card.canon || null,
+    art: (artKey && ART[artKey]) || ART.deck, canon: card.canon || null,
     choices: (card.choices || []).filter((choice) => !choice.when || choice.when(life))
       .map((choice) => {
         const cost = typeof choice.cost === "function" ? choice.cost(life) : choice.cost || 0;

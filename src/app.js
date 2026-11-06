@@ -605,7 +605,7 @@ function renderGame(focusTitle = false, statsUpdated = false, arrivedPlace = "")
   byId("scene-chapter").textContent = `${life.journal.length + 1}번째 장면 · ${scene.timeLabel || passage}`;
   byId("scene-title").textContent = scene.title;
   byId("scene-body").textContent = scene.body;
-  updateSceneImage(byId("scene-image"), scene.art.src, scene.art.alt);
+  updateSceneImage(byId("scene-image"), scene.art?.src || ART.deck.src, scene.art?.alt || "");
   byId("route-trail").textContent = (life.travelHistory || [life.birth.home]).join(" → ");
   byId("crew-line").hidden = life.rules !== 3;
   byId("crew-news").textContent = byId("crew-news").title = life.rules === 3
@@ -754,34 +754,54 @@ function changeTarget(key) {
 }
 
 function burst(row, target, delta) {
-  const from = row.getBoundingClientRect();
-  const to = target.getBoundingClientRect();
-  const color = getComputedStyle(target).getPropertyValue("--stat-color").trim() || (delta > 0 ? "#2f8f4e" : "#c0392b");
-  const count = Math.min(14, 6 + Math.abs(delta) / 2);
-  const flights = [];
-  for (let i = 0; i < count; i += 1) {
-    const dot = document.createElement("span");
-    dot.className = "fx-particle";
-    const size = 6 + Math.random() * 7;
-    const x = from.left + Math.random() * from.width;
-    const y = from.top + from.height / 2 + (Math.random() - 0.5) * from.height;
-    Object.assign(dot.style, { width: `${size}px`, height: `${size}px`, left: `${x - size / 2}px`, top: `${y - size / 2}px`, background: color, boxShadow: `0 0 10px ${color}` });
-    document.body.append(dot);
-    const dx = to.left + to.width * (0.2 + Math.random() * 0.6) - x;
-    const dy = to.top + to.height / 2 - y;
-    const spread = (Math.random() - 0.5) * 140;
-    const flight = dot.animate([
-      { transform: "translate(0, 0) scale(.4)", opacity: 0 },
-      { transform: `translate(${spread * 0.6}px, ${-30 - Math.random() * 50}px) scale(1.15)`, opacity: 1, offset: 0.25 },
-      { transform: `translate(${dx}px, ${dy}px) scale(.35)`, opacity: 0.9 }
-    ], { duration: 720 + Math.random() * 260, delay: i * 28, easing: "cubic-bezier(.5, 0, .75, .35)", fill: "forwards" });
-    flights.push(flight.finished.then(() => dot.remove()));
+  if (!row || !target) return Promise.resolve();
+  try {
+    const from = row.getBoundingClientRect();
+    const to = target.getBoundingClientRect();
+    const color = getComputedStyle(target).getPropertyValue("--stat-color").trim() || (delta > 0 ? "#2f8f4e" : "#c0392b");
+    const count = Math.min(14, 6 + Math.abs(delta) / 2);
+    const flights = [];
+    for (let i = 0; i < count; i += 1) {
+      const dot = document.createElement("span");
+      dot.className = "fx-particle";
+      const size = 6 + Math.random() * 7;
+      const x = from.left + Math.random() * from.width;
+      const y = from.top + from.height / 2 + (Math.random() - 0.5) * from.height;
+      Object.assign(dot.style, { width: `${size}px`, height: `${size}px`, left: `${x - size / 2}px`, top: `${y - size / 2}px`, background: color, boxShadow: `0 0 10px ${color}` });
+      document.body.append(dot);
+      const dx = to.left + to.width * (0.2 + Math.random() * 0.6) - x;
+      const dy = to.top + to.height / 2 - y;
+      const spread = (Math.random() - 0.5) * 140;
+      try {
+        const flight = dot.animate([
+          { transform: "translate(0, 0) scale(.4)", opacity: 0 },
+          { transform: `translate(${spread * 0.6}px, ${-30 - Math.random() * 50}px) scale(1.15)`, opacity: 1, offset: 0.25 },
+          { transform: `translate(${dx}px, ${dy}px) scale(.35)`, opacity: 0.9 }
+        ], { duration: 720 + Math.random() * 260, delay: i * 28, easing: "cubic-bezier(.5, 0, .75, .35)", fill: "forwards" });
+        if (flight?.finished && typeof flight.finished.then === "function") {
+          flights.push(flight.finished.then(() => dot.remove()).catch(() => dot.remove()));
+        } else if (flight) {
+          flights.push(new Promise((resolve) => {
+            flight.onfinish = () => { dot.remove(); resolve(); };
+            flight.onerror = () => { dot.remove(); resolve(); };
+          }));
+        } else {
+          dot.remove();
+        }
+      } catch {
+        dot.remove();
+      }
+    }
+    return Promise.all(flights).then(() => {
+      try {
+        target.classList.remove("fx-hit");
+        void target.offsetWidth;
+        target.classList.add("fx-hit");
+      } catch {}
+    }).catch(() => {});
+  } catch {
+    return Promise.resolve();
   }
-  return Promise.all(flights).then(() => {
-    target.classList.remove("fx-hit");
-    void target.offsetWidth;
-    target.classList.add("fx-hit");
-  });
 }
 
 // A dice check gets its own beat: the die tumbles through numbers, lands on the roll, then shows the verdict.
@@ -1312,21 +1332,37 @@ function playPixelFx(canvas, kind) {
 }
 
 function flyCardTo(card, target, maxOffset = 140) {
-  if (!target || target.hidden || !target.getClientRects().length) return null;
-  const from = card.getBoundingClientRect();
-  const to = target.getBoundingClientRect();
-  const dx = to.left + Math.min(to.width / 2, maxOffset) - (from.left + from.width / 2);
-  const dy = to.top + to.height / 2 - (from.top + from.height / 2);
-  return card.animate([
-    { transform: "translate(0, 0) scale(1)", opacity: 1 },
-    { transform: `translate(${dx * 0.85}px, ${dy * 0.85}px) scale(.16)`, opacity: 0.75, offset: 0.75 },
-    { transform: `translate(${dx}px, ${dy}px) scale(.04)`, opacity: 0 }
-  ], { duration: 620, easing: "cubic-bezier(.4, 0, .2, 1)", fill: "forwards" }).finished.then(() => {
-    diceResult("absorb");
-    target.classList.remove("fx-hit");
-    void target.offsetWidth;
-    target.classList.add("fx-hit");
-  });
+  if (!card || !target || target.hidden || !target.getClientRects().length || typeof card.animate !== "function") return null;
+  try {
+    const from = card.getBoundingClientRect();
+    const to = target.getBoundingClientRect();
+    const dx = to.left + Math.min(to.width / 2, maxOffset) - (from.left + from.width / 2);
+    const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+    const anim = card.animate([
+      { transform: "translate(0, 0) scale(1)", opacity: 1 },
+      { transform: `translate(${dx * 0.85}px, ${dy * 0.85}px) scale(.16)`, opacity: 0.75, offset: 0.75 },
+      { transform: `translate(${dx}px, ${dy}px) scale(.04)`, opacity: 0 }
+    ], { duration: 620, easing: "cubic-bezier(.4, 0, .2, 1)", fill: "forwards" });
+    const finish = () => {
+      try {
+        diceResult("absorb");
+        target.classList.remove("fx-hit");
+        void target.offsetWidth;
+        target.classList.add("fx-hit");
+      } catch {}
+    };
+    if (anim?.finished && typeof anim.finished.then === "function") {
+      return anim.finished.then(finish).catch(() => {});
+    }
+    return new Promise((resolve) => {
+      if (anim) {
+        anim.onfinish = () => { finish(); resolve(); };
+        anim.onerror = () => resolve();
+      } else resolve();
+    });
+  } catch {
+    return null;
+  }
 }
 
 async function playMilestones(milestones) {

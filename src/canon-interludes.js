@@ -206,7 +206,7 @@ const MOMENTS_V20 = [
     ]
   },
   {
-    title: "굶주린 소형 해왕류의 습격", art: "dangerSeaBeast",
+    title: "굶주린 소형 해왕류의 습격", art: "dangerSeaKing",
     body: "항해 중 바다 밑에서 솟구쳐 오른 해왕류가 뱃전을 물어뜯으려 했다. 갑판의 선원들이 무기를 챙기며 비명을 질렀다.",
     choices: [
       { id: "slay_beast", label: "선두에 서서 무기를 들고 해왕류와 정면 격돌한다",
