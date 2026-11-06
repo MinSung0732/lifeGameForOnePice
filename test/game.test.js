@@ -19,7 +19,16 @@ import { attachCanonContact, canonEraFor, canonPowerAt, canonRelationshipLine, c
 import { FATES } from "../src/fates.js";
 import { peopleSummary } from "../src/people.js";
 import { DUTIES } from "../src/adventures.js";
-import { routeChartFor } from "../src/route-map.js";
+import { routeChartFor, routeMapLabel } from "../src/route-map.js";
+
+test("지도 라벨은 영역별 길이에 맞춰 줄이고 원본 지명은 변경하지 않는다", () => {
+  const longName = "거품여울 군도(임의 지명)";
+  assert.equal(routeMapLabel(longName, "next"), "거품여울 군…");
+  assert.equal(routeMapLabel(longName, "previous"), "거품여울 군도…");
+  assert.equal(routeMapLabel("샤본디 제도", "current"), "샤본디 제도");
+  assert.equal(routeMapLabel("조", "next"), "조");
+  assert.equal(longName, "거품여울 군도(임의 지명)", "표시용 라벨 때문에 실제 항로명을 바꾸면 안 된다");
+});
 
 test("미니맵은 실제 항해 기록·항로 연결만 사용하고 모르는 좌표를 만들지 않는다", () => {
   const sea = createGame("free", 17, { species: "인간" });
