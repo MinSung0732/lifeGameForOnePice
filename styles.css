@@ -545,8 +545,10 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
 .relations-metric span { display: block; font-size: 11px; color: var(--muted); }
 .relations-metric strong { display: block; font: 700 18px/1.35 "Batang", serif; color: var(--ink); }
 .relations-preview { margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
-.relations-dialog { width: min(650px, calc(100vw - 28px)); max-height: min(760px, 84dvh); padding: 24px 28px;
-  border: 1px solid var(--line); background: var(--paper); color: var(--body); box-shadow: 0 18px 60px #0005; }
+.relations-dialog { width: min(650px, calc(100vw - 28px)); height: min(600px, 82dvh); max-height: calc(100dvh - 28px); padding: 24px 28px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--body); box-shadow: 0 18px 60px #0005; overflow: hidden; }
+.relations-dialog[open] { display: flex; flex-direction: column; }
+.relations-dialog-head, .relations-tabs, .relations-search-row { flex: 0 0 auto; }
 .relations-dialog::backdrop { background: rgba(16, 30, 32, .6); }
 .relations-dialog-head { display: flex; align-items: start; justify-content: space-between; gap: 15px; border-bottom: 1px solid var(--line); }
 .relations-dialog-head h2 { margin: 2px 0 14px; font: 700 28px/1.35 "Batang", serif; }
@@ -554,7 +556,11 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
 .relations-tabs button { padding: 8px 14px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--muted); }
 .relations-tabs button[aria-selected="true"] { color: var(--sea); font-weight: 700; border-bottom-color: var(--sea); }
 .relations-tabs span { font-size: 12px; }
-.relations-pane { padding-top: 12px; }
+.relations-search-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 7px 12px; margin-top: 13px; }
+.relations-search-row label { color: var(--copper); font-size: 12px; font-weight: 700; }
+.relations-search-row input { width: 100%; min-width: 0; min-height: 40px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 3px; background: #fffdf8; color: var(--ink); }
+.relations-filter-count { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 12px; }
+.relations-pane { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 6px 8px 0 0; }
 .relations-list { list-style: none; padding: 0; margin: 0; }
 .relations-list li { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 14px;
   padding: 11px 3px; border-bottom: 1px solid var(--line); }
@@ -566,8 +572,10 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
   .growth-panels { display: grid; }
   .growth-panels:not(.open) > .stats-panel { display: none; }
   .relations-panel { padding: 10px 12px; }
-  .relations-dialog { padding: 18px 16px; }
+  .relations-dialog { height: min(550px, calc(100dvh - 28px)); padding: 18px 16px; }
   .relations-dialog-head h2 { font-size: 23px; }
+  .relations-search-row { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .relations-filter-count { grid-column: 1; }
 }
 
 /* Desktop reading desk: the life dashboard stays beside the current chapter.
