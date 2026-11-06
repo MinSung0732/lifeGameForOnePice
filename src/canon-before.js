@@ -119,6 +119,22 @@ const garpAt = BEATS_V17.findIndex((beat) => beat.id === "garp");
 const postersAt = BEATS_V17.findIndex((beat) => beat.id === "bounty_300m");
 [BEATS_V17[garpAt], BEATS_V17[postersAt]] = [BEATS_V17[postersAt], BEATS_V17[garpAt]];
 const beatsFor = (life) => life.creationVersion >= 17 ? BEATS_V17 : life.creationVersion >= 10 ? BEATS_V10 : BEATS;
+export function preCanonCrewDestination(life, step = life.preCanonStep) {
+  const beat = beatsFor(life)[step];
+  if (!beat || ["amazon_lily", "impel_down", "breakout"].includes(beat.id)) return null;
+  const east = {
+    departure: "이스트 블루 · 푸샤 마을", coby: "이스트 블루 · 푸샤 마을",
+    zoro: "셸즈 타운", buggy: "오렌지 마을", usopp: "시럽 마을",
+    baratie: "바라티에", arlong: "아론 파크", bounty_30m: "아론 파크",
+    reverse_mountain: "리버스 마운틴"
+  };
+  if (east[beat.id]) return east[beat.id];
+  const place = beat.places?.[0];
+  if (place === "알라바스타") return "알라바스타 · 나노하나";
+  if (place === "자야") return "자야 · 모크 타운";
+  return place || null;
+}
+
 export const preCanonCount = (life) => beatsFor(life).length;
 
 // Older rules put every pre-war beat in the one year Luffy sets out; rule 16 spreads them over ERA_WAR years.
