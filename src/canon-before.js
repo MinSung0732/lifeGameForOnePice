@@ -1,7 +1,7 @@
 import { arcScene } from "./canon-arcs.js";
 import { canonRelationshipChanged, custodyDivergenceText } from "./canon-relationships.js";
 import { EXTRA_BEFORE, takenText } from "./canon-timeline.js";
-import { ERA_WAR, eraStart, stretched } from "./world.js";
+import { ERA_WAR, eraStart, followsCaptain, stretched } from "./world.js";
 // Rule 5 follows the published arc order without assigning exact days to the voyage.
 const EAST = "https://one-piece.com/story/east_blue/index.html";
 const ALABASTA = "https://one-piece.com/story/alabasta/index.html";
@@ -143,7 +143,7 @@ export const preCanonAge = (life, step = life.preCanonStep) => stretched(life)
 const presentAt = (life) => preCanonAge(life);
 const STRETCH_NOTE = " 이 기록에서는 원작의 몇 해를 스무 해 남짓에 걸쳐 풀어 놓았다. 원작 인물의 나이는 원작을 따른다.";
 const nearby = (life, beat) => beat.places.some((place) => life.location.includes(place))
-  || life.creationVersion >= 21 && life.canonCrew === "밀짚모자 일당"
+  || followsCaptain(life) && life.canonCrew === "밀짚모자 일당"
     && preCanonCrewDestination(life) === life.location;
 
 export function preCanonScene(life) {
