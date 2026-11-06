@@ -1,4 +1,4 @@
-function fruitFxKind(fruitText = "") {
+export function fruitFxKind(fruitText = "") {
   if (fruitText.includes("고무고무")) return "fruit-gomu";
   if (fruitText.includes("이글이글")) return "fruit-mera";
   if (fruitText.includes("꽃꽃")) return "fruit-hana";
