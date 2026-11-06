@@ -366,6 +366,8 @@ export function moveTo(life, place) {
 
 // Moves a ship to the next adjacent or logical port on its route when leaving an island.
 export function sailToNextPort(life) {
+  // The Straw Hats depart at their canon beats, not at random side events.
+  if (life.creationVersion >= 21 && life.canonCrew === "밀짚모자 일당" && !life.independent) return life.location;
   const cur = life.location;
   const v20Routes = ROUTES_V20[cur];
   let dest;
@@ -499,7 +501,30 @@ export function isNewWorld(place) {
   ].some((name) => place.includes(name));
 }
 
+function crewVoyageScene(life, age) {
+  const strawHat = life.canonCrew === "밀짚모자 일당";
+  const captain = strawHat ? "루피와 나미" : "선장과 항해사";
+  const depart = (state) => {
+    if (!strawHat) sailToNextPort(state);
+    return strawHat
+      ? "항로는 선장과 항해사가 정했다. 일행은 다음 목적지까지 함께 움직이기로 했다."
+      : `선장이 정한 항로를 따라 ${state.location}에 도착했다.`;
+  };
+  return {
+    id: `life_voyage_${age}`, age, act: 2, species: "all", yearly: true, urgent: true,
+    art: "deck", title: `${captain}의 항로`,
+    body: `${captain}가 다음 목적지를 정했다. 선원인 ${life.birth.name}은 어디로 갈지 고르는 대신 항해 중 맡을 일을 결정했다.`,
+    choices: [
+      { id: "sail", label: "항해와 조타 준비를 돕는다", risk: "기술 +5 · 선장의 항로에 동행",
+        personality: { loyalty: 5 }, apply: (state) => { state.skill += 5; return depart(state); } },
+      { id: "prepare", label: "식량과 선체를 점검한다", risk: "건강 +5 · 선장의 항로에 동행",
+        personality: { caution: 5 }, apply: (state) => { state.health += 5; return depart(state); } }
+    ]
+  };
+}
+
 export function travelScene(life, age) {
+  if (life.creationVersion >= 21 && life.path === "pirate" && !life.independent && life.role !== "선장") return crewVoyageScene(life, age);
   if (life.creationVersion >= 20) return distanceProportionalTravelScene(life, age);
   if (life.creationVersion >= 4) return branchingTravelScene(life, age);
   const route = routeFor(life);
