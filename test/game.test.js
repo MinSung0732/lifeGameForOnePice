@@ -1419,6 +1419,22 @@ test("인연·동료·세력은 조직 단위 산하 선단을 분리하고 해�
   assert.equal(fleet.factions.length, 0);
 });
 
+test("인연 검색은 이름과 관계를 구별 없이 찾으며 빈 결과도 지원한다", async () => {
+  const { filterRelationshipEntries } = await import("../src/crew.js");
+  const entries = [
+    { name: "로웰", role: "소꿉친구 · 동행 전" },
+    { name: "몽키 D. 루피", role: "선장" },
+    { name: "센고쿠", role: "해군 원수" },
+    { name: "붉은 닻 해적단", role: "산하 해적단" }
+  ];
+  assert.deepEqual(filterRelationshipEntries(entries, ""), entries);
+  assert.deepEqual(filterRelationshipEntries(entries, "   "), entries);
+  assert.deepEqual(filterRelationshipEntries(entries, "  소꿉친구 "), [entries[0]]);
+  assert.deepEqual(filterRelationshipEntries(entries, "d. 루피"), [entries[1]]);
+  assert.deepEqual(filterRelationshipEntries(entries, "해적단"), [entries[3]]);
+  assert.deepEqual(filterRelationshipEntries(entries, "사보"), []);
+});
+
 test("collectMilestones detects affiliation, devil fruit, haki, bounty, and relationship changes", () => {
   const before = createGame("free", 1, { species: "인간" });
   assert.deepEqual(collectMilestones(before, before), []);
