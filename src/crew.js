@@ -23,7 +23,7 @@ export function crewFor(life) {
     names.push(name);
     members.push({ name, role });
   };
-  if (mate?.together && mate.fate === "곁") members.push({ name: mate.name, role: "어릴 적 친구" });
+  if (mate?.fate === "곁") members.push({ name: mate.name, role: mate.together ? "어릴 적 친구 · 동료" : "소꿉친구 · 동행 전" });
   if (!life.path) return members;
   if (life.homebound) { add("이웃", 0x11); add("작업 동료", 0x12); return members; }
   // Rule 15: a named crew or organization shows its canon people of the era instead of stand-ins.
