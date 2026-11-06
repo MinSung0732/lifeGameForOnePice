@@ -1,6 +1,7 @@
 import { fruitFxKind, powerFxForChoice } from "./power-fx.js";
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, collectMilestones, createGame, getScene, personalitySummary, replay, saveRecord } from "./game.js";
 import { crewNews, crewVesselKind, eraStart, presentAge, stretched } from "./world.js";
+import { routeChartFor } from "./route-map.js";
 import { peopleSummary } from "./people.js";
 import { canonRelationshipSummary } from "./canon-relationships.js";
 import { filterRelationshipEntries, relationshipGroups } from "./crew.js";
@@ -466,6 +467,58 @@ function renderPersonality(gridId = "personality-grid", summaryId = "personality
   byId(summaryId).textContent = `성향 · ${personalitySummary(life.personality)}`;
 }
 
+// SVG is a connection diagram: the positions are deliberately not geographic coordinates.
+function renderRouteMap() {
+  const chart = routeChartFor(life);
+  byId("route-map-place").textContent = chart.current;
+  byId("route-map-previous").textContent = `이전: ${chart.previous || "출항 전"}`;
+  byId("route-map-neighbors").textContent = chart.connections.length
+    ? `연결된 항로 ${chart.connections.length}곳` : "연결된 항로 미등록";
+  byId("route-map-neighbors").title = chart.connections.join(" · ");
+  for (const zone of document.querySelectorAll("[data-route-zone]")) {
+    zone.dataset.active = String(zone.dataset.routeZone === chart.zone);
+  }
+
+  const svg = byId("route-map-svg");
+  svg.setAttribute("aria-label", `현재 ${chart.current}. ${chart.previous ? `직전 ${chart.previous}. ` : ""}연결된 항로: ${chart.connections.join(", ") || "미등록"}.`);
+  svg.replaceChildren();
+  const ns = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, value) => {
+    const element = document.createElementNS(ns, tag);
+    for (const [key, attribute] of Object.entries(attrs)) element.setAttribute(key, String(attribute));
+    if (value !== undefined) element.textContent = value;
+    return element;
+  };
+  const line = (x1, y1, x2, y2, visited = false) => {
+    svg.append(el("line", { x1, y1, x2, y2,
+      class: visited ? "route-chart-line route-chart-visited" : "route-chart-line" }));
+  };
+  const mark = (x, y, name, kind, labelX, labelY, anchor = "middle") => {
+    const group = el("g", {});
+    group.append(el("title", {}, name));
+    if (kind === "current") group.append(el("circle", { cx: x, cy: y, r: 18, class: "route-chart-ring" }));
+    group.append(el("circle", { cx: x, cy: y, r: kind === "current" ? 9 : 6,
+      class: kind === "current" ? "route-chart-current" : kind === "previous" ? "route-chart-point route-chart-visited-point" : "route-chart-point" }));
+    group.append(el("text", { x: labelX, y: labelY, "text-anchor": anchor,
+      class: kind === "previous" ? "route-chart-muted" : "" }, name.length > 10 ? `${name.slice(0, 9)}…` : name));
+    svg.append(group);
+  };
+  svg.append(el("text", { x: 55, y: 28, class: "route-chart-muted" }, "지난 기항지"));
+  svg.append(el("text", { x: 210, y: 28, class: "route-chart-muted" }, "현재 위치"));
+  svg.append(el("text", { x: 377, y: 16, class: "route-chart-muted" }, "연결 항로"));
+  if (chart.previous) line(68, 83, 226, 83, true);
+  chart.connections.forEach((_, index) => line(226, 83, 373, [36, 87, 138][index]));
+  if (chart.previous) mark(68, 83, chart.previous, "previous", 68, 111);
+  else svg.append(el("text", { x: 68, y: 89, class: "route-chart-muted", "text-anchor": "middle" }, "출항 전"));
+  mark(226, 83, chart.current, "current", 226, 116);
+  if (!chart.connections.length) {
+    svg.append(el("text", { x: 382, y: 92, class: "route-chart-muted" }, "연결 정보 없음"));
+  } else chart.connections.forEach((place, index) => {
+    const y = [36, 87, 138][index];
+    mark(373, y, place, "next", 389, y + 4, "start");
+  });
+}
+
 function renderAgeTimeline(scene) {
   const age = scene.age;
   const current = presentAge(life);
@@ -693,6 +746,8 @@ function renderGame(focusTitle = false, statsUpdated = false, arrivedPlace = "")
   if (focusTitle) byId("scene-layout").querySelector(".scene-copy").scrollTop = 0;
   updateSceneImage(byId("scene-image"), scene.art?.src || ART.deck.src, scene.art?.alt || "");
   byId("route-trail").textContent = (life.travelHistory || [life.birth.home]).join(" → ");
+  byId("route-trail").title = byId("route-trail").textContent;
+  renderRouteMap();
   byId("crew-line").hidden = life.rules !== 3;
   byId("crew-news").textContent = byId("crew-news").title = life.rules === 3
     ? life.creationVersion >= 4 && life.seen.includes("life_marineford_news")
