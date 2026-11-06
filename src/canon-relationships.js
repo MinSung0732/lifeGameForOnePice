@@ -71,7 +71,7 @@ const ARC_CUSTODY_TARGETS = {
   elbaf: [["luffy", "brook"]]
 };
 
-const enabled = (life) => life?.rules === 3 && life.mode === "free" && life.creationVersion >= 13;
+const enabled = (life) => life?.rules === 3 && (life.mode === "free" || (life.mode === "original" && life.creationVersion >= 20)) && life.creationVersion >= 13;
 const clamp = (value) => Math.max(-100, Math.min(100, value));
 const relationWord = (score) => score <= -45 ? "적대" : score <= -15 ? "경계" : score < 15 ? "안면" : score < 45 ? "우호" : "신뢰";
 const hasBatchim = (name) => {
@@ -164,7 +164,7 @@ function interactionChoices(life, contact, beatId, index, age) {
         return `${contact.display}가 부탁한 일을 끝까지 마쳤다. 짧은 감사 인사는 다음 만남에도 두 사람 사이에 남았다.`;
       }
     });
-    if (contact.captureable && !["pending", "held", "transferred"].includes(previous.custody) && previous.captureAttempts < 3) {
+    if (life.mode === "free" && contact.captureable && !["pending", "held", "transferred"].includes(previous.custody) && previous.captureAttempts < 3) {
       choices.push({
         id: "canon_contact_capture", label: previous.score <= -20 ? `${contact.display}의 경계가 흐트러진 틈을 노린다` : `${contact.display}의 퇴로를 막는다`,
         needs: { skill: 60, health: 40 }, risk: "기술 60 · 건강 40 필요 · 주사위 결과가 변수", failRisk: "건강 -20 · 관계에 파장이 있을 수 있음",
@@ -352,7 +352,8 @@ export function canonRelationshipSummary(life) {
 }
 
 export function canonRelationshipLine(life) {
-  if (life?.rules !== 3 || life.mode !== "free") return "더 자유로운 모드에서 관계를 기록합니다";
+  if (life?.rules !== 3) return "더 자유로운 모드에서 관계를 기록합니다";
+  if (life.mode !== "free" && life.creationVersion < 20) return "더 자유로운 모드에서 관계를 기록합니다";
   if (life.creationVersion < 13) return "새 생애부터 인물 관계를 기록합니다";
   return canonRelationshipSummary(life) || "아직 접점 없음";
 }

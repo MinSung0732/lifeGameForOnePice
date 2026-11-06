@@ -6,7 +6,7 @@ import { takenText } from "./canon-timeline.js";
 import { oldEraScene } from "./canon-old-era.js";
 import { islandEvent } from "./islands.js";
 import { fruitFor } from "./fruits.js";
-import { bountyScene } from "./bounty.js";
+import { bountyScene, formatBounty, marinePatrolScene } from "./bounty.js";
 import { fateScene } from "./fates.js";
 import { canonIfAfter } from "./canon-events.js";
 import { crewContactScene } from "./canon-crews.js";
@@ -120,11 +120,11 @@ const origin = [
 const scenes = [
   { id: "life_home", age: at(4, 20), art: (life) => ({ 인간: "deck", 어인: "fishman", 밍크족: "mink", "하늘섬 사람": "sky", 거인족: "giant" })[life.birth.species], title: "집의 소리", body: (life) => `${life.birth.home}의 하루에는 일하는 소리와 돌아오는 발걸음이 있었다. ${life.birth.name}은 아직 어느 길을 택할지 알 수 없었다. 곁의 어른들은 먹을 것과 잠자리를 먼저 걱정했다.` },
   { id: "life_friend", age: at(7, 40), art: "deck", title: "오래 남은 이름", body: "또래 친구와 처음으로 비밀을 나눴다. 둘은 먼 곳을 꿈꾸기도 했지만, 당장은 서로의 집으로 돌아가는 길을 익히는 편이 중요했다.", after: (life) => { life.friendBond += 10; return "친구와의 약속이 생겼다."; } },
-  { id: "life_first_skill", age: at(9, 52), art: "workbench", title: "손에 익힌 일", body: "마을에 손이 모자란 날이 왔다. 어른들은 위험한 일을 맡기지 않았고, 아이들이 할 수 있는 작은 몫을 나눠 주었다.", choices: [
+  { id: "life_first_skill", age: at(9, 52), art: (life) => life?.creationVersion >= 20 ? "workbenchSkillTraining" : "workbench", title: "손에 익힌 일", body: "마을에 손이 모자란 날이 왔다. 어른들은 위험한 일을 맡기지 않았고, 아이들이 할 수 있는 작은 몫을 나눠 주었다.", choices: [
     { id: "learn", label: "매듭과 도구를 배운다", risk: "기술 +10 · 물가 사고에 대비", personality: { caution: 5, ambition: 3 }, apply: (life) => { life.skill += 10; return "밧줄과 도구를 다루는 순서를 익혔다."; } },
     { id: "carry", label: "물자를 옮기며 사람을 돕는다", risk: "물자 +10 · 지역의 신뢰 +10", personality: { empathy: 7, loyalty: 5 }, apply: (life) => { life.supplies += 10; life.trust += 10; return "얼굴을 익힌 사람들이 다음 일에도 손을 내밀었다."; } }
   ] },
-  { id: "life_child_crisis", age: at(11, 60), art: "lifeStorm", title: "범람한 길목", body: "거친 물이 마을의 통로를 덮쳤다. 어른들은 아이들에게 물러서라고 외쳤다. 한 배의 밧줄이 풀렸지만, 물살은 가까이 갈수록 거셌다.", choices: [
+  { id: "life_child_crisis", age: at(11, 60), art: (life) => life?.creationVersion >= 20 ? "smallBoatDistress" : "lifeStorm", title: "범람한 길목", body: "거친 물이 마을의 통로를 덮쳤다. 어른들은 아이들에게 물러서라고 외쳤다. 한 배의 밧줄이 풀렸지만, 물살은 가까이 갈수록 거셌다.", choices: [
     { id: "wait", label: "어른들의 구조를 돕는다", risk: "물가 밖에서 밧줄을 건넴 · 양육자와의 유대 +10", personality: { caution: 7, loyalty: 5 }, apply: (life) => { life.bond += 10; return "마른 밧줄을 건네고 뒤에서 기다렸다. 배는 어른들의 손으로 돌아왔다."; } },
     { id: "rush", label: "직접 밧줄을 붙잡는다", risk: "기술 30이 매듭을 다룰 기준 · 물살이 거셈", personality: { ambition: 8, caution: -8 }, apply: (life) => {
       if (life.skill < 30) {
@@ -139,9 +139,9 @@ const scenes = [
       life.health -= 10; life.trust += 10; return "매듭을 걸어 배를 붙잡았다. 물살에 다쳤지만 마을로 돌아왔다.";
     } }
   ] },
-  { id: "life_after_storm", age: at(11, 60), art: "workbench", title: "그날의 새벽", body: (life) => `${life.birth.name}은 다친 곳과 부서진 물건을 보며 그날을 오래 기억했다. 마을은 통로를 고치고 새 밧줄을 걸었다. 세월이 흘러도 물살 소리만은 쉽게 잊히지 않았다.` },
+  { id: "life_after_storm", age: at(11, 60), art: (life) => life?.creationVersion >= 20 ? "workbenchAftermath" : "workbench", title: "그날의 새벽", body: (life) => `${life.birth.name}은 다친 곳과 부서진 물건을 보며 그날을 오래 기억했다. 마을은 통로를 고치고 새 밧줄을 걸었다. 세월이 흘러도 물살 소리만은 쉽게 잊히지 않았다.` },
   { id: "life_school", age: at(14, 78), art: "deck", title: "배운 것과 모르는 것", body: "일을 배우는 자리가 조금 넓어졌다. 바다의 날씨, 배의 장부, 사람을 다루는 법은 서로 다른 재주였다. 곁의 어른들도 모든 답을 알지는 못했다." },
-  { id: "life_training", age: at(16, 95), art: "workbench", title: "첫 수련", body: "작은 실수 하나가 다른 사람의 일을 늘렸다. 고쳐 볼 기회가 다시 왔을 때 무엇을 연습할지 정해야 했다.", choices: [
+  { id: "life_training", age: at(16, 95), art: (life) => life?.creationVersion >= 20 ? "workbenchSkillTraining" : "workbench", title: "첫 수련", body: "작은 실수 하나가 다른 사람의 일을 늘렸다. 고쳐 볼 기회가 다시 왔을 때 무엇을 연습할지 정해야 했다.", choices: [
     { id: "practice", label: "어려운 기술을 다시 연습한다", cost: 10, risk: "기술 +10 · 물자 -10", personality: { ambition: 5, caution: 4 }, apply: (life) => { life.skill += 10; life.supplies -= 10; return "손이 느려도 같은 작업을 끝까지 되풀이했다."; } },
     { id: "earn", label: "쉬운 일감을 더 맡는다", risk: "물자 +10 · 건강 -10", personality: { ambition: 7, caution: -4 }, apply: (life) => { life.supplies += 10; life.health -= 10; return "일감은 늘었고 살림은 나아졌지만 몸에는 피로가 남았다."; } },
     { id: "help", label: "동료와 함께 방법을 배운다", risk: "친구와의 유대 +10 · 지역의 신뢰 +10", personality: { empathy: 5, loyalty: 6 }, apply: (life) => { life.friendBond += 10; life.trust += 10; return "서로의 서툰 일을 덜어 주는 방법을 배웠다."; } }
@@ -165,9 +165,9 @@ const scenes = [
     } }
   ] },
   { id: "life_leave_home", age: at(19, 112), when: (life) => life.creationVersion === 1 || !life.leftHome && !life.homebound,
-    art: "deck", title: "섬 밖으로", body: (life) => `${journeys[life.birth.species]} ${life.birth.name}은 출발하는 날을 양육자에게 알렸다. 바다에 나간 뒤에도 고향의 이름은 쉽게 지워지지 않았다.`,
+    art: (life) => life?.creationVersion >= 20 ? "harborDeparture" : "deck", title: "섬 밖으로", body: (life) => `${journeys[life.birth.species]} ${life.birth.name}은 출발하는 날을 양육자에게 알렸다. 바다에 나간 뒤에도 고향의 이름은 쉽게 지워지지 않았다.`,
     after: (life) => { depart(life); return `${life.location}에 첫 기항했다.`; } },
-  { id: "life_first_station", age: at(21, 122), art: "deck", title: "일의 첫해", body: (life) => life.homebound
+  { id: "life_first_station", age: at(21, 122), art: (life) => life?.creationVersion >= 20 ? (life.homebound ? "workbench" : "deckBusyDay") : "deck", title: "일의 첫해", body: (life) => life.homebound
     ? "고향에서 시장과 작업장을 오가며 할 일을 익혔다. 멀리 떠나는 사람만 바쁜 것은 아니었다."
     : byPath(life,
     "갑판에서는 누가 어느 돛을 맡는지부터 외웠다. 자유는 일을 나누는 약속 없이는 오래가지 못했다.",
@@ -179,7 +179,7 @@ const scenes = [
     { id: "gear", label: "도구와 항해 준비에 쓴다", cost: 10, risk: "기술 +10 · 물자 -10", apply: (life) => { life.skill += 10; life.supplies -= 10; return "좋은 도구가 다음 일의 실패를 줄여 주었다."; } },
     { id: "save", label: "비상 물자로 남긴다", risk: "물자 +10", apply: (life) => { life.supplies += 10; return "예비 식량과 약품을 따로 묶어 두었다."; } }
   ] },
-  { id: "life_enemy", age: at(24, 135), art: "lifeStorm", title: "부두에서 맞선 배", body: "기항지에 먼저 닿은 무장 선단이 약한 배의 물자를 가로막았다. 한 선원이 길을 터 달라며 다가왔다. 무기를 드는 순간부터 다른 배들도 싸움에 휘말릴 수 있었다.", choices: [
+  { id: "life_enemy", age: at(24, 135), art: (life) => life?.creationVersion >= 20 ? "harborStandoff" : "lifeStorm", title: "부두에서 맞선 배", body: "기항지에 먼저 닿은 무장 선단이 약한 배의 물자를 가로막았다. 한 선원이 길을 터 달라며 다가왔다. 무기를 드는 순간부터 다른 배들도 싸움에 휘말릴 수 있었다.", choices: [
     { id: "fight", label: "앞에 나서서 길을 연다", available: (life) => life.skill >= 30 && life.health >= 30, needs: { skill: 30, health: 30 },
       bounty: (life) => life.path === "pirate" ? 3_000_000 : 0,
       risk: "기술 30 · 건강 30 필요 · 기술 60 또는 무장색이 전투의 변수",
@@ -193,17 +193,74 @@ const scenes = [
     { id: "withdraw", label: "다른 배와 함께 우회로를 찾는다", risk: "기술 +10 · 상대가 깃발을 봄", personality: { caution: 7, loyalty: 5 }, apply: (life) => { life.skill += 10; life.rival = true; return "무장 선단을 피했지만 서로의 깃발을 기억하게 됐다."; } }
   ] },
   { id: "life_enemy_after", age: at(24, 135), art: "workbench", title: "남은 눈길", when: (life) => life.rival, body: (life) => `${life.birth.name}의 배가 떠난 뒤에도 그 선단의 사람들이 항구에 남아 있었다. 다시 마주치면 오늘의 일을 모른 척할 수 없었다.` },
-  { id: "life_orders", age: at(25, 140), art: "deck", title: "명령과 판단", body: (life) => life.homebound
-    ? "마을의 일감은 큰 집부터 돌아갔다. 그러나 비를 맞은 작은 집이 더 급해 보였다."
-    : byPath(life,
-    "선장은 이익이 적은 구조 요청을 지나치려 했다. 갑판에는 동의하지 않는 사람이 있었다.",
-    "상관은 규정대로만 움직이라고 했다. 그러나 작은 배의 구조 요청은 기다릴 시간이 없어 보였다.",
-    "연락망은 한 사람보다 문서 꾸러미를 먼저 옮기라고 했다. 현장의 목소리는 달랐다.",
-    "조합은 계약된 배부터 수리하라고 했다. 손상된 작은 배에는 돈도 시간이 없었다."), choices: [
-    { id: "obey", label: "맡은 순서를 지킨다", risk: "물자 +10 · 지역의 신뢰 -10", personality: { caution: 6, empathy: -4 }, apply: (life) => { life.supplies += 10; life.trust -= 10; return "일은 제때 끝났지만 도움을 기다린 사람의 얼굴이 남았다."; } },
-    { id: "help", label: "현장의 사람을 먼저 돕는다", cost: 10, risk: "물자 -10 · 지역의 신뢰 +10", personality: { empathy: 8, loyalty: 4 }, apply: (life) => { life.supplies -= 10; life.trust += 10; life.injustice = true; return "도움을 받은 이가 돌아왔다. 조직에서는 독단이었다고 꾸짖었다."; } }
-  ] },
-  { id: "life_repercussion", age: at(25, 140), art: "deck", title: "뒤따른 말", body: (life) => life.trust >= 40 ? "기항지의 사람들이 이름을 기억했다. 그 신뢰가 명령을 대신해 주지는 않았지만 다음 일을 함께 시작할 사람이 늘었다." : "기항지의 사람들은 쉽게 마음을 열지 않았다. 한 번의 결정이 오래 남을 수 있다는 사실을 배웠다." },
+  { id: "life_orders", age: at(25, 140),
+    art: (life) => life?.creationVersion >= 20 && (life.independent || life.role === "선장" || (life.rankTier && life.rankTier >= 2)) ? "deckCommand" : "deck",
+    title: "명령과 판단",
+    body: (life) => {
+      if (life.homebound) return "마을의 일감은 큰 집부터 돌아갔다. 그러나 비를 맞은 작은 집이 더 급해 보였다.";
+      if (life.creationVersion >= 20) {
+        if (life.independent || life.role === "선장") return "동료 선원들이 이익이 적은 구조 요청이라며 그냥 지나치자고 건의했다. 키를 쥔 선장으로서 결단을 내려야 했다.";
+        if (life.path === "marine" && (life.rankTier >= 3 || ["소령", "중좌", "대령", "준장", "소장", "중장", "대장"].includes(life.role))) return "본부의 순찰 지침과 눈앞 작은 조난선의 구조 요청이 엇갈렸다. 함선 지휘관으로서 현장 판단을 내려야 했다.";
+      }
+      return byPath(life,
+        "선장은 이익이 적은 구조 요청을 지나치려 했다. 갑판에는 동의하지 않는 사람이 있었다.",
+        "상관은 규정대로만 움직이라고 했다. 그러나 작은 배의 구조 요청은 기다릴 시간이 없어 보였다.",
+        "연락망은 한 사람보다 문서 꾸러미를 먼저 옮기라고 했다. 현장의 목소리는 달랐다.",
+        "조합은 계약된 배부터 수리하라고 했다. 손상된 작은 배에는 돈도 시간이 없었다.");
+    },
+    choices: [
+      { id: "obey",
+        label: (life) => {
+          if (life.creationVersion >= 20) {
+            if (life.independent || life.role === "선장") return "선원들의 뜻을 따라 항로를 유지한다";
+            if (life.path === "marine" && (life.rankTier >= 3 || ["소령", "중좌", "대령", "준장", "소장", "중장", "대장"].includes(life.role))) return "본부 지침대로 관할 초계 구역을 지킨다";
+          }
+          return "맡은 순서를 지킨다";
+        },
+        risk: "물자 +10 · 지역의 신뢰 -10", personality: { caution: 6, empathy: -4 },
+        apply: (life) => {
+          life.supplies += 10; life.trust -= 10;
+          if (life.creationVersion >= 20) {
+            if (life.independent || life.role === "선장") return "선원들은 안도했지만 바다로 사라지는 구조 신호가 선장의 마음에 남았다.";
+            if (life.path === "marine" && life.rankTier >= 3) return "초계 일정은 맞췄지만 침몰하는 배를 뒤로한 상관의 기록이 남았다.";
+          }
+          return "일은 제때 끝났지만 도움을 기다린 사람의 얼굴이 남았다.";
+        }
+      },
+      { id: "help",
+        label: (life) => {
+          if (life.creationVersion >= 20) {
+            if (life.independent || life.role === "선장") return "선장의 책임으로 키를 돌려 구조에 나선다";
+            if (life.path === "marine" && (life.rankTier >= 3 || ["소령", "중좌", "대령", "준장", "소장", "중장", "대장"].includes(life.role))) return "지휘관 재량으로 항로를 틀어 조난선을 구한다";
+          }
+          return "현장의 사람을 먼저 돕는다";
+        },
+        cost: 10, risk: "물자 -10 · 지역의 신뢰 +10", personality: { empathy: 8, loyalty: 4 },
+        apply: (life) => {
+          life.supplies -= 10; life.trust += 10; life.injustice = true;
+          if (life.creationVersion >= 20) {
+            if (life.independent || life.role === "선장") return "배를 돌려 조난자를 구해냈다. 선원들도 선장의 결단을 묵묵히 따랐다.";
+            if (life.path === "marine" && life.rankTier >= 3) return "조난선을 구조했다. 본부에서는 임의 작전 변경이라며 경고장을 보냈다.";
+          }
+          return "도움을 받은 이가 돌아왔다. 조직에서는 독단이었다고 꾸짖었다.";
+        }
+      }
+    ]
+  },
+  { id: "life_repercussion", age: at(25, 140),
+    art: (life) => life?.creationVersion >= 20 && (life.independent || life.role === "선장") ? "deckCommand" : "deck",
+    title: "뒤따른 말",
+    body: (life) => {
+      if (life.creationVersion >= 20 && (life.independent || life.role === "선장")) {
+        return life.trust >= 40
+          ? "선원들과 기항지 사람들이 선장의 결단을 신뢰하기 시작했다. 그 신뢰가 거친 바다에서 배를 하나로 묶어 주었다."
+          : "결정에 대한 뒷말이 선내와 부두에 돌았다. 한 번의 판단이 선장으로서의 무게로 남았다.";
+      }
+      return life.trust >= 40
+        ? "기항지의 사람들이 이름을 기억했다. 그 신뢰가 명령을 대신해 주지는 않았지만 다음 일을 함께 시작할 사람이 늘었다."
+        : "기항지의 사람들은 쉽게 마음을 열지 않았다. 한 번의 결정이 오래 남을 수 있다는 사실을 배웠다.";
+    }
+  },
   { id: "life_fruit_find", age: at(27, 149), art: "specialFruitChest", title: "물결에 밀려온 상자", when: (life) => life.seed % 3 === 0
     && (life.creationVersion < 4 || fruitForCard(life, 27, 149)), body: (life) => life.creationVersion >= 4
     ? `떠밀려 온 상자에 악마의 열매가 있었다. 동행한 수집가는 ${fruitForCard(life, 27, 149).name}일 가능성을 말했다. ${fruitForCard(life, 27, 149).formerOwner ? "이전 능력자가 죽은 뒤 다시 나타났을 가능성이 있다." : "아직 능력자가 알려지기 전의 시기다."} 먹으면 바다에서 힘을 잃는다는 점만은 분명했다.`
@@ -212,7 +269,13 @@ const scenes = [
     : "떠밀려 온 상자에 기묘한 무늬의 열매가 하나 있었다. 도감에서 이름을 찾을 수 없었다. 먹으면 힘을 얻을지 몰라도 바다에서는 몸을 가누기 어렵다는 말을 들었다.", choices: [
     { id: "eat", label: (life) => life.creationVersion >= 4 ? "확신 없이 열매를 먹는다" : "정체를 모른 채 먹는다", risk: "새 힘을 얻을 수 있음 · 물에 잠기면 힘이 빠짐", personality: { ambition: 7, caution: -7 }, apply: (life) => eatFruit(life, 27, 149) },
     { id: "sell", label: "열매를 넘기고 항해 자금을 받는다", risk: "물자 +20 · 비능력자로 남음", personality: { caution: 6 }, apply: (life) => { life.supplies += 20; return "물자를 챙겨 배로 돌아왔다. 열매가 누구의 손에 갔는지는 듣지 못했다."; } },
-    { id: "leave", label: "손대지 않고 발견 사실을 알린다", risk: "지역의 신뢰 +10 · 비능력자로 남음", personality: { empathy: 5, caution: 5 }, apply: (life) => { life.trust += 10; return "항구 사람들에게 상자의 위치를 알려 주고 지나왔다."; } }
+    { id: "leave", label: (life) => life.creationVersion >= 20 ? "열매를 사양하고 바다와 호흡하는 단련을 택한다" : "손대지 않고 발견 사실을 알린다",
+      risk: (life) => life.creationVersion >= 20 ? "기술 +15 · 건강 +10 · 비능력자로 남음" : "지역의 신뢰 +10 · 비능력자로 남음",
+      personality: { empathy: 5, caution: 5 },
+      apply: (life) => {
+        if (life.creationVersion >= 20) { life.skill += 15; life.health += 10; life.pureHuman = true; return "열매의 유혹을 뿌리치고 바다를 자유롭게 헤엄칠 수 있는 신체와 도구의 단련을 택했다."; }
+        life.trust += 10; return "항구 사람들에게 상자의 위치를 알려 주고 지나왔다.";
+      } }
   ] },
   { id: "life_setback", age: at(28, 155), art: "lifeStorm", title: "실수한 항해", body: "항해 기록과 실제 물길이 어긋났다. 짐 일부가 젖고 다른 배의 일정도 밀렸다. 책임을 피하기 어려웠다.", choices: [
     { id: "admit", label: "실수를 밝히고 다시 조사한다", cost: 10, risk: "물자 -10 · 지역의 신뢰 +10 · 기술 +10", personality: { loyalty: 7, caution: 5 }, apply: (life) => { life.supplies -= 10; life.trust += 10; life.skill += 10; return "손해를 메우는 데 오래 걸렸지만 같은 실수를 피할 기록이 남았다."; } },
@@ -225,7 +288,14 @@ const scenes = [
     ? `먼 항로의 일을 마친 대가로 상인이 열매 하나와 물자 꾸러미를 내놓았다. 동행한 수집가는 도감을 뒤적이다 ${fruitFor(life).type}의 ${fruitFor(life).name}${fruitFor(life).owner ? "일 거라고 했다." : "인 것 같지만 기록에 없는 새 열매라고 했다."}`
     : "먼 항로의 일을 마친 대가로 상인이 열매 하나와 물자 꾸러미를 내놓았다. 동행한 수집가는 열매가 작은 매듭을 조이는 초인계라고 알려 주었지만, 정확한 이름은 찾지 못했다.", choices: [
     { id: "eat", label: "열매를 받아 먹는다", risk: (life) => `${life.creationVersion >= 3 ? fruitForCard(life, 29, 163).type : "매듭을 조이는"} 힘 · 물에 잠기면 힘이 빠짐`, personality: { ambition: 6, caution: -4 }, apply: (life) => eatFruit(life, 29, 163) },
-    { id: "supplies", label: "물자 꾸러미를 받는다", risk: "물자 +20 · 비능력자로 남음", personality: { caution: 5 }, apply: (life) => { life.supplies += 20; return "운반할 물자와 식량을 챙겼다. 손에 익힌 기술로 다음 항해를 준비했다."; } }
+    { id: "supplies", label: (life) => life.creationVersion >= 20 ? "물자 꾸러미를 받고 비능력자의 길을 걷는다" : "물자 꾸러미를 받는다",
+      risk: (life) => life.creationVersion >= 20 ? "물자 +20 · 기술 +10 · 비능력자로 남음" : "물자 +20 · 비능력자로 남음",
+      personality: { caution: 5 },
+      apply: (life) => {
+        life.supplies += 20;
+        if (life.creationVersion >= 20) { life.skill += 10; life.pureHuman = true; return "열매 대신 물자를 챙겼다. 어떤 파도에도 헤엄쳐 살아남을 수 있는 맨몸의 기술을 다졌다."; }
+        return "운반할 물자와 식량을 챙겼다. 손에 익힌 기술로 다음 항해를 준비했다.";
+      } }
   ] },
   { id: "life_mentor", age: at(30, 170), art: "workbench", title: "오래 일한 사람", body: "오래 일한 선배가 젖은 장부를 펴 놓고 실패한 날을 다시 짚었다. 능숙함은 한 번의 대담한 행동보다 그 뒤의 수습에 있었다." },
   { id: "life_change_path", age: at(32, 182), when: (life) => life.creationVersion === 1, art: "deck", title: "길을 고쳐 잡을 때", body: (life) => `${life.birth.name}은 지금까지의 일을 바탕으로 다른 소속을 택할 수도 있었다. 새 조직에 가면 직책은 다시 낮아지고, 지나온 평판은 남는다.`, choices: [
@@ -235,7 +305,7 @@ const scenes = [
     { id: "liberator", label: "독립 해방망으로 옮긴다", when: (life) => life.path !== "liberator", risk: "새 소속 · 연락원부터 다시 시작", apply: (life) => { setCareer(life, "liberator"); return "비공식 연락망의 가장 작은 일부터 다시 배웠다."; } },
     { id: "civilian", label: "민간 조합으로 옮긴다", when: (life) => life.path !== "civilian", risk: "새 소속 · 견습부터 다시 시작", apply: (life) => { setCareer(life, "civilian"); return "무기를 내려놓고 민간 배의 일을 다시 배웠다."; } }
   ] },
-  { id: "life_fruit_practice", age: at(33, 185), art: "workbench", title: "손끝의 새 일", when: (life) => Boolean(life.devilFruit), body: (life) => life.creationVersion >= 3
+  { id: "life_fruit_practice", age: at(33, 185), art: (life) => life?.creationVersion >= 20 ? "workbenchFruitPractice" : "workbench", title: "손끝의 새 일", when: (life) => Boolean(life.devilFruit), body: (life) => life.creationVersion >= 3
     ? `${life.devilFruit}의 힘은 아직 뜻대로 움직이지 않았다. 비가 오면 물길도 피해야 했다. 힘을 여러 번 연습할지, 안전한 도구부터 더 마련할지 정해야 했다.`
     : "손끝의 힘은 아직 뜻대로 움직이지 않았다. 비가 오면 물길도 피해야 했다. 같은 매듭을 여러 번 연습할지, 안전한 도구부터 더 마련할지 정해야 했다.", choices: [
     { id: "practice", label: "마른 작업장에서 힘을 연습한다", risk: "기술 40이 안정된 연습의 기준 · 과로 주의", apply: (life) => {
@@ -244,21 +314,21 @@ const scenes = [
     } },
     { id: "prepare", label: "물가에서 쓸 안전 장비를 마련한다", risk: "물자 +10 · 열매 숙련 유지", apply: (life) => { life.supplies += 10; return "동료와 구조 밧줄을 다시 점검했다. 물에 빠졌을 때 손을 잡아 줄 사람도 정했다."; } }
   ] },
-  { id: "life_new_routine", age: at(34, 190), art: "deck", title: "새 일상의 무게", body: (life) => life.homebound
+  { id: "life_new_routine", age: at(34, 190), art: (life) => life?.creationVersion >= 20 ? (life.homebound ? "workbench" : "deckBusyDay") : "deck", title: "새 일상의 무게", body: (life) => life.homebound
     ? "고향의 일은 계절마다 달랐다. 떠나는 배를 배웅하고 돌아온 사람의 이야기를 들으며 손에 익은 일을 이어 갔다."
     : byPath(life,
     "항해는 항구마다 달랐지만 배 안의 일은 반복됐다. 작은 고장을 제때 고치는 사람이 동료의 잠을 지켰다.",
     "순찰표와 당직이 삶의 리듬이 됐다. 지키는 사람에게도 지켜야 할 휴식이 필요했다.",
     "탈출로는 지도에 그리지 않았다. 낯선 집의 문이 열리기까지 오래 기다려야 했다.",
     "배가 돌아오는 날마다 수리 목록이 새로 생겼다. 일의 끝은 다음 배의 출항이었다."), after: (life) => { life.skill += 10; return "맡은 일에 익숙해졌다."; } },
-  { id: "life_alliance_offer", age: at(35, 195), when: (life) => life.creationVersion === 1 || !life.homebound, art: "deck", title: "같은 항로의 약속", body: "자주 마주친 독립 선단이 함께 항해하자고 제안했다. 약속을 지키면 위기 때 서로 물자를 나눌 수 있었다. 그러나 상대가 숨긴 화물도 있었다.", choices: [
+  { id: "life_alliance_offer", age: at(35, 195), when: (life) => life.creationVersion === 1 || !life.homebound, art: (life) => life?.creationVersion >= 20 ? "workbenchNegotiation" : "deck", title: "같은 항로의 약속", body: "자주 마주친 독립 선단이 함께 항해하자고 제안했다. 약속을 지키면 위기 때 서로 물자를 나눌 수 있었다. 그러나 상대가 숨긴 화물도 있었다.", choices: [
     { id: "join", label: "동행과 상호 구조를 약속한다", available: (life) => life.trust >= 40, risk: "지역의 신뢰 40 필요 · 서로의 화물은 여전히 미확인", personality: { loyalty: 9, empathy: 6 }, apply: (life) => { life.alliance = true; life.trust += 10; return "서로의 배가 위기 때 신호를 알아볼 수 있도록 약속했다."; } },
     { id: "decline", label: "각자의 항로를 지킨다", risk: "기술 +10 · 공동 신호는 만들지 않음", personality: { freedom: 8, caution: 5 }, apply: (life) => { life.skill += 10; return "항로 기록을 나누되 배의 지휘는 각자 맡았다."; } },
     { id: "betray", label: "상대의 화물을 빼돌린다", risk: "물자 +20 · 지역의 신뢰 -20 · 추적 가능성", personality: { ambition: 10, loyalty: -12, empathy: -8 }, apply: (life) => { life.supplies += 20; life.trust -= 20; life.rival = true; life.betrayed = true; return "화물은 손에 넣었다. 다음 기항지에는 배신당한 선단의 사람이 먼저 기다리고 있었다."; } }
   ] },
-  { id: "life_alliance_after", age: at(35, 195), art: "workbench", title: "약속 뒤의 하루", when: (life) => life.alliance || life.betrayed,
+  { id: "life_alliance_after", age: at(35, 195), art: (life) => life?.creationVersion >= 20 ? "workbenchReportLetters" : "workbench", title: "약속 뒤의 하루", when: (life) => life.alliance || life.betrayed,
     body: (life) => life.betrayed ? "상대 선단은 물자를 잃은 사람의 이름을 적었다. 거래가 끝나도 원한은 쉽게 끝나지 않았다." : "동맹의 배가 같은 깃발을 달지는 않았다. 서로 다른 일을 하면서도 위급할 때 부를 신호를 정했다." },
-  { id: "life_mission", age: at(36, 198), art: "lifeStorm", title: "밤의 신호", body: "폭우 속에서 작은 배의 불빛이 사라졌다. 구하러 가려면 기술과 식량, 버틸 체력이 필요했다.", choices: [
+  { id: "life_mission", age: at(36, 198), art: (life) => life?.creationVersion >= 20 ? "stormSeaRescue" : "lifeStorm", title: "밤의 신호", body: "폭우 속에서 작은 배의 불빛이 사라졌다. 구하러 가려면 기술과 식량, 버틸 체력이 필요했다.", choices: [
     { id: "lead", label: "직접 구조선을 이끈다", risk: (life) =>
       `기술 40 · 물자 ${life.devilFruit ? 40 : 20} · 건강 40이 준비 기준${life.devilFruit ? " · 물에 빠지면 힘이 빠짐" : ""}`, apply: (life) => {
       if (!canLeadRescue(life)) { life.health -= 10; return "출항을 시도했지만 배를 제어하지 못했다. 다른 구조대가 일을 넘겨받았다."; }
@@ -266,8 +336,8 @@ const scenes = [
     } },
     { id: "signal", label: "해안에서 신호와 물자를 맡는다", cost: 10, risk: "물자 10 필요 · 해안에서 구조를 지원", apply: (life) => { life.supplies -= 10; life.friendBond += 10; return "구조선이 돌아올 길을 밝혀 두었다."; } }
   ] },
-  { id: "life_mission_after", age: at(36, 198), art: "workbench", title: "구조 다음 날", body: (life) => life.rescued ? "구조된 이들의 가족이 항구에 모였다. 고마움은 오래 남았고, 다친 몸에는 회복할 시간이 필요했다." : "다른 구조대의 배가 돌아왔다. 혼자 해내지 못한 일에도 맡은 몫이 있었다." },
-  { id: "life_haki_training", age: at(38, 206), art: "workbench", title: "기척을 읽는 수련", body: "노련한 항해사가 사람의 기척을 듣는 법과 몸을 단단히 지키는 법을 보여 주었다. 오래 집중하고 몸을 단련해야 닿을 수 있는 힘이었다.", choices: [
+  { id: "life_mission_after", age: at(36, 198), art: (life) => life?.creationVersion >= 20 ? "harborRelief" : "workbench", title: "구조 다음 날", body: (life) => life.rescued ? "구조된 이들의 가족이 항구에 모였다. 고마움은 오래 남았고, 다친 몸에는 회복할 시간이 필요했다." : "다른 구조대의 배가 돌아왔다. 혼자 해내지 못한 일에도 맡은 몫이 있었다." },
+  { id: "life_haki_training", age: at(38, 206), art: (life) => life?.creationVersion >= 20 ? "workbenchHakiTraining" : "workbench", title: "기척을 읽는 수련", body: "노련한 항해사가 사람의 기척을 듣는 법과 몸을 단단히 지키는 법을 보여 주었다. 오래 집중하고 몸을 단련해야 닿을 수 있는 힘이었다.", choices: [
     { id: "observation", label: "견문색의 기초를 배운다", available: (life) => life.skill >= 40, needs: { skill: 40 }, risk: "기술 40 필요 · 견문색 1단계", apply: (life) => {
       if (life.skill < 40 && life.creationVersion < 3) return "서두르는 동안 작은 기척을 놓쳤다. 먼저 맡은 일을 차분히 익혀야 했다.";
       life.haki.observation = 1; return "눈을 감아도 동료가 어느 쪽에 있는지 느낄 수 있었다.";
@@ -276,16 +346,22 @@ const scenes = [
       if ((life.skill < 40 || life.health < 40) && life.creationVersion < 3) return "몸이 버티지 못해 수련을 멈췄다. 무리한 훈련은 다음으로 미뤘다.";
       life.haki.armament = 1; return "한순간 손을 단단히 지키는 감각을 익혔다.";
     } },
-    { id: "craft", label: "기존 기술을 더 다듬는다", risk: "기술 +10 · 패기는 배우지 않음", apply: (life) => { life.skill += 10; return "특별한 힘 없이도 배와 사람을 지킬 수 있도록 도구를 손에 익혔다."; } }
+    { id: "craft", label: (life) => life.creationVersion >= 20 && !life.devilFruit ? "비능력자 고유의 체술과 달인의 도구술을 연마한다" : "기존 기술을 더 다듬는다",
+      risk: (life) => life.creationVersion >= 20 && !life.devilFruit ? "기술 +20 · 건강 +10 · 바다의 제약 없음" : "기술 +10 · 패기는 배우지 않음",
+      apply: (life) => {
+        life.skill += (life.creationVersion >= 20 && !life.devilFruit ? 20 : 10);
+        if (life.creationVersion >= 20 && !life.devilFruit) life.health += 10;
+        return "특별한 힘 없이도 배와 사람을 지킬 수 있도록 도구를 손에 익혔다.";
+      } }
   ] },
-  { id: "life_companion", age: at(40, 216), art: "deck", title: "곁에 둔 사람", body: (life) => life.homebound
+  { id: "life_companion", age: at(40, 216), art: (life) => life?.creationVersion >= 20 ? "harborReunion" : "deck", title: "곁에 둔 사람", body: (life) => life.homebound
     ? "함께 지낸 사람이 일터 밖에서도 시간을 낼 수 있겠느냐고 물었다. 익숙한 마을에서도 일은 가까운 사람의 시간을 가져갔다."
     : "함께 지낸 사람이 다음 항구에도 동행할지 물었다. 일이 가까운 사람의 시간을 계속 가져가고 있었다.", choices: [
     { id: "share", label: "함께 지낼 시간을 마련한다", cost: 10, risk: "친구와의 유대 +10 · 물자 -10", apply: (life) => { life.friendBond += 10; life.supplies -= 10; return "일정을 바꾸어 함께 보낼 저녁을 남겼다."; } },
     { id: "work", label: "당장의 일을 우선한다", risk: "물자 +10 · 친구와의 유대 -10", apply: (life) => { life.supplies += 10; life.friendBond -= 10; return "일은 늘었지만 돌아왔을 때 빈자리가 더 크게 보였다."; } }
   ] },
-  { id: "life_distance", age: at(40, 216), art: "deck", title: "그날의 편지", body: (life) => life.friendBond >= 40 ? "그날 저녁 먼 항구에서 편지가 왔다. 서로 다른 일을 하면서도 안부를 물을 사람은 남아 있었다." : "그날 저녁 답장하지 못한 편지가 남았다. 다시 말을 걸고 싶어도 지난 시간을 한 번에 되돌릴 수는 없었다." },
-  { id: "life_haki_practice", age: at(42, 226), art: "deck", title: "수련을 이어 가는 날", body: "배움은 한 번의 깨달음으로 끝나지 않았다. 기척을 살피는 일과 몸을 지키는 일, 오래 써 온 기술 중 무엇을 더 익힐지 골랐다.", choices: [
+  { id: "life_distance", age: at(40, 216), art: (life) => life?.creationVersion >= 20 ? "deckNightWatch" : "deck", title: "그날의 편지", body: (life) => life.friendBond >= 40 ? "그날 저녁 먼 항구에서 편지가 왔다. 서로 다른 일을 하면서도 안부를 물을 사람은 남아 있었다." : "그날 저녁 답장하지 못한 편지가 남았다. 다시 말을 걸고 싶어도 지난 시간을 한 번에 되돌릴 수는 없었다." },
+  { id: "life_haki_practice", age: at(42, 226), art: (life) => life?.creationVersion >= 20 ? "workbenchHakiTraining" : "deck", title: "수련을 이어 가는 날", body: "배움은 한 번의 깨달음으로 끝나지 않았다. 기척을 살피는 일과 몸을 지키는 일, 오래 써 온 기술 중 무엇을 더 익힐지 골랐다.", choices: [
     { id: "observation", label: "견문색을 수련한다", available: (life) => life.skill >= 60, needs: { skill: 60 }, risk: "기술 60 필요 · 견문색 +1", apply: (life) => {
       if (life.skill < 60 && life.creationVersion < 3) return "집중이 오래가지 않았다. 일과 수련의 기초를 더 다져야 했다.";
       life.haki.observation = Math.min(2, life.haki.observation + 1); return "바람소리 사이에서 동료의 발소리를 가려 냈다.";
@@ -300,7 +376,7 @@ const scenes = [
     { id: "help", label: "수리를 도우며 천천히 친해진다", cost: 10, risk: "물자 -10 · 지역의 신뢰 +10", personality: { empathy: 8, loyalty: 5 }, apply: (life) => { life.supplies -= 10; life.trust += 10; return "작업이 끝나자 항구 사람들이 다음 물때를 알려 주었다."; } },
     { id: "trade", label: "필요한 거래만 마치고 떠난다", risk: "물자 +10 · 관계 변화 없음", personality: { caution: 6, freedom: 4 }, apply: (life) => { life.supplies += 10; return "서로의 장부를 맞추고 조용히 출항했다."; } }
   ] },
-  { id: "life_route", age: at(44, 235), when: (life) => life.creationVersion === 1 || !life.homebound, art: "deck", title: "새 항로", body: "새 항로의 지도를 얻었다. 익숙한 곳에 남거나 어려운 길을 시험할 수 있었다.", choices: [
+  { id: "life_route", age: at(44, 235), when: (life) => life.creationVersion === 1 || !life.homebound, art: (life) => life?.creationVersion >= 20 ? "harborDeparture" : "deck", title: "새 항로", body: "새 항로의 지도를 얻었다. 익숙한 곳에 남거나 어려운 길을 시험할 수 있었다.", choices: [
     { id: "new", label: "새 항로를 조사한다", cost: (life) => life.skill < 60 ? 10 : 0, risk: "기술 60이 기록 해독의 기준 · 물자 투입 가능", apply: (life) => { if (life.skill < 60) { life.supplies -= 10; return "길을 잘못 읽어 물자를 잃었다. 다음에는 더 많은 기록이 필요했다."; } life.skill += 10; life.trust += 10; return "위험한 구간을 기록해 다른 배에도 전했다."; } },
     { id: "known", label: "익숙한 길을 지킨다", risk: "물자 +10 · 새 물길은 확인하지 않음", apply: (life) => { life.supplies += 10; return "익숙한 길에도 돌봐야 할 사람이 있었다."; } }
   ] },
@@ -325,7 +401,7 @@ const scenes = [
     } },
     { id: "call", label: "다른 작업반을 불러 함께 기다린다", risk: "현장에 남아 구조를 기다림 · 신중함 +5", personality: { caution: 5, empathy: 3 }, apply: () => "다른 작업반이 버팀목을 세워 갇힌 일꾼을 꺼냈다." }
   ] },
-  { id: "life_rank_offer", age: at(46, 244), when: (life) => life.creationVersion === 1, art: "workbench", title: "맡을 사람의 수", body: "조직에서 더 많은 사람을 맡아 달라는 제안이 왔다. 직책은 이름뿐인 보상이 아니었다.", choices: [
+  { id: "life_rank_offer", age: at(46, 244), when: (life) => life.creationVersion === 1, art: (life) => life?.creationVersion >= 20 ? "workbenchNegotiation" : "workbench", title: "맡을 사람의 수", body: "조직에서 더 많은 사람을 맡아 달라는 제안이 왔다. 직책은 이름뿐인 보상이 아니었다.", choices: [
     { id: "accept", label: "책임을 맡는다", available: (life) => life.skill >= 60 && life.trust >= 40, risk: "기술 60 · 신뢰 40 필요 · 승진", apply: (life) => {
       if (life.skill < 60 || life.trust < 40) return "아직 함께 일할 사람의 신뢰를 얻지 못해 제안은 보류됐다.";
       life.role = byPath(life, "부선장", "상사", "현장 책임자", "수리반장"); life.supplies += 10; return `더 많은 일을 맡아 ${life.role}(으)로 불렸다.`;
@@ -338,19 +414,35 @@ const scenes = [
     { id: "listen", label: "반대 이유를 끝까지 듣는다", risk: "친구와의 유대 +10 · 지역의 신뢰 +10", apply: (life) => { life.friendBond += 10; life.trust += 10; return "의견을 나누는 데 하루가 걸렸지만 함께 떠날 방법을 찾았다."; } },
     { id: "order", label: "자기 판단대로 밀어붙인다", risk: "물자 +10 · 친구와의 유대 -10", apply: (life) => { life.supplies += 10; life.friendBond -= 10; return "일은 빨리 끝났다. 동료는 다음 항해에서 다른 배를 탔다."; } }
   ] },
-  { id: "life_command", age: at(51, 258), art: "deck", title: "책임의 크기", body: (life) => `${life.birth.name}의 판단을 기다리는 사람이 늘었다. ${life.affiliation}에서 보낸 세월은 숙련을 쌓았지만, 모든 결정이 옳았던 것은 아니었다.` },
-  { id: "life_rival_return", age: at(52, 260), art: "lifeStorm", title: "다시 만난 선단", when: (life) => life.rival, body: "오래전 부두에서 마주친 무장 선단이 다시 나타났다. 이번에는 상대도 사람을 잃고 지쳐 있었다. 뒤로 돌거나, 말을 걸거나, 먼저 길을 막을 수 있었다.", choices: [
-    { id: "truce", label: "서로의 피해를 말하고 휴전을 청한다", available: (life) => life.trust >= 40, risk: "지역의 신뢰 40 필요 · 상대의 대답은 아직 모름", personality: { empathy: 9, loyalty: 5 }, apply: (life) => { life.rival = false; life.trust += 10; return "이름을 지우지는 못했지만 다음 항로에서 서로를 먼저 공격하지 않기로 했다."; } },
-    { id: "fight", label: "동료를 앞세워 맞선다", available: (life) => life.skill >= 50 && life.health >= 30, needs: { skill: 50, health: 30 },
-      bounty: (life) => life.path === "pirate" ? 8_000_000 : 0,
-      risk: "기술 50 · 건강 30 필요 · 기술 70 또는 무장색이 전투의 변수",
-      personality: { ambition: 7, caution: -6 }, apply: (life) => {
-        if (life.skill < 70 && !life.haki.armament) { life.health -= 20; return "상대의 배가 더 빨랐다. 동료를 잃지 않으려 물러났다."; }
-        life.health -= 10; life.trust += 10; life.rival = false; return "두 배가 충돌하기 전에 상대가 항로를 비켰다. 더 쫓지는 않았다.";
-      } },
-    { id: "avoid", label: "다른 항로로 돌아간다", cost: 10, risk: "물자 10 필요 · 우회 중 상대를 놓칠 수 있음", personality: { caution: 8 }, apply: (life) => { life.supplies -= 10; return "멀리 돌아가며 맞부딪치지 않았다. 다음에는 또 판단해야 했다."; } },
-    { id: "wait", label: "동료를 지키며 상대가 지나가길 기다린다", risk: "건강 -10 · 밤새 경계", personality: { caution: 5, loyalty: 4 }, apply: (life) => { life.health -= 10; return "밤새 경계를 섰고 상대의 배가 물러난 뒤에야 움직였다."; } }
-  ] },
+  { id: "life_command", age: at(51, 258), art: (life) => life?.creationVersion >= 20 ? "deckCommand" : "deck", title: "책임의 크기", body: (life) => `${life.birth.name}의 판단을 기다리는 사람이 늘었다. ${life.affiliation}에서 보낸 세월은 숙련을 쌓았지만, 모든 결정이 옳았던 것은 아니었다.` },
+  { id: "life_rival_return", age: at(52, 260), art: (life) => life?.creationVersion >= 20 ? "deckTenseStandoff" : "lifeStorm", title: "다시 만난 선단", when: (life) => life.rival,
+    body: (life) => {
+      if (life.creationVersion >= 20) {
+        if (["사황", "해군 대장", "해군 원수"].includes(life.role) || (life.bounty || 0) >= 500_000_000) {
+          return "오래전 부두에서 마주쳤던 선단과 28년 만에 마주쳤다. 상대도 백전노장의 함대로 성장해 있었지만, 이제 바다의 거물이 된 깃발을 보고 함포를 거두며 극도로 긴장했다.";
+        }
+        return "오래전 부두에서 마주친 무장 선단이 28년의 세월을 지나 다시 나타났다. 백발이 성성해진 상대도 모진 풍파에 지쳐 있었다. 뒤로 돌거나, 말을 걸거나, 먼저 길을 막을 수 있었다.";
+      }
+      return "오래전 부두에서 마주친 무장 선단이 다시 나타났다. 이번에는 상대도 사람을 잃고 지쳐 있었다. 뒤로 돌거나, 말을 걸거나, 먼저 길을 막을 수 있었다.";
+    },
+    choices: [
+      { id: "truce", label: "서로의 피해를 말하고 휴전을 청한다", available: (life) => life.trust >= 40, risk: "지역의 신뢰 40 필요 · 상대의 대답은 아직 모름", personality: { empathy: 9, loyalty: 5 }, apply: (life) => { life.rival = false; life.trust += 10; return "이름을 지우지는 못했지만 다음 항로에서 서로를 먼저 공격하지 않기로 했다."; } },
+      { id: "fight",
+        label: (life) => life.creationVersion >= 20 && (["사황", "해군 대장"].includes(life.role) || (life.bounty || 0) >= 500_000_000) ? "위압적인 기세로 상대 선단을 굴복시킨다" : "동료를 앞세워 맞선다",
+        available: (life) => life.skill >= 50 && life.health >= 30, needs: { skill: 50, health: 30 },
+        bounty: (life) => life.path === "pirate" ? 8_000_000 : 0,
+        risk: "기술 50 · 건강 30 필요 · 기술 70 또는 무장색이 전투의 변수",
+        personality: { ambition: 7, caution: -6 }, apply: (life) => {
+          if (life.creationVersion >= 20 && (["사황", "해군 대장"].includes(life.role) || (life.bounty || 0) >= 500_000_000)) {
+            life.trust += 10; life.rival = false; if (life.creationVersion >= 20) life.reputation = (life.reputation || 0) + 15;
+            return "압도적인 위압감 앞에 상대 선단은 무기를 거두고 고개를 숙였다. 28년에 걸친 악연이 마침내 정리됐다.";
+          }
+          if (life.skill < 70 && !life.haki.armament) { life.health -= 20; return "상대의 배가 더 빨랐다. 동료를 잃지 않으려 물러났다."; }
+          life.health -= 10; life.trust += 10; life.rival = false; return "두 배가 충돌하기 전에 상대가 항로를 비켰다. 더 쫓지는 않았다.";
+        } },
+      { id: "avoid", label: "다른 항로로 돌아간다", cost: 10, risk: "물자 10 필요 · 우회 중 상대를 놓칠 수 있음", personality: { caution: 8 }, apply: (life) => { life.supplies -= 10; return "멀리 돌아가며 맞부딪치지 않았다. 다음에는 또 판단해야 했다."; } },
+      { id: "wait", label: "동료를 지키며 상대가 지나가길 기다린다", risk: "건강 -10 · 밤새 경계", personality: { caution: 5, loyalty: 4 }, apply: (life) => { life.health -= 10; return "밤새 경계를 섰고 상대의 배가 물러난 뒤에야 움직였다."; } }
+    ] },
   { id: "life_second_rank", age: at(54, 263), when: (life) => life.creationVersion === 1, art: "deck", title: "두 번째 직책", body: "오래 맡은 일과 남겨 온 기록이 평가받았다. 충분한 기술과 신뢰가 있다면 더 큰 직책을 맡을 수 있었다.", choices: [
     { id: "seek", label: "승진 심사를 받는다", available: (life) => life.skill >= 80 && life.trust >= 60, risk: "기술 80 · 신뢰 60 필요 · 승진", apply: (life) => {
       if (life.skill < 80 || life.trust < 60) { life.trust -= 10; return "기록이 부족해 승진하지 못했다. 부족한 일은 분명해졌다."; }
@@ -362,11 +454,11 @@ const scenes = [
     { id: "train", label: "동료와 거리를 두고 다스리는 법을 배운다", risk: "패왕색 1단계 · 건강 -10", apply: (life) => { life.haki.conqueror = 1; life.health -= 10; return "힘을 쏟는 대신 멈추는 법부터 배웠다. 동료들이 다시 가까이 다가왔다."; } },
     { id: "hold", label: "우선 일터와 사람을 진정시킨다", risk: "지역의 신뢰 +10 · 패왕색은 잠재", apply: (life) => { life.trust += 10; return "낯선 힘을 앞세우지 않았다. 동료들이 다친 사람이 없는지부터 살폈다."; } }
   ] },
-  { id: "life_charter", age: at(57, 265), art: "workbench", title: "남길 기준", body: "후배가 일을 배우러 왔다. 서류보다 몸에 익은 판단을 어떻게 건넬지 고민해야 했다.", choices: [
+  { id: "life_charter", age: at(57, 265), art: (life) => life?.creationVersion >= 20 ? "workbenchReportLetters" : "workbench", title: "남길 기준", body: "후배가 일을 배우러 왔다. 서류보다 몸에 익은 판단을 어떻게 건넬지 고민해야 했다.", choices: [
     { id: "teach", label: "실패한 기록까지 가르친다", risk: "지역의 신뢰 +10 · 인수인계에 시간 사용", apply: (life) => { life.trust += 10; life.successor = true; return "후배는 성공담보다 실패를 고친 과정을 오래 기억했다."; } },
     { id: "solo", label: "당분간 혼자 맡는다", risk: "물자 +10 · 인수인계 미룸", apply: (life) => { life.supplies += 10; return "당장의 일은 빨랐다. 뒤따를 사람은 아직 구하지 못했다."; } }
   ] },
-  { id: "life_alliance_council", age: at(59, 268), art: "deck", title: "함께 움직일 배들", when: (life) => life.alliance, body: "동맹을 맺은 선단들이 한 항구에 모였다. 공동 구조 항로를 만들자는 제안이 나왔고, 누가 물자를 더 낼지도 정해야 했다.", choices: [
+  { id: "life_alliance_council", age: at(59, 268), art: (life) => life?.creationVersion >= 20 ? "deckTenseStandoff" : "deck", title: "함께 움직일 배들", when: (life) => life.alliance, body: "동맹을 맺은 선단들이 한 항구에 모였다. 공동 구조 항로를 만들자는 제안이 나왔고, 누가 물자를 더 낼지도 정해야 했다.", choices: [
     { id: "coalition", label: "공동 항로 연합을 만든다", available: (life) => life.trust >= 70 && life.supplies >= 20,
       risk: "지역의 신뢰 70 · 물자 20 필요 · 선단별 지휘권은 별도", personality: { loyalty: 10, empathy: 7 }, apply: (life) => { life.coalition = true; life.supplies -= 20; life.trust += 10; return "각 배의 지휘권을 남겨 둔 채 공동 구조 항로와 연락망을 만들었다."; } },
     { id: "support", label: "작은 배의 물자를 먼저 보탠다", cost: 10, risk: "물자 -10 · 지역의 신뢰 +10", personality: { empathy: 8, loyalty: 7 }, apply: (life) => { life.supplies -= 10; life.trust += 10; return "연합은 아직 아니어도 다음 위기 때 부를 이름이 늘었다."; } },
@@ -379,7 +471,7 @@ const scenes = [
     { id: "press", label: "속도를 내어 먼저 건넌다", risk: "물자 +10 · 건강 -10", apply: (life) => { life.supplies += 10; life.health -= 10; return "먼저 건넜지만 피로가 오래 남았다."; } }
   ] },
   { id: "life_homecoming", age: at(67, 276), when: (life) => life.creationVersion === 1 || life.leftHome && !life.homebound, art: (life) => ({ 인간: "deck", 어인: "fishman", 밍크족: "mink", "하늘섬 사람": "sky", 거인족: "giant" })[life.birth.species], title: "고향의 다른 얼굴", body: (life) => `${life.birth.home}에 돌아왔을 때 아는 길도 조금 달라져 있었다. ${life.birth.name}을 기억하는 사람과 새로 온 사람이 한곳에서 일했다.`, after: (life) => { moveTo(life, life.birth.home); return "고향에 잠시 머물렀다."; } },
-  { id: "life_old_friend", age: at(69, 278), art: "deck", title: "오래된 친구", body: (life) => life.friendBond >= 40 ? "옛 친구와 다시 마주 앉았다. 서로의 선택을 모두 이해하지는 못해도, 물어볼 이야기가 남아 있었다." : "옛 친구의 소식은 다른 사람을 통해 들었다. 멀어진 시간은 서로의 삶에 실제로 있었다." },
+  { id: "life_old_friend", age: at(69, 278), art: (life) => life?.creationVersion >= 20 ? "harborReunion" : "deck", title: "오래된 친구", body: (life) => life.friendBond >= 40 ? "옛 친구와 다시 마주 앉았다. 서로의 선택을 모두 이해하지는 못해도, 물어볼 이야기가 남아 있었다." : "옛 친구의 소식은 다른 사람을 통해 들었다. 멀어진 시간은 서로의 삶에 실제로 있었다." },
   { id: "life_late_work", age: at(71, 280), art: "workbench", title: "몸에 남은 노동", body: "손에 익은 일은 여전히 해낼 수 있었다. 회복에는 전보다 긴 시간이 필요해졌고, 맡을 일을 고르는 방식도 달라져야 했다.", choices: [
     { id: "share", label: "일을 후배와 나눈다", risk: "건강 +10 · 업무를 나눔", apply: (life) => { life.health += 10; life.successor = true; return "혼자 붙들던 일을 나누자 몸과 일정에 여유가 생겼다."; } },
     { id: "hold", label: "계속 앞에서 일한다", risk: "물자 +10 · 건강 -10", apply: (life) => { life.supplies += 10; life.health -= 10; return "일은 끝냈다. 쉬는 날에도 몸의 통증은 가시지 않았다."; } }
@@ -420,6 +512,92 @@ const scenes = [
         risk: "열매 사용 · 물에 빠지면 도움을 받아야 함", personality: { ambition: 5, freedom: 5 },
         apply: (life) => { life.health -= 10; life.friendBond += 5; return "낯선 힘에 해왕류의 시선이 잠시 옮겨갔다. 동료들이 배를 빼내고 손을 내밀었다."; } }
     ] },
+  { id: "life_friend_reunion", age: 35, art: "harborReunion", title: "노을빛 부두의 재회", when: () => false,
+    body: (life) => `낯선 기항지의 부두에서 익숙한 목소리가 들렸다. 어린 시절 고향에서 함께 바다를 바라보던 소꿉친구 ${life.friendName || "친구"}였다! 세월이 흘러 어엿한 바다의 일꾼으로 마주 선 두 사람은 등불 아래 마주 앉았다.`,
+    choices: [
+      { id: "celebrate", label: "함께 술잔을 기울이며 옛 추억을 나눈다", risk: "친구와의 유대 +15 · 지역의 신뢰 +10 · 건강 +5", personality: { empathy: 6, freedom: 4 },
+        apply: (state) => { state.friendBond += 15; state.trust += 10; state.health += 5; return `${state.friendName || "친구"}와 밤새 고향 이야기를 나눴다. 각자의 바다를 걷고 있어도 마음만은 그때로 돌아갔다.`; } },
+      { id: "support", label: "서로의 항해 물자를 나누고 행운을 빈다", risk: "물자 +20 · 친구와의 유대 +10", personality: { loyalty: 6, caution: 4 },
+        apply: (state) => { state.supplies += 20; state.friendBond += 10; return `${state.friendName || "친구"}가 건넨 보급품을 싣고 다시 출항을 준비했다. 먼바다에서도 서로를 잊지 않기로 했다.`; } }
+    ] },
+  { id: "life_personality_ambition", age: 38, art: "deckCommand", title: "정점을 향한 야망", when: () => false,
+    body: "가슴속에서 타오르는 거대한 야망이 더 이상 작은 배에 안주할 수 없게 만들었다. 칠무해나 거대 세력의 영토에 맞서 자신만의 패권을 증명할 기회가 눈앞에 다가왔다.",
+    choices: [
+      { id: "challenge", label: "거대 세력의 정박지에 깃발을 꽂고 정면 승부한다", needs: { skill: 65, health: 50 }, risk: "기술 65 · 건강 50 필요 · 성공 시 현상금 대폭 상승", failRisk: "건강 -25",
+        personality: { ambition: 9, caution: -5 },
+        apply: (state) => { if (state.path === "pirate") state.bounty += 50_000_000; state.reputation = (state.reputation || 0) + 20; state.trust += 10; return "거대 세력의 방어선을 뚫고 깃발을 세웠다. 바다 전체에 거대한 야망의 이름이 울려 퍼졌다."; },
+        fail: (state) => { state.health -= 25; return "거센 반격에 물러섰지만 가슴속의 야망은 꺾이지 않았다."; } },
+      { id: "scheme", label: "수면 아래에서 세력을 규합해 기반을 다진다", risk: "물자 +30 · 지역의 신뢰 +15", personality: { ambition: 7, caution: 5 },
+        apply: (state) => { state.supplies += 30; state.trust += 15; return "치밀한 포섭으로 여러 선단을 영향력 아래 두었다. 조용한 거물이 되어가고 있었다."; } }
+    ] },
+  { id: "life_personality_empathy", age: 38, art: "harborRelief", title: "기항지에 퍼진 은혜", when: () => false,
+    body: "지나온 항구마다 베푼 온정과 구호의 손길이 마침내 거대한 보답으로 돌아왔다. 폭풍과 해군의 추격 속에서도 여러 섬의 주민들이 비밀리에 배를 숨겨주고 식량을 날라주었다.",
+    choices: [
+      { id: "network", label: "민간 구호와 비상 대피 연락망을 완성한다", risk: "지역의 신뢰 +25 · 건강 +15 · 물자 +20", personality: { empathy: 9, loyalty: 6 },
+        apply: (state) => { state.trust += 25; state.health += 15; state.supplies += 20; return "바다 곳곳에 위기 때 쉴 수 있는 피난처가 마련됐다. 선행은 가장 단단한 방패가 되었다."; } }
+    ] },
+  { id: "life_personality_loyalty", age: 38, art: "deckTenseStandoff", title: "목숨을 건 동료들의 맹세", when: () => false,
+    body: "절체절명의 암초 지대에서 적함에 포위당했을 때, 동료들이 한 치의 망설임도 없이 앞을 가로막아섰다. 서로를 위해 목숨을 던질 수 있는 유대감이 갑판을 가득 채웠다.",
+    choices: [
+      { id: "stand_together", label: "동료들과 어깨를 맞대고 포위망을 돌파한다", risk: "친구와의 유대 +20 · 지역의 신뢰 +15 · 건강 +10", personality: { loyalty: 9, empathy: 5 },
+        apply: (state) => { state.friendBond += 20; state.trust += 15; state.health += 10; return "완벽한 호흡으로 포위망을 찢고 빠져나왔다. 배의 깃발 아래 선원들은 영원한 형제가 되었다."; } }
+    ] },
+  { id: "life_personality_caution", age: 38, art: "workbenchReportLetters", title: "그림자 속의 음모 간파", when: () => false,
+    body: "항해 장부와 기항지 첩보 속에서 어색한 필적과 암살자의 독 냄새를 미리 알아챘다. 세계정부의 암살반이 쳐놓은 함정이 발동하기도 전에 판세를 뒤집을 기회였다.",
+    choices: [
+      { id: "counter", label: "함정을 역이용해 추적자들을 고립시킨다", risk: "기술 +15 · 물자 +25 · 평판 상승", personality: { caution: 8, loyalty: 4 },
+        apply: (state) => { state.skill += 15; state.supplies += 25; state.reputation = (state.reputation || 0) + 10; return "추적자들은 자신들이 판 함정에 빠졌다. 귀중한 첩보와 군수 물자를 획득했다."; } }
+    ] },
+  { id: "life_personality_freedom", age: 38, art: "harborDeparture", title: "해도 밖 미지의 하늘과 바다", when: () => false,
+    body: "정부와 해군이 그어놓은 해도에 얽매이지 않고 바람의 냄새만을 따라 항해한 끝에, 전설로만 내려오던 숨겨진 해저 동굴과 하늘섬으로 통하는 상승 해류를 발견했다!",
+    choices: [
+      { id: "explore", label: "지도에 없는 미지의 해역으로 키를 꺾는다", risk: "기술 +20 · 물자 +30 · 자유로운 영혼", personality: { freedom: 10, ambition: 5 },
+        apply: (state) => { state.skill += 20; state.supplies += 30; return "아무도 발 딛지 않은 환상의 섬에서 풍요로운 보급과 고대의 유적을 마주했다."; } }
+    ] },
+  { id: "life_marine_commendation", age: 40, art: "workbenchReportLetters", title: "본부 수감 실적 특별 포상", when: () => false,
+    body: "수많은 흉악 해적을 체포해 임펠 다운으로 호송한 혁혁한 공로가 인정되어, 해군 본부 원수로부터 특별 포상과 훈장이 수여됐다.",
+    choices: [
+      { id: "accept", label: "포상을 수락하고 함대 보급을 확충한다", risk: "물자 +30 · 지역의 신뢰 +20 · 명성 상승", personality: { loyalty: 6, ambition: 5 },
+        apply: (state) => { state.supplies += 30; state.trust += 20; state.reputation = (state.reputation || 0) + 15; return "본부의 전폭적인 지원으로 최신형 함포와 보급선을 지원받았다."; } }
+    ] },
+  { id: "life_infamy_standoff", age: 40, art: "harborBountyInspection", title: "바다를 뒤흔든 악명", when: () => false,
+    body: "세계정부가 특급 위험 인물로 지정하며 파견한 정예 군함들이 항구를 봉쇄했다. 자비 없는 악명 앞에 부두 전체가 얼어붙었다.",
+    choices: [
+      { id: "breakout", label: "악명에 걸맞은 무력으로 포위망을 분쇄한다", needs: { skill: 65, health: 50 }, risk: "기술 65 · 건강 50 필요 · 성공 시 현상금 대폭 상승", failRisk: "건강 -30",
+        personality: { ambition: 8, freedom: 6 },
+        apply: (state) => { state.bounty += 60_000_000; state.reputation = (state.reputation || 0) - 15; return "군함의 방어선을 일격에 격파하고 포위망을 뚫었다. 바다는 공포에 떨었다."; },
+        fail: (state) => { state.health -= 30; return "함포 사격을 뚫고 간신히 탈출했다. 상처는 깊었지만 악명은 더욱 치솟았다."; } }
+    ] },
+  { id: "life_emperor_decree", age: 50, art: "deckCommand", title: "사황의 영역과 깃발", when: () => false,
+    body: (life) => `신세계에 펄럭이는 ${life.birth.name}의 해적 깃발 아래 여러 섬과 산하 해적단이 모였다. 다른 사황과의 해역 경계, 영역 주민 보호, 쳐들어오는 최악의 세대 루키들을 어떻게 다룰지 결단을 내려야 했다.`,
+    choices: [
+      { id: "protect", label: "가맹하지 못한 섬들에게 깃발을 빌려주고 보호한다", risk: "지역의 신뢰 +20 · 물자 -10 · 명성 상승", personality: { empathy: 8, loyalty: 6 },
+        apply: (state) => { state.trust += 20; state.supplies -= 10; state.reputation = (state.reputation || 0) + 15; return "사황의 깃발 아래 주민들은 평화를 얻었다. 바다 곳곳에서 신뢰의 목소리가 모였다."; } },
+      { id: "dominate", label: "신세계 해상 요충지를 장악해 통행세를 거둔다", risk: "물자 +30 · 현상금 5억 상승 · 악명 상승", personality: { ambition: 9, caution: -5 },
+        apply: (state) => { state.supplies += 30; state.bounty += 500_000_000; state.reputation = (state.reputation || 0) - 10; return "철저한 패권 장악으로 막대한 군수 물자를 확보했다. 신세계의 긴장감이 높아졌다."; } },
+      { id: "clash", label: "영해를 침범한 적대 사황 간부 선단을 직접 격퇴한다", needs: { skill: 75, health: 60 }, risk: "기술 75 · 건강 60 필요 · 성공 시 현상금 3억 상승", failRisk: "건강 -25",
+        personality: { ambition: 8, loyalty: 5 },
+        apply: (state) => { state.skill += 10; state.health -= 10; state.bounty += 300_000_000; state.reputation = (state.reputation || 0) + 10; return "선두에 서서 적대 세력을 일격에 바다로 밀어냈다. 사황의 위엄을 확고히 각인시켰다."; },
+        fail: (state) => { state.health -= 25; return "치열한 교전 끝에 상대를 몰아냈지만 깊은 상처가 남았다."; } }
+    ] },
+  { id: "life_admiral_verdict", age: 50, art: "deckCommand", title: "대장의 정의와 결단", when: () => false,
+    body: (life) => `해군 대장의 정의 코트를 걸친 ${life.birth.name}의 집무실로 중대한 전보가 들어왔다. 천룡인의 불합리한 출격 명령과 관할 해역 민간인 피난 작전의 우선순위를 정해야 했다.`,
+    choices: [
+      { id: "protect_civilians", label: "천룡인의 호위를 미루고 민간인 피난선부터 호송한다", risk: "지역의 신뢰 +25 · 명성 상승 · 본부의 질책", personality: { empathy: 9, loyalty: 4 },
+        apply: (state) => { state.trust += 25; state.reputation = (state.reputation || 0) + 20; state.injustice = true; return "민간인 수천 명을 무사히 구출했다. 천룡인은 분노했지만 바다의 사람들은 대장의 정의를 칭송했다."; } },
+      { id: "iron_justice", label: "해군 본부의 군사 작전을 최우선으로 위험 분자를 섬멸한다", needs: { skill: 70, health: 50 }, risk: "기술 70 · 건강 50 필요 · 수감 실적 상승", failRisk: "건강 -20",
+        personality: { loyalty: 8, ambition: 6 },
+        apply: (state) => { state.skill += 10; state.supplies += 15; state.arrestCount = (state.arrestCount || 0) + 2; state.reputation = (state.reputation || 0) + 10; return "흉악 해적 선단을 궤멸시키고 주동자를 임펠 다운으로 호송했다."; },
+        fail: (state) => { state.health -= 20; return "격렬한 저항에 부딪혀 일부를 놓쳤다. 함선 정비에 시간이 걸렸다."; } }
+    ] },
+  { id: "life_liberator_strike", age: 50, art: "workbenchNegotiation", title: "혁명군 군대장의 결단", when: () => false,
+    body: "세계정부 가맹국의 폭정에 맞선 민중 봉기가 일어났다. 천룡인에게 바칠 천상금 수송선을 가로막고 혁명 세력을 전면 지원할 시기가 왔다.",
+    choices: [
+      { id: "intercept", label: "천룡인의 수송선을 급습해 물자를 해방군에 나눈다", risk: "물자 +35 · 지역의 신뢰 +20 · 명성 상승", personality: { freedom: 8, empathy: 7 },
+        apply: (state) => { state.supplies += 35; state.trust += 20; state.reputation = (state.reputation || 0) + 15; return "천상금을 빼앗아 굶주린 백성들에게 곡식과 약품을 배급했다. 해방의 함성이 울렸다."; } },
+      { id: "liberate", label: "억압받는 주민들을 훈련시키고 자치 방위군을 결성한다", risk: "기술 +10 · 지역의 신뢰 +25 · 유대 상승", personality: { loyalty: 8, empathy: 6 },
+        apply: (state) => { state.skill += 10; state.trust += 25; state.friendBond += 15; return "주민들 스스로 나라를 지킬 수 있는 힘을 길러주었다. 혁명의 불씨가 뿌리내렸다."; } }
+    ] }
 ];
 
 export const lifeScenes = [...origin, ...scenes.map((card) => ({ act: card.age === 0 ? 1 : 2, species: "all", ...card }))]
@@ -669,19 +847,126 @@ function careerOpportunity(life, age, base) {
   return opportunities.length ? opportunities[yearRoll(life.seed, age) % opportunities.length] : null;
 }
 
-function rankOpportunity(life, age, base) {
+function rankRequirementsV20(life, tier) {
+  const path = life.path;
+  if (path === "marine") {
+    // ["상사", "소위", "소령", "대령", "중장"]
+    const reqs = [
+      { skill: 35, rep: 5, arrests: 1, bounty: 3_000_000 },
+      { skill: 45, rep: 15, arrests: 2, bounty: 15_000_000 },
+      { skill: 55, rep: 25, arrests: 3, bounty: 40_000_000 },
+      { skill: 62, rep: 40, arrests: 4, bounty: 80_000_000 },
+      { skill: 68, rep: 60, arrests: 5, bounty: 200_000_000 }
+    ];
+    const r = reqs[tier] || reqs[reqs.length - 1];
+    const rep = life.reputation || 0;
+    const met = rep >= 0 && life.skill >= r.skill && rep >= r.rep
+      && (life.arrestCount || 0) >= r.arrests && (life.arrestBounty || 0) >= r.bounty;
+    return {
+      met,
+      risk: `기술 ${r.skill} · 명성 ${r.rep} · 수감 ${r.arrests}명(${formatBounty(r.bounty)}) 필요`,
+      onAccept: (state) => {
+        state.reputation = (state.reputation || 0) + 10;
+        return `동료와 사령부가 ${state.birth.name}의 해적 토벌 실적과 군공을 인정하여 ${state.role}으로 진급시켰다.`;
+      }
+    };
+  }
+
+  if (path === "pirate") {
+    // ["선원", "간부", "부선장"]
+    const reqs = [
+      { skill: 35, bounty: 0, infamy: 0, chivalry: 0 },
+      { skill: 50, bounty: 25_000_000, infamy: 10, chivalry: 20 },
+      { skill: 65, bounty: 80_000_000, infamy: 25, chivalry: 45 }
+    ];
+    const r = reqs[tier] || reqs[reqs.length - 1];
+    const rep = life.reputation || 0;
+    const repMet = tier === 0 || rep <= -r.infamy || rep >= r.chivalry;
+    const met = life.skill >= r.skill && (life.bounty || 0) >= r.bounty && repMet;
+    const risk = tier === 0
+      ? `기술 ${r.skill} 필요`
+      : `기술 ${r.skill} · 현상금 ${formatBounty(r.bounty)} · 악명 ${r.infamy}(또는 명성 ${r.chivalry}) 필요`;
+    return {
+      met,
+      risk,
+      onAccept: (state) => {
+        if ((state.reputation || 0) < 0) state.reputation = (state.reputation || 0) - 10;
+        else state.reputation = (state.reputation || 0) + 10;
+        return `선장과 선원들이 ${state.birth.name}의 이름과 실력을 인정하여 ${state.role}의 자리를 맡겼다.`;
+      }
+    };
+  }
+
+  if (path === "liberator") {
+    // ["현장 연락원", "지역 연락 책임자", "작전 책임자"]
+    const reqs = [
+      { skill: 35, rep: 5, trust: 35 },
+      { skill: 50, rep: 20, trust: 45 },
+      { skill: 65, rep: 40, trust: 55 }
+    ];
+    const r = reqs[tier] || reqs[reqs.length - 1];
+    const rep = life.reputation || 0;
+    const met = life.skill >= r.skill && rep >= r.rep && standing(life) >= r.trust;
+    return {
+      met,
+      risk: `기술 ${r.skill} · 명성 ${r.rep} · 신뢰 ${r.trust} 필요`,
+      onAccept: (state) => {
+        state.reputation = (state.reputation || 0) + 10;
+        return `혁명군 연락망이 ${state.birth.name}의 신망과 공헌을 인정하여 ${state.role}의 임무를 맡겼다.`;
+      }
+    };
+  }
+
+  // civilian: ["숙련 일꾼", "수리반장", "조합 책임자"]
+  const reqs = [
+    { skill: 35, rep: 0, trust: 35 },
+    { skill: 50, rep: 10, trust: 45 },
+    { skill: 65, rep: 20, trust: 55 }
+  ];
+  const r = reqs[tier] || reqs[reqs.length - 1];
+  const rep = life.reputation || 0;
+  const met = life.skill >= r.skill && rep >= r.rep && standing(life) >= r.trust;
+  return {
+    met,
+    risk: `기술 ${r.skill} · 명성 ${r.rep} · 신뢰 ${r.trust} 필요`,
+    onAccept: (state) => {
+      state.reputation = (state.reputation || 0) + 5;
+      return `조합의 장인들이 ${state.birth.name}의 솜씨와 신용을 높이 사 ${state.role}의 직책을 맡겼다.`;
+    }
+  };
+}
+
+export function rankOpportunity(life, age, base) {
   if (life.creationVersion < 2 || !life.path || life.homebound || life.independent || life.retired) return null;
   const tier = life.rankTier;
-  const requirements = life.creationVersion >= 11
-    ? [{ skill: 35, trust: 35 }, { skill: 45, trust: 42 }, { skill: 55, trust: 48 }, { skill: 62, trust: 54 }, { skill: 68, trust: 60 }]
-    : [{ skill: 45, trust: 40 }, { skill: 65, trust: 50 }, { skill: 80, trust: 60 }, { skill: 85, trust: 70 }, { skill: 90, trust: 80 }];
   // Rule 3 offers the next rank sooner after an accepted promotion; a declined offer waits the old interval.
   const rankGap = life.creationVersion >= 3 && !life.rankDeclined && life.lastRankOfferAge >= life.careerStartAge ? giant(life) ? 12 : 6 : giant(life) ? 20 : 12;
   // In original mode a canon crew's officer seats are taken by canon characters, so the player stays a deckhand.
   if (life.canonCrew && life.mode === "original" && tier >= 1) return null;
   if (life.canonCrew === "밀짚모자 일당") return null;
-  if (tier >= RANK_ROLES[life.path].length || age - life.careerStartAge < 3 || age - life.lastRankOfferAge < rankGap
-    || life.skill < requirements[tier].skill || standing(life) < requirements[tier].trust
+  if (tier >= RANK_ROLES[life.path].length || age - life.careerStartAge < 3 || age - life.lastRankOfferAge < rankGap) return null;
+
+  if (life.creationVersion >= 20) {
+    const v20 = rankRequirementsV20(life, tier);
+    if (!v20.met) return null;
+    const nextRole = RANK_ROLES[life.path][tier];
+    if (life.journal.slice(-10).some((entry) => entry.title === `${nextRole}의 제안`)) return null;
+    return { ...base, id: `life_rank_${tier + 1}_${age}`, urgent: true, art: "workbench", title: `${nextRole}의 제안`,
+      body: `${life.affiliation}에서 ${life.birth.name}이 남긴 일과 평판을 살폈다. 더 높은 책임을 맡을 자리가 비었지만 받아들일지는 본인이 정해야 했다.`, choices: [
+        { id: "remain", label: "지금의 직책에서 더 배운다", risk: "현재 직책 유지 · 기술 +10", personality: { caution: 4 },
+          apply: (state) => { state.lastRankOfferAge = age; state.rankDeclined = true; state.skill += 10; return "제안을 미루고 현장에서 맡은 일을 계속했다."; } },
+        { id: "accept", label: `${nextRole}의 책임을 맡는다`, risk: v20.risk,
+          personality: { ambition: 5, loyalty: 4 }, apply: (state) => {
+            state.rankTier += 1; state.role = nextRole; state.lastRankOfferAge = age; state.rankDeclined = false;
+            return v20.onAccept(state);
+          } }
+      ] };
+  }
+
+  const requirements = life.creationVersion >= 11
+    ? [{ skill: 35, trust: 35 }, { skill: 45, trust: 42 }, { skill: 55, trust: 48 }, { skill: 62, trust: 54 }, { skill: 68, trust: 60 }]
+    : [{ skill: 45, trust: 40 }, { skill: 65, trust: 50 }, { skill: 80, trust: 60 }, { skill: 85, trust: 70 }, { skill: 90, trust: 80 }];
+  if (life.skill < requirements[tier].skill || standing(life) < requirements[tier].trust
     || life.creationVersion < 11 && !life.seen.includes("life_orders")) return null;
   const nextRole = RANK_ROLES[life.path][tier];
   if (life.creationVersion >= 11 && life.journal.slice(-10).some((entry) => entry.title === `${nextRole}의 제안`)) return null;
@@ -877,6 +1162,150 @@ function careerStart(life, age, base) {
   return offerFor(path, life, age, base);
 }
 
+function systemEventScene(life, age, base) {
+  if (life.creationVersion < 20 || life.retired) return null;
+
+  // 1. IF governance scenes (Emperor / Admiral / Commander)
+  if (life.worldBranch === "emperor" && !life.seen.includes("life_emperor_decree")) {
+    return {
+      ...base, id: "life_emperor_decree", urgent: true, art: "deckCommand", title: "사황의 영역과 깃발",
+      body: `신세계에 펄럭이는 ${life.birth.name}의 해적 깃발 아래 여러 섬과 산하 해적단이 모였다. 다른 사황과의 해역 경계, 영역 주민 보호, 쳐들어오는 최악의 세대 루키들을 어떻게 다룰지 결단을 내려야 했다.`,
+      choices: [
+        { id: "protect", label: "가맹하지 못한 섬들에게 깃발을 빌려주고 보호한다", risk: "지역의 신뢰 +20 · 물자 -10 · 명성 상승", personality: { empathy: 8, loyalty: 6 },
+          apply: (state) => { state.trust += 20; state.supplies -= 10; state.reputation = (state.reputation || 0) + 15; return "사황의 깃발 아래 주민들은 평화를 얻었다. 바다 곳곳에서 신뢰의 목소리가 모였다."; } },
+        { id: "dominate", label: "신세계 해상 요충지를 장악해 통행세를 거둔다", risk: "물자 +30 · 현상금 5억 상승 · 악명 상승", personality: { ambition: 9, caution: -5 },
+          apply: (state) => { state.supplies += 30; state.bounty += 500_000_000; state.reputation = (state.reputation || 0) - 10; return "철저한 패권 장악으로 막대한 군수 물자를 확보했다. 신세계의 긴장감이 높아졌다."; } },
+        { id: "clash", label: "영해를 침범한 적대 사황 간부 선단을 직접 격퇴한다", needs: { skill: 75, health: 60 }, risk: "기술 75 · 건강 60 필요 · 성공 시 현상금 3억 상승", failRisk: "건강 -25",
+          personality: { ambition: 8, loyalty: 5 },
+          apply: (state) => { state.skill += 10; state.health -= 10; state.bounty += 300_000_000; state.reputation = (state.reputation || 0) + 10; return "선두에 서서 적대 세력을 일격에 바다로 밀어냈다. 사황의 위엄을 확고히 각인시켰다."; },
+          fail: (state) => { state.health -= 25; return "치열한 교전 끝에 상대를 몰아냈지만 깊은 상처가 남았다."; } }
+      ]
+    };
+  }
+  if (life.worldBranch === "admiral" && !life.seen.includes("life_admiral_verdict")) {
+    return {
+      ...base, id: "life_admiral_verdict", urgent: true, art: "deckCommand", title: "대장의 정의와 결단",
+      body: `해군 대장의 정의 코트를 걸친 ${life.birth.name}의 집무실로 중대한 전보가 들어왔다. 천룡인의 불합리한 출격 명령과 관할 해역 민간인 피난 작전의 우선순위를 정해야 했다.`,
+      choices: [
+        { id: "protect_civilians", label: "천룡인의 호위를 미루고 민간인 피난선부터 호송한다", risk: "지역의 신뢰 +25 · 명성 상승 · 본부의 질책", personality: { empathy: 9, loyalty: 4 },
+          apply: (state) => { state.trust += 25; state.reputation = (state.reputation || 0) + 20; state.injustice = true; return "민간인 수천 명을 무사히 구출했다. 천룡인은 분노했지만 바다의 사람들은 대장의 정의를 칭송했다."; } },
+        { id: "iron_justice", label: "해군 본부의 군사 작전을 최우선으로 위험 분자를 섬멸한다", needs: { skill: 70, health: 50 }, risk: "기술 70 · 건강 50 필요 · 수감 실적 상승", failRisk: "건강 -20",
+          personality: { loyalty: 8, ambition: 6 },
+          apply: (state) => { state.skill += 10; state.supplies += 15; state.arrestCount = (state.arrestCount || 0) + 2; state.reputation = (state.reputation || 0) + 10; return "흉악 해적 선단을 궤멸시키고 주동자를 임펠 다운으로 호송했다."; },
+          fail: (state) => { state.health -= 20; return "격렬한 저항에 부딪혀 일부를 놓쳤다. 함선 정비에 시간이 걸렸다."; } }
+      ]
+    };
+  }
+  if (life.worldBranch === "commander" && !life.seen.includes("life_liberator_strike")) {
+    return {
+      ...base, id: "life_liberator_strike", urgent: true, art: "workbenchNegotiation", title: "혁명군 군대장의 결단",
+      body: "세계정부 가맹국의 폭정에 맞선 민중 봉기가 일어났다. 천룡인에게 바칠 천상금 수송선을 가로막고 혁명 세력을 전면 지원할 시기가 왔다.",
+      choices: [
+        { id: "intercept", label: "천룡인의 수송선을 급습해 물자를 해방군에 나눈다", risk: "물자 +35 · 지역의 신뢰 +20 · 명성 상승", personality: { freedom: 8, empathy: 7 },
+          apply: (state) => { state.supplies += 35; state.trust += 20; state.reputation = (state.reputation || 0) + 15; return "천상금을 빼앗아 굶주린 백성들에게 곡식과 약품을 배급했다. 해방의 함성이 울렸다."; } },
+        { id: "liberate", label: "억압받는 주민들을 훈련시키고 자치 방위군을 결성한다", risk: "기술 +10 · 지역의 신뢰 +25 · 유대 상승", personality: { loyalty: 8, empathy: 6 },
+          apply: (state) => { state.skill += 10; state.trust += 25; state.friendBond += 15; return "주민들 스스로 나라를 지킬 수 있는 힘을 길러주었다. 혁명의 불씨가 뿌리내렸다."; } }
+      ]
+    };
+  }
+
+  // 2. Childhood friend adult reunion
+  if (life.friendName && !life.homebound && age >= 30 && !life.seen.includes("life_friend_reunion") && (age % 4 === 0 || life.friendBond >= 55)) {
+    return {
+      ...base, id: "life_friend_reunion", urgent: true, art: "harborReunion", title: "노을빛 부두의 재회",
+      body: `낯선 기항지의 부두에서 익숙한 목소리가 들렸다. 어린 시절 고향에서 함께 바다를 바라보던 소꿉친구 ${life.friendName}이었다! 세월이 흘러 어엿한 바다의 일꾼으로 마주 선 두 사람은 등불 아래 마주 앉았다.`,
+      choices: [
+        { id: "celebrate", label: "함께 술잔을 기울이며 옛 추억을 나눈다", risk: "친구와의 유대 +15 · 지역의 신뢰 +10 · 건강 +5", personality: { empathy: 6, freedom: 4 },
+          apply: (state) => { state.friendBond += 15; state.trust += 10; state.health += 5; return `${state.friendName}과 밤새 고향 이야기를 나눴다. 각자의 바다를 걷고 있어도 마음만은 그때로 돌아갔다.`; } },
+        { id: "support", label: "서로의 항해 물자를 나누고 행운을 빈다", risk: "물자 +20 · 친구와의 유대 +10", personality: { loyalty: 6, caution: 4 },
+          apply: (state) => { state.supplies += 20; state.friendBond += 10; return `${state.friendName}이 건넨 보급품을 싣고 다시 출항을 준비했다. 먼바다에서도 서로를 잊지 않기로 했다.`; } }
+      ]
+    };
+  }
+
+  // 3. High personality (70+) events
+  if ((life.personality?.ambition || 0) >= 70 && age >= 35 && !life.seen.includes("life_personality_ambition")) {
+    return {
+      ...base, id: "life_personality_ambition", urgent: true, art: "deckCommand", title: "정점을 향한 야망",
+      body: "가슴속에서 타오르는 거대한 야망이 더 이상 작은 배에 안주할 수 없게 만들었다. 칠무해나 거대 세력의 영토에 맞서 자신만의 패권을 증명할 기회가 눈앞에 다가왔다.",
+      choices: [
+        { id: "challenge", label: "거대 세력의 정박지에 깃발을 꽂고 정면 승부한다", needs: { skill: 65, health: 50 }, risk: "기술 65 · 건강 50 필요 · 성공 시 현상금 대폭 상승", failRisk: "건강 -25",
+          personality: { ambition: 9, caution: -5 },
+          apply: (state) => { if (state.path === "pirate") state.bounty += 50_000_000; state.reputation = (state.reputation || 0) + 20; state.trust += 10; return "거대 세력의 방어선을 뚫고 깃발을 세웠다. 바다 전체에 거대한 야망의 이름이 울려 퍼졌다."; },
+          fail: (state) => { state.health -= 25; return "거센 반격에 물러섰지만 가슴속의 야망은 꺾이지 않았다."; } },
+        { id: "scheme", label: "수면 아래에서 세력을 규합해 기반을 다진다", risk: "물자 +30 · 지역의 신뢰 +15", personality: { ambition: 7, caution: 5 },
+          apply: (state) => { state.supplies += 30; state.trust += 15; return "치밀한 포섭으로 여러 선단을 영향력 아래 두었다. 조용한 거물이 되어가고 있었다."; } }
+      ]
+    };
+  }
+  if ((life.personality?.empathy || 0) >= 70 && age >= 35 && !life.seen.includes("life_personality_empathy")) {
+    return {
+      ...base, id: "life_personality_empathy", urgent: true, art: "harborRelief", title: "기항지에 퍼진 은혜",
+      body: "지나온 항구마다 베푼 온정과 구호의 손길이 마침내 거대한 보답으로 돌아왔다. 폭풍과 해군의 추격 속에서도 여러 섬의 주민들이 비밀리에 배를 숨겨주고 식량을 날라주었다.",
+      choices: [
+        { id: "network", label: "민간 구호와 비상 대피 연락망을 완성한다", risk: "지역의 신뢰 +25 · 건강 +15 · 물자 +20", personality: { empathy: 9, loyalty: 6 },
+          apply: (state) => { state.trust += 25; state.health += 15; state.supplies += 20; return "바다 곳곳에 위기 때 쉴 수 있는 피난처가 마련됐다. 선행은 가장 단단한 방패가 되었다."; } }
+      ]
+    };
+  }
+  if ((life.personality?.loyalty || 0) >= 70 && age >= 35 && !life.seen.includes("life_personality_loyalty")) {
+    return {
+      ...base, id: "life_personality_loyalty", urgent: true, art: "deckTenseStandoff", title: "목숨을 건 동료들의 맹세",
+      body: "절체절명의 암초 지대에서 적함에 포위당했을 때, 동료들이 한 치의 망설임도 없이 앞을 가로막아섰다. 서로를 위해 목숨을 던질 수 있는 유대감이 갑판을 가득 채웠다.",
+      choices: [
+        { id: "stand_together", label: "동료들과 어깨를 맞대고 포위망을 돌파한다", risk: "친구와의 유대 +20 · 지역의 신뢰 +15 · 건강 +10", personality: { loyalty: 9, empathy: 5 },
+          apply: (state) => { state.friendBond += 20; state.trust += 15; state.health += 10; return "완벽한 호흡으로 포위망을 찢고 빠져나왔다. 배의 깃발 아래 선원들은 영원한 형제가 되었다."; } }
+      ]
+    };
+  }
+  if ((life.personality?.caution || 0) >= 70 && age >= 35 && !life.seen.includes("life_personality_caution")) {
+    return {
+      ...base, id: "life_personality_caution", urgent: true, art: "workbenchReportLetters", title: "그림자 속의 음모 간파",
+      body: "항해 장부와 기항지 첩보 속에서 어색한 필적과 암살자의 독 냄새를 미리 알아챘다. 세계정부의 암살반이 쳐놓은 함정이 발동하기도 전에 판세를 뒤집을 기회였다.",
+      choices: [
+        { id: "counter", label: "함정을 역이용해 추적자들을 고립시킨다", risk: "기술 +15 · 물자 +25 · 평판 상승", personality: { caution: 8, loyalty: 4 },
+          apply: (state) => { state.skill += 15; state.supplies += 25; state.reputation = (state.reputation || 0) + 10; return "추적자들은 자신들이 판 함정에 빠졌다. 귀중한 첩보와 군수 물자를 획득했다."; } }
+      ]
+    };
+  }
+  if ((life.personality?.freedom || 0) >= 70 && age >= 35 && !life.seen.includes("life_personality_freedom")) {
+    return {
+      ...base, id: "life_personality_freedom", urgent: true, art: "harborDeparture", title: "해도 밖 미지의 하늘과 바다",
+      body: "정부와 해군이 그어놓은 해도에 얽매이지 않고 바람의 냄새만을 따라 항해한 끝에, 전설로만 내려오던 숨겨진 해저 동굴과 하늘섬으로 통하는 상승 해류를 발견했다!",
+      choices: [
+        { id: "explore", label: "지도에 없는 미지의 해역으로 키를 꺾는다", risk: "기술 +20 · 물자 +30 · 자유로운 영혼", personality: { freedom: 10, ambition: 5 },
+          apply: (state) => { state.skill += 20; state.supplies += 30; return "아무도 발 딛지 않은 환상의 섬에서 풍요로운 보급과 고대의 유적을 마주했다."; } }
+      ]
+    };
+  }
+
+  // 4. Reputation & arrest feedback
+  if (life.path === "marine" && (life.arrestCount || 0) >= 2 && !life.seen.includes("life_marine_commendation")) {
+    return {
+      ...base, id: "life_marine_commendation", urgent: true, art: "workbenchReportLetters", title: "본부 수감 실적 특별 포상",
+      body: "수많은 흉악 해적을 체포해 임펠 다운으로 호송한 혁혁한 공로가 인정되어, 해군 본부 원수로부터 특별 포상과 훈장이 수여됐다.",
+      choices: [
+        { id: "accept", label: "포상을 수락하고 함대 보급을 확충한다", risk: "물자 +30 · 지역의 신뢰 +20 · 명성 상승", personality: { loyalty: 6, ambition: 5 },
+          apply: (state) => { state.supplies += 30; state.trust += 20; state.reputation = (state.reputation || 0) + 15; return "본부의 전폭적인 지원으로 최신형 함포와 보급선을 지원받았다."; } }
+      ]
+    };
+  }
+  if (life.path === "pirate" && (life.reputation || 0) <= -25 && !life.seen.includes("life_infamy_standoff")) {
+    return {
+      ...base, id: "life_infamy_standoff", urgent: true, art: "harborBountyInspection", title: "바다를 뒤흔든 악명",
+      body: "세계정부가 특급 위험 인물로 지정하며 파견한 정예 군함들이 항구를 봉쇄했다. 자비 없는 악명 앞에 부두 전체가 얼어붙었다.",
+      choices: [
+        { id: "breakout", label: "악명에 걸맞은 무력으로 포위망을 분쇄한다", needs: { skill: 65, health: 50 }, risk: "기술 65 · 건강 50 필요 · 성공 시 현상금 대폭 상승", failRisk: "건강 -30",
+          personality: { ambition: 8, freedom: 6 },
+          apply: (state) => { state.bounty += 60_000_000; state.reputation = (state.reputation || 0) - 15; return "군함의 방어선을 일격에 격파하고 포위망을 뚫었다. 바다는 공포에 떨었다."; },
+          fail: (state) => { state.health -= 30; return "함포 사격을 뚫고 간신히 탈출했다. 상처는 깊었지만 악명은 더욱 치솟았다."; } }
+      ]
+    };
+  }
+
+  return null;
+}
+
 function sceneForAge(life) {
   const age = life.age + 1;
   const base = { id: `life_year_${age}`, age, act: age < (giant(life) ? 112 : 19) ? 1 : 2, species: "all", yearly: true };
@@ -899,7 +1328,13 @@ function sceneForAge(life) {
   const ifReady = life.creationVersion === 1 ? true : life.creationVersion === 2
     ? life.path === "pirate" ? life.independent && life.role === "선장" : life.rankTier >= 5
     : standing(life) >= (life.creationVersion >= 11 ? 45 : 50) && (life.path === "pirate" ? life.independent || life.rankTier >= 2 : life.rankTier >= (life.path === "marine" ? 3 : 2));
-  if ((stretched(life) ? life.canonStep >= canonIfAfter(life) && !life.seen.includes("life_free_rank") : age === life.birth.yearsBeforeCurrent - 1 || life.creationVersion >= 4 && age === life.birth.yearsBeforeCurrent)
+  const ifCanonStepOk = life.creationVersion >= 20
+    ? (life.canonStep >= canonIfAfter(life) || (life.canonStep >= 5 && (standing(life) >= 55 || (life.bounty || 0) >= 500_000_000 || (life.rankTier || 0) >= 4 || (life.path === "liberator" && (life.trust || 0) >= 60))))
+    : life.canonStep >= canonIfAfter(life);
+  const ifStepDue = stretched(life)
+    ? ifCanonStepOk && !life.seen.includes("life_free_rank")
+    : age === life.birth.yearsBeforeCurrent - 1 || life.creationVersion >= 4 && age === life.birth.yearsBeforeCurrent;
+  if (ifStepDue
     && life.mode === "free" && !life.retired
     && (life.creationVersion >= 3 ? ["pirate", "marine", "liberator"] : ["pirate", "marine"]).includes(life.path) && ifReady) {
     if (life.path === "liberator") return { ...base, id: "life_free_rank", urgent: true, art: "workbench", title: "비어 있는 군대장 자리",
@@ -926,7 +1361,9 @@ function sceneForAge(life) {
           risk: `기술 ${need.skill} · 신뢰 ${need.trust} · 건강 ${need.health} 필요`, personality: { ambition: 10, loyalty: 5 },
           apply: (state) => { state.role = pirate ? "사황" : "해군 대장"; state.worldBranch = pirate ? "emperor" : "admiral"; state.pendingBranch = true; state.people.branchAge = age; state.trust += 10;
             if (pirate && state.creationVersion >= 4) state.bounty = Math.max(state.bounty, 3_000_000_000);
-            return pirate ? `${state.birth.name}의 세력이 버기 대신 사황으로 인정받는 IF가 열렸다.` : `${state.birth.name}이 아라마키 대신 해군 대장으로 임명되는 IF가 열렸다.`; } },
+            return pirate
+              ? (state.creationVersion >= 20 && state.canonStep < 8 ? `${state.birth.name}의 세력이 사황의 한 축으로 인정받는 IF가 열렸다.` : `${state.birth.name}의 세력이 버기 대신 사황으로 인정받는 IF가 열렸다.`)
+              : (state.creationVersion >= 20 && state.canonStep < 8 ? `${state.birth.name}이 새로운 해군 대장으로 임명되는 IF가 열렸다.` : `${state.birth.name}이 아라마키 대신 해군 대장으로 임명되는 IF가 열렸다.`); } },
         { id: "decline", label: "지금 맡은 사람들을 지킨다", risk: "기존 직책 유지 · 지역의 신뢰 +10",
           personality: { loyalty: 6, caution: 4 }, apply: (state) => { state.trust += 10; return "더 큰 이름을 얻는 대신 곁의 사람들과 남았다."; } }
       ] };
@@ -997,6 +1434,10 @@ function sceneForAge(life) {
   if (bond) return bond;
   const wanted = bountyScene(life, age, base);
   if (wanted) return wanted;
+  const patrol = marinePatrolScene(life, age, base);
+  if (patrol) return patrol;
+  const systemStory = life.creationVersion >= 20 ? systemEventScene(life, age, base) : null;
+  if (systemStory) return systemStory;
   const adventure = adventureScene(life, age, base);
   if (adventure) return adventure;
 

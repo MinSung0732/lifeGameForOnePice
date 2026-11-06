@@ -51,6 +51,293 @@ const ROUTES_V4 = {
 // Places where pirates gather; marines start with less goodwill there and pirates with more.
 const PIRATE_HAVENS = ["자야 · 모크 타운", "하치노스 근해", "샤본디 제도"];
 
+// Rule 20 route network: integrates canon islands and custom (임의 지명) uncharted stops
+// with distance-proportional supply costs (단거리 8~12, 중거리 16~22, 원거리 26~32, 심해 잠항 30).
+export const ROUTES_V20 = {
+  // 1. 위대한 항로 전반부 · 낙원 (Paradise)
+  "리버스 마운틴": [
+    { dest: "쌍둥이 언덕", dist: "단거리", cost: 10, note: "운하를 타고 등대 입구로 진입" },
+    { dest: "위스키 피크", dist: "중거리", cost: 18, note: "기록지침 첫 번째 기항지" },
+    { dest: "물안개 암초군(임의 지명)", dist: "원거리", cost: 26, note: "리버스 마운틴 기슭의 안개 바다" }
+  ],
+  "쌍둥이 언덕": [
+    { dest: "위스키 피크", dist: "단거리", cost: 10, note: "선인장 바위산 환영의 마을" },
+    { dest: "리틀 가든", dist: "중거리", cost: 18, note: "태고의 거인과 공룡이 사는 숲" },
+    { dest: "돌소금 여울(임의 지명)", dist: "원거리", cost: 26, note: "소금바람 부는 무인 암초대" }
+  ],
+  "위스키 피크": [
+    { dest: "리틀 가든", dist: "단거리", cost: 10, note: "거인족 결투가 울리는 섬" },
+    { dest: "드럼섬", dist: "중거리", cost: 18, note: "설산과 사쿠라 왕국" },
+    { dest: "해류목 군도(임의 지명)", dist: "원거리", cost: 28, note: "표류목이 모이는 외딴 군도" }
+  ],
+  "리틀 가든": [
+    { dest: "드럼섬", dist: "단거리", cost: 10, note: "의술과 눈 덮인 겨울섬" },
+    { dest: "알라바스타 · 나노하나", dist: "중거리", cost: 20, note: "사막 왕국의 분주한 무역항" },
+    { dest: "산호별 환초(임의 지명)", dist: "원거리", cost: 28, note: "캄 벨트 인근의 얕은 산호섬" }
+  ],
+  "드럼섬": [
+    { dest: "알라바스타 · 나노하나", dist: "단거리", cost: 10, note: "모래바람 부는 사막 항구" },
+    { dest: "자야 · 모크 타운", dist: "중거리", cost: 20, note: "해적과 건달들의 무법지대" },
+    { dest: "소용돌이 갯길(임의 지명)", dist: "원거리", cost: 28, note: "변덕스러운 와류가 도는 해협" }
+  ],
+  "알라바스타 · 나노하나": [
+    { dest: "자야 · 모크 타운", dist: "단거리", cost: 12, note: "술집과 현상금 사냥꾼의 항구" },
+    { dest: "롱 링 롱 랜드", dist: "중거리", cost: 20, note: "끝없는 평원과 유목민의 바다" },
+    { dest: "바람길 암초(임의 지명)", dist: "원거리", cost: 28, note: "돌풍이 잦아드는 외딴 바위섬" }
+  ],
+  "자야 · 모크 타운": [
+    { dest: "롱 링 롱 랜드", dist: "단거리", cost: 10, note: "길쭉한 동물과 유목민들의 섬" },
+    { dest: "워터 세븐", dist: "중거리", cost: 20, note: "분수와 바다열차가 달리는 수로 도시" },
+    { dest: "하늘구름 외곽(임의 지명)", dist: "원거리", cost: 30, note: "돌출 해류 너머 구름바다 언저리" }
+  ],
+  "롱 링 롱 랜드": [
+    { dest: "워터 세븐", dist: "단거리", cost: 10, note: "조선공들의 거대한 물의 도시" },
+    { dest: "샤본디 제도", dist: "중거리", cost: 22, note: "맹그로브 숲과 비누방울 항구" },
+    { dest: "스릴러 바크 외해(임의 지명)", dist: "원거리", cost: 28, note: "마의 삼각지대 짙은 안개 바다" }
+  ],
+  "워터 세븐": [
+    { dest: "샤본디 제도", dist: "단거리", cost: 12, note: "레드 라인 앞의 마지막 기항지" },
+    { dest: "롱 링 롱 랜드", dist: "중거리", cost: 18, note: "평온한 초원 바다로의 역항해" },
+    { dest: "소금바람 요새(임의 지명)", dist: "원거리", cost: 28, note: "정부 전용 타라이 해류 부근" }
+  ],
+  "샤본디 제도": [
+    { dest: "어인섬", dist: "심해 잠항", cost: 30, note: "선박 코팅 포함 · 해저 1만m 항해" },
+    { dest: "워터 세븐", dist: "중거리", cost: 18, note: "기록지침 역방향 수로 도시" },
+    { dest: "거품여울 군도(임의 지명)", dist: "단거리", cost: 10, note: "야르키만 맹그로브 외곽 섬" }
+  ],
+
+  // 2. 심해 및 신세계 (New World)
+  "어인섬": [
+    { dest: "펑크 하자드", dist: "단거리", cost: 12, note: "신세계 부상 후 첫 번째 금지 구역" },
+    { dest: "드레스로자", dist: "중거리", cost: 22, note: "꽃과 정열의 번영한 섬" },
+    { dest: "해저 산호길(임의 지명)", dist: "원거리", cost: 28, note: "심해 해류를 타고 도는 외곽 암초" }
+  ],
+  "펑크 하자드": [
+    { dest: "드레스로자", dist: "단거리", cost: 10, note: "콜로세움과 왕궁이 있는 번화한 섬" },
+    { dest: "그린 비트", dist: "중거리", cost: 18, note: "거대한 식물과 요정의 숲" },
+    { dest: "용암빙벽 암초(임의 지명)", dist: "원거리", cost: 28, note: "불과 얼음 해류가 맞부딪치는 바다" }
+  ],
+  "드레스로자": [
+    { dest: "그린 비트", dist: "단거리", cost: 8, note: "철교 너머 난쟁이들의 섬" },
+    { dest: "조", dist: "중거리", cost: 20, note: "안개 속에 숨은 거대 코끼리의 등" },
+    { dest: "붉은 이끼 환초(임의 지명)", dist: "원거리", cost: 28, note: "신세계 남동쪽 따뜻한 모래톱" }
+  ],
+  "그린 비트": [
+    { dest: "조", dist: "단거리", cost: 12, note: "기록지침에 잡히지 않는 살아있는 섬" },
+    { dest: "홀케이크 아일랜드 외해", dist: "중거리", cost: 22, note: "사황의 영역 토트랜드 외곽" },
+    { dest: "투어의 서식지(임의 지명)", dist: "원거리", cost: 28, note: "사나운 투어 떼가 뛰노는 절벽 바다" }
+  ],
+  "조": [
+    { dest: "와노국 외해", dist: "단거리", cost: 12, note: "폭포 절벽 아래 거친 파도의 바다" },
+    { dest: "홀케이크 아일랜드 외해", dist: "중거리", cost: 20, note: "과자 섬들이 둘러싼 사황의 영해" },
+    { dest: "안개코끼리 바닷길(임의 지명)", dist: "원거리", cost: 28, note: "즈니샤의 발자국을 따르는 해류" }
+  ],
+  "홀케이크 아일랜드 외해": [
+    { dest: "와노국 외해", dist: "단거리", cost: 12, note: "구름과 번개가 치는 쇄국의 외해" },
+    { dest: "엘바프", dist: "중거리", cost: 22, note: "세계 최강 거인 전사들의 왕국" },
+    { dest: "사탕소금 군도(임의 지명)", dist: "원거리", cost: 28, note: "토트랜드 국경 경비정의 순찰선" }
+  ],
+  "와노국 외해": [
+    { dest: "에그헤드 외해", dist: "단거리", cost: 12, note: "미래섬의 거대 돔 바다" },
+    { dest: "엘바프", dist: "중거리", cost: 20, note: "거대한 보물나무 아담이 솟은 섬" },
+    { dest: "검은 번개 여울(임의 지명)", dist: "원거리", cost: 30, note: "와노국 근해의 험악한 와류" }
+  ],
+  "에그헤드 외해": [
+    { dest: "엘바프", dist: "단거리", cost: 10, note: "거인 전사들이 기다리는 북방의 바다" },
+    { dest: "조", dist: "중거리", cost: 22, note: "안개 바다 속으로 돌아가는 역항해" },
+    { dest: "철거인 해구(임의 지명)", dist: "원거리", cost: 28, note: "고대 병기의 파편이 잠든 바다" }
+  ],
+  "엘바프": [
+    { dest: "스핑크스 섬", dist: "단거리", cost: 12, note: "흰 수염의 조용한 고향 마을" },
+    { dest: "하치노스 근해", dist: "중거리", cost: 20, note: "해적섬 벌집의 술렁이는 바다" },
+    { dest: "거인나무 환초(임의 지명)", dist: "원거리", cost: 28, note: "엘바프 외곽의 울창한 목재 바위섬" }
+  ],
+  "스핑크스 섬": [
+    { dest: "드레스로자", dist: "단거리", cost: 12, note: "정열의 항구로 돌아가는 뱃길" },
+    { dest: "조", dist: "중거리", cost: 20, note: "살아있는 거상 즈니샤를 찾는 길" },
+    { dest: "흰모래 묘지(임의 지명)", dist: "원거리", cost: 28, note: "옛 해적들의 무덤이 있는 외딴섬" }
+  ],
+  "하치노스 근해": [
+    { dest: "스핑크스 섬", dist: "단거리", cost: 12, note: "비가맹국의 조용한 해안" },
+    { dest: "조", dist: "중거리", cost: 20, note: "기록지침 너머로 향하는 방랑 항해" },
+    { dest: "해적소굴 여울(임의 지명)", dist: "원거리", cost: 28, note: "약탈선들이 숨어드는 무법 암초" }
+  ],
+
+  // 3. 4대 블루 및 출신지
+  "이스트 블루 · 로그 타운": [
+    { dest: "리버스 마운틴", dist: "단거리", cost: 10, note: "위대한 항로 입구 관문 운하" },
+    { dest: "풍차언덕 암초(임의 지명)", dist: "중거리", cost: 16, note: "이스트 블루의 온화한 바다" },
+    { dest: "위스키 피크", dist: "원거리", cost: 26, note: "운하를 넘어 첫 번째 항로로 직행" }
+  ],
+  "사우스 블루 · 바테리라": [
+    { dest: "리버스 마운틴", dist: "단거리", cost: 10, note: "사우스 블루 쪽 해류 운하" },
+    { dest: "남십자 환초(임의 지명)", dist: "중거리", cost: 18, note: "남쪽 바다의 따뜻한 여울" },
+    { dest: "위스키 피크", dist: "원거리", cost: 26, note: "위대한 항로로의 직행 항해" }
+  ],
+  "웨스트 블루 · 카노 나라": [
+    { dest: "리버스 마운틴", dist: "단거리", cost: 10, note: "웨스트 블루 해류 운하" },
+    { dest: "서풍 암초(임의 지명)", dist: "중거리", cost: 18, note: "팔보수군 선단이 다니는 길" },
+    { dest: "위스키 피크", dist: "원거리", cost: 26, note: "운하를 넘어 그랜드 라인 진입" }
+  ],
+  "노스 블루 · 루브니르 왕국": [
+    { dest: "리버스 마운틴", dist: "단거리", cost: 10, note: "노스 블루의 거센 해류 운하" },
+    { dest: "북극성 모래섬(임의 지명)", dist: "중거리", cost: 18, note: "차가운 북방 바람의 모래톱" },
+    { dest: "위스키 피크", dist: "원거리", cost: 26, note: "리버스 마운틴을 넘는 원거리 항해" }
+  ],
+  "위대한 항로 상공 · 스카이피아": [
+    { dest: "자야 · 모크 타운", dist: "단거리", cost: 10, note: "청해로 내려가는 해류길" },
+    { dest: "롱 링 롱 랜드", dist: "중거리", cost: 18, note: "청해의 드넓은 초원 바다" },
+    { dest: "하늘구름 외곽(임의 지명)", dist: "원거리", cost: 26, note: "백백해 언저리의 구름 암초" }
+  ],
+  "위대한 항로 해저 · 어인섬": [
+    { dest: "펑크 하자드", dist: "단거리", cost: 12, note: "신세계 부상 항로" },
+    { dest: "드레스로자", dist: "중거리", cost: 22, note: "신세계 번영한 해역" },
+    { dest: "해저 산호길(임의 지명)", dist: "원거리", cost: 28, note: "해저 심해 외곽 암초" }
+  ],
+  "신세계 · 조": [
+    { dest: "와노국 외해", dist: "단거리", cost: 12, note: "폭포 절벽의 거센 바다" },
+    { dest: "홀케이크 아일랜드 외해", dist: "중거리", cost: 20, note: "사황 빅 맘의 영해" },
+    { dest: "안개코끼리 바닷길(임의 지명)", dist: "원거리", cost: 28, note: "즈니샤 발자국 해류" }
+  ],
+  "신세계 · 스핑크스 섬": [
+    { dest: "드레스로자", dist: "단거리", cost: 12, note: "정열의 항구 뱃길" },
+    { dest: "조", dist: "중거리", cost: 20, note: "살아있는 거상의 길" },
+    { dest: "흰모래 묘지(임의 지명)", dist: "원거리", cost: 28, note: "외딴 무덤의 모래톱" }
+  ],
+  "신세계 · 엘바프": [
+    { dest: "스핑크스 섬", dist: "단거리", cost: 12, note: "흰 수염의 고향 마을" },
+    { dest: "하치노스 근해", dist: "중거리", cost: 20, note: "해적섬 벌집의 바다" },
+    { dest: "거인나무 환초(임의 지명)", dist: "원거리", cost: 28, note: "울창한 목재 바위섬" }
+  ],
+
+  // 4. 임의 지명에서의 연결
+  "물안개 암초군(임의 지명)": [
+    { dest: "쌍둥이 언덕", dist: "단거리", cost: 10, note: "등대 불빛을 따라 귀항" },
+    { dest: "위스키 피크", dist: "중거리", cost: 18, note: "기록지침 첫 기항지" },
+    { dest: "돌소금 여울(임의 지명)", dist: "원거리", cost: 26, note: "바깥쪽 암초 해역" }
+  ],
+  "돌소금 여울(임의 지명)": [
+    { dest: "위스키 피크", dist: "단거리", cost: 10, note: "선인장 마을" },
+    { dest: "리틀 가든", dist: "중거리", cost: 18, note: "원시림과 화산" },
+    { dest: "해류목 군도(임의 지명)", dist: "원거리", cost: 26, note: "표류목이 모이는 무인도" }
+  ],
+  "해류목 군도(임의 지명)": [
+    { dest: "리틀 가든", dist: "단거리", cost: 10, note: "거인들의 섬" },
+    { dest: "드럼섬", dist: "중거리", cost: 18, note: "눈 덮인 겨울섬" },
+    { dest: "산호별 환초(임의 지명)", dist: "원거리", cost: 28, note: "캄 벨트 인접 산호지대" }
+  ],
+  "산호별 환초(임의 지명)": [
+    { dest: "드럼섬", dist: "단거리", cost: 10, note: "사쿠라 설산 왕국" },
+    { dest: "알라바스타 · 나노하나", dist: "중거리", cost: 20, note: "사막 왕국의 무역항" },
+    { dest: "소용돌이 갯길(임의 지명)", dist: "원거리", cost: 28, note: "와류 해협" }
+  ],
+  "소용돌이 갯길(임의 지명)": [
+    { dest: "알라바스타 · 나노하나", dist: "단거리", cost: 10, note: "나노하나 부두" },
+    { dest: "자야 · 모크 타운", dist: "중거리", cost: 20, note: "해적들의 무법항" },
+    { dest: "바람길 암초(임의 지명)", dist: "원거리", cost: 28, note: "외딴 바위 암초" }
+  ],
+  "바람길 암초(임의 지명)": [
+    { dest: "자야 · 모크 타운", dist: "단거리", cost: 10, note: "모크 타운" },
+    { dest: "롱 링 롱 랜드", dist: "중거리", cost: 18, note: "유목민 평원" },
+    { dest: "워터 세븐", dist: "원거리", cost: 26, note: "물의 도시" }
+  ],
+  "하늘구름 외곽(임의 지명)": [
+    { dest: "롱 링 롱 랜드", dist: "단거리", cost: 12, note: "청해 평원으로 하강" },
+    { dest: "워터 세븐", dist: "중거리", cost: 20, note: "수로 도시" },
+    { dest: "샤본디 제도", dist: "원거리", cost: 28, note: "맹그로브 군도" }
+  ],
+  "스릴러 바크 외해(임의 지명)": [
+    { dest: "샤본디 제도", dist: "단거리", cost: 12, note: "안개를 벗어나 비누방울 섬으로" },
+    { dest: "워터 세븐", dist: "중거리", cost: 18, note: "바다열차 수로 도시" },
+    { dest: "거품여울 군도(임의 지명)", dist: "원거리", cost: 26, note: "맹그로브 외곽 여울" }
+  ],
+  "소금바람 요새(임의 지명)": [
+    { dest: "샤본디 제도", dist: "단거리", cost: 12, note: "비누방울 군도" },
+    { dest: "워터 세븐", dist: "중거리", cost: 18, note: "조선소 도시" },
+    { dest: "거품여울 군도(임의 지명)", dist: "원거리", cost: 26, note: "샤본디 외곽 섬" }
+  ],
+  "거품여울 군도(임의 지명)": [
+    { dest: "샤본디 제도", dist: "단거리", cost: 8, note: "본섬 부두로 진입" },
+    { dest: "워터 세븐", dist: "중거리", cost: 18, note: "역방향 수로 도시" },
+    { dest: "어인섬", dist: "원거리", cost: 30, note: "선박 코팅 포함 · 심해 잠항" }
+  ],
+  "해저 산호길(임의 지명)": [
+    { dest: "어인섬", dist: "단거리", cost: 8, note: "어인섬 궁전으로 귀환" },
+    { dest: "펑크 하자드", dist: "중거리", cost: 16, note: "신세계 부상 항로" },
+    { dest: "드레스로자", dist: "원거리", cost: 26, note: "정열의 섬" }
+  ],
+  "용암빙벽 암초(임의 지명)": [
+    { dest: "드레스로자", dist: "단거리", cost: 10, note: "번화한 왕국" },
+    { dest: "그린 비트", dist: "중거리", cost: 16, note: "난쟁이 숲" },
+    { dest: "조", dist: "원거리", cost: 26, note: "거대 코끼리의 등" }
+  ],
+  "붉은 이끼 환초(임의 지명)": [
+    { dest: "드레스로자", dist: "단거리", cost: 10, note: "드레스로자 항구" },
+    { dest: "그린 비트", dist: "중거리", cost: 16, note: "식물의 숲" },
+    { dest: "조", dist: "원거리", cost: 24, note: "모코모 공국" }
+  ],
+  "투어의 서식지(임의 지명)": [
+    { dest: "그린 비트", dist: "단거리", cost: 10, note: "철교 너머 숲" },
+    { dest: "조", dist: "중거리", cost: 18, note: "움직이는 섬" },
+    { dest: "홀케이크 아일랜드 외해", dist: "원거리", cost: 26, note: "토트랜드 외곽" }
+  ],
+  "안개코끼리 바닷길(임의 지명)": [
+    { dest: "조", dist: "단거리", cost: 8, note: "즈니샤의 등 위로 귀환" },
+    { dest: "와노국 외해", dist: "중거리", cost: 18, note: "폭포 절벽 바다" },
+    { dest: "홀케이크 아일랜드 외해", dist: "원거리", cost: 24, note: "과자 섬 군도" }
+  ],
+  "사탕소금 군도(임의 지명)": [
+    { dest: "홀케이크 아일랜드 외해", dist: "단거리", cost: 10, note: "토트랜드 영해" },
+    { dest: "와노국 외해", dist: "중거리", cost: 18, note: "무사의 외해" },
+    { dest: "엘바프", dist: "원거리", cost: 26, note: "거인의 나라" }
+  ],
+  "검은 번개 여울(임의 지명)": [
+    { dest: "와노국 외해", dist: "단거리", cost: 10, note: "와노국 근해" },
+    { dest: "에그헤드 외해", dist: "중거리", cost: 18, note: "미래섬 바다" },
+    { dest: "엘바프", dist: "원거리", cost: 26, note: "전사들의 섬" }
+  ],
+  "철거인 해구(임의 지명)": [
+    { dest: "에그헤드 외해", dist: "단거리", cost: 10, note: "미래섬 부두" },
+    { dest: "엘바프", dist: "중거리", cost: 18, note: "거인 왕국" },
+    { dest: "스핑크스 섬", dist: "원거리", cost: 26, note: "흰 수염의 고향" }
+  ],
+  "거인나무 환초(임의 지명)": [
+    { dest: "엘바프", dist: "단거리", cost: 8, note: "엘바프 항구" },
+    { dest: "스핑크스 섬", dist: "중거리", cost: 16, note: "조용한 비가맹국" },
+    { dest: "하치노스 근해", dist: "원거리", cost: 24, note: "벌집 해적섬" }
+  ],
+  "흰모래 묘지(임의 지명)": [
+    { dest: "스핑크스 섬", dist: "단거리", cost: 10, note: "스핑크스 해안" },
+    { dest: "드레스로자", dist: "중거리", cost: 18, note: "정열의 항구" },
+    { dest: "조", dist: "원거리", cost: 26, note: "움직이는 코끼리" }
+  ],
+  "해적소굴 여울(임의 지명)": [
+    { dest: "하치노스 근해", dist: "단거리", cost: 10, note: "벌집 외해" },
+    { dest: "스핑크스 섬", dist: "중거리", cost: 18, note: "스핑크스 섬" },
+    { dest: "조", dist: "원거리", cost: 26, note: "모코모 공국" }
+  ],
+  "풍차언덕 암초(임의 지명)": [
+    { dest: "리버스 마운틴", dist: "단거리", cost: 10, note: "관문 운하" },
+    { dest: "이스트 블루 · 로그 타운", dist: "단거리", cost: 10, note: "로그 타운" },
+    { dest: "위스키 피크", dist: "원거리", cost: 26, note: "그랜드 라인" }
+  ],
+  "남십자 환초(임의 지명)": [
+    { dest: "리버스 마운틴", dist: "단거리", cost: 10, note: "관문 운하" },
+    { dest: "사우스 블루 · 바테리라", dist: "단거리", cost: 10, note: "바테리라" },
+    { dest: "위스키 피크", dist: "원거리", cost: 26, note: "그랜드 라인" }
+  ],
+  "서풍 암초(임의 지명)": [
+    { dest: "리버스 마운틴", dist: "단거리", cost: 10, note: "관문 운하" },
+    { dest: "웨스트 블루 · 카노 나라", dist: "단거리", cost: 10, note: "카노 나라" },
+    { dest: "위스키 피크", dist: "원거리", cost: 26, note: "그랜드 라인" }
+  ],
+  "북극성 모래섬(임의 지명)": [
+    { dest: "리버스 마운틴", dist: "단거리", cost: 10, note: "관문 운하" },
+    { dest: "노스 블루 · 루브니르 왕국", dist: "단거리", cost: 10, note: "루브니르" },
+    { dest: "위스키 피크", dist: "원거리", cost: 26, note: "그랜드 라인" }
+  ]
+};
+
 function firstTrust(life, place) {
   let hash = 0;
   for (const char of place) hash = Math.imul(hash ^ char.codePointAt(0), 0x01000193) >>> 0;
@@ -178,7 +465,20 @@ export function encounterScene(life) {
     art: "deck", title: `${encounter.name}와의 마주침`, body: encounter.body, canon: encounter.canon, choices: encounter.choices };
 }
 
+export function isNewWorld(place) {
+  if (!place) return false;
+  return place.includes("신세계") || NEW_ROUTE.includes(place) || [
+    "어인섬", "펑크 하자드", "드레스로자", "그린 비트", "조",
+    "홀케이크 아일랜드 외해", "와노국 외해", "에그헤드 외해",
+    "엘바프", "스핑크스 섬", "하치노스 근해", "로드스타 섬 근해",
+    "해저 산호길", "용암빙벽 암초", "붉은 이끼 환초", "투어의 서식지",
+    "안개코끼리 바닷길", "사탕소금 군도", "검은 번개 여울", "철거인 해구",
+    "거인나무 환초", "흰모래 묘지", "해적소굴 여울"
+  ].some((name) => place.includes(name));
+}
+
 export function travelScene(life, age) {
+  if (life.creationVersion >= 20) return distanceProportionalTravelScene(life, age);
   if (life.creationVersion >= 4) return branchingTravelScene(life, age);
   const route = routeFor(life);
   const nearIndex = (life.routeIndex + 1) % route.length;
@@ -205,6 +505,120 @@ export function travelScene(life, age) {
       { id: "far", label: `${ro(route[farIndex])} 긴 항해를 한다`, available: (state) => state.supplies >= 20, risk: `물자 20 필요 · 긴 항로${place(farIndex)}`, personality: { ambition: 7, freedom: 5 }, apply: (state) => visit(state, farIndex, 20) },
       { id: "convoy", label: `동행 선단과 ${ro(route[nearIndex])} 간다`, risk: `물자 없이 이동 · 친구와의 유대 -5${place(nearIndex)}`, personality: { loyalty: 4, freedom: -3 }, apply: (state) => { const result = visit(state, nearIndex, 0); state.friendBond -= 5; return result; } }
     ] };
+}
+
+function distanceProportionalTravelScene(life, age) {
+  const routes = ROUTES_V20[life.location] || ROUTES_V20[routeFor(life)[0]] || [
+    { dest: "위스키 피크", dist: "단거리", cost: 10, note: "기록지침 항로" },
+    { dest: "리틀 가든", dist: "중거리", cost: 18, note: "중거리 항로" },
+    { dest: "돌소금 여울(임의 지명)", dist: "원거리", cost: 26, note: "원거리 항로" }
+  ];
+  const newWorld = isNewWorld(life.location);
+  const candidates = newWorld
+    ? ["드레스로자", "그린 비트", "조", "와노국 외해", "엘바프", "스핑크스 섬", "하치노스 근해", "에그헤드 외해", "붉은 이끼 환초(임의 지명)", "거인나무 환초(임의 지명)"]
+    : ["쌍둥이 언덕", "위스키 피크", "리틀 가든", "드럼섬", "알라바스타 · 나노하나", "자야 · 모크 타운", "롱 링 롱 랜드", "워터 세븐", "샤본디 제도", "물안개 암초군(임의 지명)", "해류목 군도(임의 지명)"];
+  const currentDestNames = routes.map((r) => r.dest);
+  const poseOptions = candidates.filter((place) => place !== life.location && place !== "어인섬" && !currentDestNames.includes(place));
+  const poseDestination = poseOptions[yearRoll(life.seed ^ 0x6d3c, age) % (poseOptions.length || 1)] || (newWorld ? "엘바프" : "워터 세븐");
+
+  function visit(state, place, cost) {
+    state.age = age;
+    state.supplies -= cost;
+    moveTo(state, place);
+    state.pendingEncounter = encounterAt(state);
+    if (place.includes("(임의 지명)")) {
+      return `${state.birth.name}의 배는 지도에 임의 지명으로 적힌 ${place}에 닻을 내렸다. 해도에는 없던 작은 부두와 거친 암초 너머로 새로운 풍경이 펼쳐졌다.`;
+    }
+    return `${state.birth.name}의 배는 ${place}에 닿았다. 낡은 해도에는 없던 부두의 소란이 먼저 들렸다.`;
+  }
+
+  const title = `${life.location}에서 바늘이 갈라질 때`;
+  let displayTitle = title;
+  const departures = life.journal.filter((entry) => entry.title === title || entry.title.startsWith(`${title} · `)).length;
+  if (departures) displayTitle = `${title} · ${departures + 1}번째 출항`;
+
+  const near = routes[0];
+  const mid = routes[1] || routes[0];
+  const far = routes[2] || routes[1] || routes[0];
+
+  const nearCost = life.location === "샤본디 제도" && near.dest === "어인섬" ? 30 : near.cost;
+  const midCost = life.location === "샤본디 제도" && mid.dest === "어인섬" ? 30 : mid.cost;
+  const farCost = life.location === "샤본디 제도" && far.dest === "어인섬" ? 30 : far.cost;
+
+  const nearRisk = near.dest === "어인섬"
+    ? `물자 ${nearCost} 필요 · 선박 코팅 포함 (${near.note})`
+    : `물자 ${nearCost} 필요 · ${near.dist} 항로 (${near.note})`;
+  const midRisk = mid.dest === "어인섬"
+    ? `물자 ${midCost} 필요 · 선박 코팅 포함 (${mid.note})`
+    : `물자 ${midCost} 필요 · ${mid.dist} 항로 (${mid.note})`;
+  const farRisk = far.dest === "어인섬"
+    ? `물자 ${farCost} 필요 · 선박 코팅 포함 (${far.note})`
+    : `물자 ${farCost} 필요 · ${far.dist} 항로 (${far.note})`;
+
+  const choices = [
+    {
+      id: "near",
+      label: `[단거리] 기록지침을 따라 ${ro(near.dest)} 간다`,
+      available: (state) => state.supplies >= nearCost,
+      risk: nearRisk,
+      personality: { caution: 4 },
+      apply: (state) => visit(state, near.dest, nearCost)
+    },
+    {
+      id: "mid",
+      label: `[중거리] 바닷길을 넓혀 ${ro(mid.dest)} 간다`,
+      available: (state) => state.supplies >= midCost,
+      risk: midRisk,
+      personality: { freedom: 4 },
+      apply: (state) => visit(state, mid.dest, midCost)
+    },
+    {
+      id: "far",
+      label: `[원거리] 먼 바다를 건너 ${ro(far.dest)} 간다`,
+      available: (state) => state.supplies >= farCost,
+      risk: farRisk,
+      personality: { ambition: 6, freedom: 5 },
+      apply: (state) => visit(state, far.dest, farCost)
+    },
+    {
+      id: "convoy",
+      label: `동행 선단과 ${ro(near.dest)} 간다`,
+      risk: `${near.dest === "어인섬" ? "코팅된 선박에 동승" : "물자 없이 이동"} · 친구와의 유대 -5`,
+      personality: { loyalty: 4 },
+      apply: (state) => { state.friendBond -= 5; return visit(state, near.dest, 0); }
+    },
+    {
+      id: "pose",
+      label: `영구 지침으로 ${ro(life.eternalPose || near.dest)} 간다`,
+      when: (state) => Boolean(state.eternalPose) && state.eternalPose !== state.location && isNewWorld(state.eternalPose) === newWorld,
+      available: (state) => state.supplies >= 15,
+      risk: "물자 15 필요 · 가지고 있는 영구 지침 사용",
+      personality: { caution: 4 },
+      apply: (state) => visit(state, state.eternalPose, 15)
+    },
+    {
+      id: "buy_pose",
+      label: `영구 지침을 사서 ${ro(poseDestination)} 간다`,
+      when: () => Boolean(poseDestination),
+      available: (state) => state.supplies >= 30,
+      risk: "물자 30 필요 · 영구 지침 보유",
+      personality: { ambition: 5 },
+      apply: (state) => { state.eternalPose = poseDestination; return visit(state, poseDestination, 30); }
+    }
+  ];
+
+  return {
+    id: `life_voyage_${age}`,
+    age,
+    act: 2,
+    species: "all",
+    yearly: true,
+    urgent: true,
+    art: "deck",
+    title: displayTitle,
+    body: `기록지침과 나침반의 바늘이 제각기 다른 물길을 가리켰다. 거리에 따라 채워 넣을 물자와 식량이 달랐고, 지도에 없는 임의 지명의 작은 섬이나 미개척 암초를 경유할 수도 있었다.`,
+    choices
+  };
 }
 
 function branchingTravelScene(life, age) {
@@ -273,4 +687,15 @@ export function crewNews(life, age = life.age) {
                 : "원작이 아직 그리지 않은 시간이다. 일당의 다음 항해는 공개되지 않았다.";
   const taken = life.people?.fruitOwner;
   return taken ? `${line} (이 세계선의 ${taken.owner}는 ${taken.fruit}를 먹지 않았다.)` : line;
+}
+
+export function crewVesselKind(life, sceneAge = life?.age ?? 0) {
+  if (!life || life.rules !== 3) return "hat";
+  if (life.seen?.includes("life_marineford_news")) return "sunny";
+  if (sceneAge < eraStart(life)) return "hat";
+  const step = life.preCanonStep || 0;
+  const v = life.creationVersion || 20;
+  const sunnyAt = v >= 17 ? 34 : v >= 10 ? 33 : 20;
+  const merryAt = v >= 10 ? 4 : 3;
+  return step >= sunnyAt ? "sunny" : step >= merryAt ? "merry" : "dinghy";
 }

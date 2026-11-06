@@ -38,7 +38,7 @@ const MISHAPS = [
       { id: "corner", label: "구석에서 조용히 남은 것을 먹는다", risk: "건강 +10", personality: { caution: 6 },
         apply: (life) => { life.health += 10; return "아무도 노리지 않은 생선구이가 의외로 가장 맛있었다."; } }
     ] },
-  { id: "poster_photo", when: (life) => life.bounty > 0, title: "망친 수배서 사진",
+  { id: "poster_photo", art: (life) => life?.creationVersion >= 20 ? "harborBountyInspection" : "deck", when: (life) => life.bounty > 0, title: "망친 수배서 사진",
     body: (life) => `새로 붙은 수배서를 본 동료들이 배를 잡고 굴렀다. ${formatBounty(life.bounty)}짜리 사진 속 ${eun(life.birth.name)} 하필 재채기하던 순간이었다!`,
     choices: [
       { id: "protest", label: "해군 지부에 항의 편지를 보낸다", bounty: 2_000_000, risk: "결과는 알 수 없음 · 현상금이 오를지도", personality: { freedom: 7, caution: -5 },
@@ -58,7 +58,7 @@ const MISHAPS = [
       { id: "referee", label: "심판을 자처하고 판돈을 관리한다", risk: "지역의 신뢰 +10", personality: { caution: 5, loyalty: 3 },
         apply: (life) => { life.trust += 10; return "공정한 심판 덕에 싸움 없이 밤이 끝났다. 다음 날 술집 주인이 식량 한 상자를 보냈다."; } }
     ] },
-  { id: "upside_map", when: atSea, title: "거꾸로 든 해도",
+  { id: "upside_map", art: (life) => life?.creationVersion >= 20 ? "stormNavigationError" : "deck", when: atSea, title: "거꾸로 든 해도",
     body: "사흘째 같은 섬이 보였다. 알고 보니 항해를 맡은 동료가 해도를 거꾸로 들고 있었다! 동료는 이쪽이 더 멋진 길이라고 우겼다.",
     choices: [
       { id: "fix", label: "해도를 바로잡고 항로를 다시 짠다", risk: "기술 +10", personality: { caution: 6 },
@@ -74,7 +74,7 @@ const MISHAPS = [
     choices: [
       { id: "sneak", label: "해군으로 변장해 식당에 들어간다", needs: { skill: 45 }, bounty: 3_000_000, risk: "기술 45 필요 · 성공하면 물자 +20 · 현상금이 오를 수 있음", failRisk: "건강 -15",
         personality: { freedom: 7, caution: -6 },
-        apply: (life) => { life.supplies += 20; return "배식 줄에 서서 세 번이나 더 받았다. 나올 때는 주방장에게 맛있다고 인사까지 했다."; },
+        apply: (life) => { life.supplies += 20; if (life.creationVersion >= 20) life.reputation = (life.reputation || 0) - 6; return "배식 줄에 서서 세 번이나 더 받았다. 나올 때는 주방장에게 맛있다고 인사까지 했다."; },
         fail: (life) => { life.health -= 15; return "모자가 거꾸로였다. 국자를 든 주방장에게 기지 밖까지 쫓겨났다."; } },
       { id: "fish", label: "얌전히 바다에서 고기를 잡는다", risk: "물자 +10", personality: { caution: 6 },
         apply: (life) => { life.supplies += 10; return "생선 열 마리를 굽자 기지 쪽에서 오히려 냄새를 맡고 고개를 내밀었다."; } }
@@ -157,7 +157,7 @@ const MISHAPS = [
       { id: "tease", label: "현실을 보라며 놀린다", risk: "친구와의 유대 -10", personality: { caution: 5, empathy: -4 },
         apply: (life) => { life.friendBond -= 10; life.people.mate.bond = (life.people.mate.bond || 0) - 10; return "친구는 삐쳐서 사흘 동안 말을 하지 않았다. 나흘째에 고기를 내밀자 겨우 풀렸다."; } }
     ] },
-  { id: "fruit_show", when: (life) => Boolean(life.devilFruit) && atSea(life), title: "능력 자랑의 대가",
+  { id: "fruit_show", art: (life) => life?.creationVersion >= 20 ? "workbenchFruitPractice" : "deck", when: (life) => Boolean(life.devilFruit) && atSea(life), title: "능력 자랑의 대가",
     body: (life) => `${eun(life.birth.name)} 항구 아이들 앞에서 열매의 힘을 자랑하다 발을 헛디뎠다. 첨벙! 힘이 쭉 빠진 몸이 그대로 가라앉기 시작했다.`,
     choices: [
       { id: "shout", label: "물을 먹으며 동료를 부른다", risk: "건강 -10 · 동료의 도움", personality: { caution: 4 },
@@ -188,7 +188,7 @@ const DANGERS = [
       { id: "flee", label: "돛을 전부 펴고 달아난다", risk: "물자를 버려야 할 수도 있음 · 결과는 알 수 없음", personality: { caution: 7 },
         apply: (life) => { if (lucky(life, 0x7d01, 60)) { life.supplies -= 10; return "짐을 몇 개 던져 배를 가볍게 했다. 해왕류는 짐 상자를 삼키고 물러났다."; } life.supplies -= 30; return wound(life, 20, "해왕류의 습격") ? "배의 뒷부분이 물렸다. 가라앉는 배에서 끝내 빠져나오지 못했다." : "배의 뒷부분이 물려 짐 절반을 잃었다. 겨우 가까운 섬에 닿았다."; } }
     ] },
-  { id: "storm", when: atSea, title: "삼키는 폭풍",
+  { id: "storm", art: (life) => life?.creationVersion >= 20 ? "stormSeaRescue" : "deck", when: atSea, title: "삼키는 폭풍",
     body: "기록지침이 미친 듯이 흔들리고 하늘이 검게 갈라졌다. 위대한 항로의 날씨는 예고가 없었다. 돛이 찢어지기 직전이었다.",
     choices: [
       { id: "sail", label: "돛대에 몸을 묶고 돛을 지킨다", needs: { skill: 55, health: 45 }, risk: "기술 55 · 건강 45 필요", failRisk: "건강 -35 · 배를 잃을 수 있음",
@@ -221,7 +221,7 @@ const DANGERS = [
     choices: [
       { id: "break", label: "정면으로 포위망을 뚫는다", needs: { skill: 70, health: 50 }, risk: "기술 70 · 건강 50 필요 · 현상금 상승", bounty: 20_000_000, failRisk: "건강 -40 · 체포나 죽음",
         personality: { ambition: 8, freedom: 7, caution: -6 },
-        apply: (life) => { life.health -= 15; return "포탄 사이를 뚫고 바다로 빠져나왔다. 다음 날 신문 일면에 이름이 실렸다."; },
+        apply: (life) => { life.health -= 15; if (life.creationVersion >= 20) life.reputation = (life.reputation || 0) - 15; return "포탄 사이를 뚫고 바다로 빠져나왔다. 다음 날 신문 일면에 이름이 실렸다."; },
         fail: (life) => {
           if (wound(life, 40, "포위망 돌파 중 전사")) return "마지막 포위선 앞에서 쓰러졌다. 동료들은 그 이름을 깃발에 새겼다.";
           if (lucky(life, 0x7d03, 50)) { life.ending = "prison"; life.deathCause = "체포되어 임펠 다운에 수감"; return "해루석 수갑이 손목에 채워졌다. 호송선은 바다 밑 감옥으로 향했다."; }
@@ -232,45 +232,58 @@ const DANGERS = [
       { id: "surrender", label: "동료를 살리는 조건으로 투항한다", risk: "체포 · 동료는 풀려남", personality: { loyalty: 10, empathy: 8 },
         apply: (life) => { life.ending = "prison"; life.deathCause = "동료를 살리고 스스로 투항해 임펠 다운에 수감"; return "손을 들고 걸어 나갔다. 떠나는 동료들의 배를 끝까지 바라보았다."; } }
     ] },
-  { id: "duel", when: (life) => life.skill >= 45 && !life.homebound, title: "이름난 검객의 도전",
+  { id: "duel", art: (life) => life?.creationVersion >= 20 ? "deckDuelChallenge" : "deck", when: (life) => life.skill >= 45 && !life.homebound, title: "이름난 검객의 도전",
     body: (life) => `${eul(life.birth.name)} 찾아 세 개의 바다를 건너왔다는 검객이 부두에 섰다. 이긴 쪽이 진 쪽의 이름을 가져간다는 오래된 방식의 결투였다.`,
     choices: [
       { id: "accept", label: "결투를 받아들인다", needs: { skill: 70, health: 50 }, risk: "기술 70 · 건강 50 필요 · 이기면 명성", failRisk: "건강 -35 · 목숨이 위험",
         personality: { ambition: 9, caution: -7 },
-        apply: (life) => { life.trust += 20; life.skill += 5; if (life.bounty > 0) life.bounty += 10_000_000; return "검이 부러지는 소리와 함께 승부가 났다. 검객은 무릎을 꿇고 다음에는 지지 않겠다고 했다."; },
+        apply: (life) => { life.trust += 20; life.skill += 5; if (life.bounty > 0) life.bounty += 10_000_000; if (life.creationVersion >= 20) life.reputation = (life.reputation || 0) + 10; return "검이 부러지는 소리와 함께 승부가 났다. 검객은 무릎을 꿇고 다음에는 지지 않겠다고 했다."; },
         fail: (life) => wound(life, 35, "결투") ? "마지막 일격을 막지 못했다. 검객은 쓰러진 상대의 이름을 오래 기억하겠다고 말했다." : "깊은 상처를 입고 쓰러졌다. 검객은 목숨을 거두지 않고 떠났다." },
       { id: "refuse", label: "싸울 이유가 없다며 거절한다", risk: "지역의 신뢰 -10 · 겁쟁이라는 소문", personality: { caution: 8 },
         apply: (life) => { life.trust -= 10; return "검객은 실망한 얼굴로 돌아섰다. 항구에는 좋지 않은 소문이 돌았다."; } }
     ] },
-  { id: "mutiny", when: (life) => life.path === "pirate" && (life.independent || life.rankTier >= 2), title: "갑판 위의 반란",
+  { id: "mutiny", art: (life) => life?.creationVersion >= 20 ? "deckMutiny" : "deck", when: (life) => life.path === "pirate" && (life.independent || life.rankTier >= 2), title: "갑판 위의 반란",
     body: "몫이 적다는 불만이 쌓이고 쌓인 끝에, 선원 절반이 무기를 들고 선장실 앞에 모였다. 누군가 배의 주인이 바뀔 때가 됐다고 외쳤다.",
     choices: [
       { id: "talk", label: "칼을 내려놓고 몫을 다시 나눈다", cost: 20, risk: "물자 -20 · 결과는 알 수 없음", personality: { empathy: 7, loyalty: 6 },
-        apply: (life) => { life.supplies -= 20; if (lucky(life, 0x7d04, 70)) { life.friendBond += 10; return "장부를 펼쳐 놓고 밤새 이야기했다. 아침에는 모두가 같은 배의 선원으로 돌아왔다."; } return wound(life, 30, "선상 반란") ? "말이 끝나기 전에 칼이 날아왔다. 배는 다른 이름의 깃발을 달고 떠났다." : "협상은 깨졌다. 반란은 막았지만 등에 깊은 상처가 남았다."; } },
+        apply: (life) => { life.supplies -= 20; if (lucky(life, 0x7d04, 70)) { life.friendBond += 10; if (life.creationVersion >= 20) life.reputation = (life.reputation || 0) + 8; return "장부를 펼쳐 놓고 밤새 이야기했다. 아침에는 모두가 같은 배의 선원으로 돌아왔다."; } return wound(life, 30, "선상 반란") ? "말이 끝나기 전에 칼이 날아왔다. 배는 다른 이름의 깃발을 달고 떠났다." : "협상은 깨졌다. 반란은 막았지만 등에 깊은 상처가 남았다."; } },
       { id: "crush", label: "앞장선 자를 힘으로 제압한다", needs: { skill: 60, health: 45 }, risk: "기술 60 · 건강 45 필요", failRisk: "건강 -35",
         personality: { ambition: 7, empathy: -6 },
-        apply: (life) => { life.trust -= 5; return "주동자를 바다에 던졌다. 배는 조용해졌지만 웃음소리도 함께 사라졌다."; },
+        apply: (life) => { life.trust -= 5; if (life.creationVersion >= 20) life.reputation = (life.reputation || 0) - 10; return "주동자를 바다에 던졌다. 배는 조용해졌지만 웃음소리도 함께 사라졌다."; },
         fail: (life) => wound(life, 35, "선상 반란") ? "혼자서는 막을 수 없었다. 배는 반란자들의 것이 됐다." : "간신히 제압했지만 갈비뼈가 여러 대 부러졌다." }
     ] },
-  { id: "plague", art: "workbench", when: (life) => true, title: "열병이 도는 항구",
+  { id: "plague", art: (life) => life?.creationVersion >= 20 ? "harborPlague" : "workbench", when: (life) => true, title: "열병이 도는 항구",
     body: "항구에 열병이 번졌다. 거리에는 문이 닫힌 집이 늘었고, 의원은 손이 모자랐다. 배에 남으면 안전했지만 도움을 청하는 목소리가 들렸다.",
     choices: [
       { id: "help", label: "남아서 환자를 돌본다", needs: { health: 55 }, risk: "건강 55 필요 · 성공하면 지역의 신뢰 +20", failRisk: "건강 -30 · 감염 위험",
         personality: { empathy: 10, loyalty: 5 },
-        apply: (life) => { life.trust += 20; life.health -= 10; return "보름 동안 물을 끓이고 약을 날랐다. 열병이 물러간 날 항구가 처음으로 종을 울렸다."; },
+        apply: (life) => { life.trust += 20; life.health -= 10; if (life.creationVersion >= 20) life.reputation = (life.reputation || 0) + 10; return "보름 동안 물을 끓이고 약을 날랐다. 열병이 물러간 날 항구가 처음으로 종을 울렸다."; },
         fail: (life) => wound(life, 30, "항구의 열병") ? "환자를 돌보던 손이 먼저 뜨거워졌다. 항구 사람들은 그 이름을 종탑에 새겼다." : "열병에 걸려 한 달을 앓았다. 그래도 돌본 환자들이 번갈아 간호해 주었다." },
       { id: "leave", label: "배를 띄워 섬을 떠난다", risk: "지역의 신뢰 -10 · 안전", personality: { caution: 8, empathy: -5 },
         apply: (life) => { life.trust -= 10; return "멀어지는 항구에서 종소리가 들리지 않았다. 그 침묵이 오래 마음에 남았다."; } }
     ] },
-  { id: "base_raid", when: (life) => life.path === "marine" && !life.homebound, title: "기지를 덮친 해적",
+  { id: "base_raid", art: (life) => life?.creationVersion >= 20 ? "marineBaseRaid" : "deck", when: (life) => life.path === "marine" && !life.homebound, title: "기지를 덮친 해적",
     body: "한밤중에 이름난 해적단이 기지를 기습했다. 상관은 부상으로 쓰러졌고, 남은 병사들의 시선이 이쪽으로 모였다.",
     choices: [
       { id: "command", label: "남은 병사를 모아 지휘한다", needs: { skill: 60, health: 45 }, risk: "기술 60 · 건강 45 필요 · 성공하면 평판 상승", failRisk: "건강 -40 · 목숨이 위험",
         personality: { loyalty: 8, ambition: 6 },
-        apply: (life) => { life.trust += 20; return "새벽이 오기 전에 해적들이 물러났다. 본부에서 이름을 물어 왔다."; },
+        apply: (life) => {
+          life.trust += 20;
+          if (life.creationVersion >= 20) {
+            life.arrestCount = (life.arrestCount || 0) + 1;
+            life.arrestBounty = (life.arrestBounty || 0) + 30_000_000;
+            life.reputation = (life.reputation || 0) + 15;
+          }
+          return "새벽이 오기 전에 해적들을 제압해 수감했다. 본부에서 이름을 물어 왔다.";
+        },
         fail: (life) => wound(life, 40, "해적의 기지 기습") ? "마지막까지 정문을 지켰다. 동료들은 그 자리에 작은 비석을 세웠다." : "정문을 지키다 크게 다쳤다. 기지는 지켰지만 한동안 일어날 수 없었다." },
       { id: "civilians", label: "기지 근처 주민부터 대피시킨다", risk: "지역의 신뢰 +10 · 건강 -10", personality: { empathy: 9 },
-        apply: (life) => { life.trust += 10; life.health -= 10; return "주민을 모두 언덕으로 옮겼다. 기지는 불탔지만 마을 사람은 한 명도 다치지 않았다."; } }
+        apply: (life) => {
+          life.trust += 10;
+          life.health -= 10;
+          if (life.creationVersion >= 20) life.reputation = (life.reputation || 0) + 12;
+          return "주민을 모두 언덕으로 옮겼다. 기지는 불탔지만 마을 사람은 한 명도 다치지 않았다.";
+        } }
     ] }
 ];
 

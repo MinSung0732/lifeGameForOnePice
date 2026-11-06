@@ -1,6 +1,6 @@
 import { CANON_CHAPTER, scenes } from "./story.js";
 import { FLEX_IDS, FLEX_IDS_V5, V9_DEFERRED, V11_DEFERRED, V14_REPLACED, branchScene, marinefordNews, yearlyScene } from "./life-story.js";
-import { ERA_WAR, encounterScene, eraStart, stretched, yearRoll } from "./world.js";
+import { ERA_WAR, encounterScene, eraStart, standing, stretched, yearRoll } from "./world.js";
 import { canonAge, canonCount, canonIfAfter, canonScene } from "./canon-events.js";
 import { preCanonAge, preCanonCount, preCanonScene } from "./canon-before.js";
 import { canonGapFor, canonInterludeScene } from "./canon-interludes.js";
@@ -140,7 +140,30 @@ export const ART = {
   sky: { src: "./design/assets/sky-home.webp", alt: "구름 바다 위 스카이피아의 창작 마을" },
   skyCrisis: { src: "./design/assets/sky-crisis.webp", alt: "스카이피아의 구름 길을 덮친 폭풍과 이를 지키는 주민들" },
   giant: { src: "./design/assets/giant-home.webp", alt: "거인들이 사는 엘바프의 창작 해안 마을" },
-  giantCrisis: { src: "./design/assets/giant-crisis.webp", alt: "엘바프 해안의 거친 파도 앞에서 커다란 배를 지키는 거인들" }
+  giantCrisis: { src: "./design/assets/giant-crisis.webp", alt: "엘바프 해안의 거친 파도 앞에서 커다란 배를 지키는 거인들" },
+  // 22 new scene illustrations from New_image
+  harborReunion: { src: "./design/assets/harbor-reunion.png", alt: "노을빛 항구에서 다시 마주 앉은 옛 동료와 따뜻한 등불" },
+  harborStandoff: { src: "./design/assets/harbor-standoff.png", alt: "어두운 구름 아래 부두의 좁은 길목을 막아선 무장 선단" },
+  deckBusyDay: { src: "./design/assets/deck-busy-day.png", alt: "맑은 날 밧줄과 물자 상자가 놓인 활기찬 일상의 갑판" },
+  deckNightWatch: { src: "./design/assets/deck-night-watch.webp", alt: "달빛 비치는 밤바다와 등불이 켜진 고요한 야간 당직 갑판" },
+  deckDuelChallenge: { src: "./design/assets/deck-duel-challenge.png", alt: "결투를 앞두고 칼끝이 마주선 긴장된 갑판" },
+  deckMutiny: { src: "./design/assets/deck-mutiny.png", alt: "화물이 쏟아지고 충돌의 흔적이 남은 거친 선상 반란의 갑판" },
+  workbenchSkillTraining: { src: "./design/assets/workbench-skill-training.png", alt: "목공과 항해 도구를 다듬으며 기술을 연마하는 작업실" },
+  workbenchReportLetters: { src: "./design/assets/workbench-report-letters.png", alt: "등불 아래 펼쳐진 항해 장부와 밀봉된 편지들" },
+  workbenchFruitPractice: { src: "./design/assets/workbench-fruit-practice.png", alt: "상자 속 소용돌이 무늬 열매와 신비로운 빛이 감도는 작업대" },
+  stormSeaRescue: { src: "./design/assets/storm-sea-rescue.png", alt: "칠흑 같은 밤 폭풍우를 뚫고 조난선을 향해 나아가는 구조선" },
+  stormNavigationError: { src: "./design/assets/storm-navigation-error.png", alt: "비바람에 젖은 해도와 바늘이 흔들리는 나침반" },
+  marineBaseRaid: { src: "./design/assets/marine-base-raid.png", alt: "밤하늘에 포탄 궤적이 쏟아지고 불길이 치솟는 해군 요새" },
+  deckTenseStandoff: { src: "./design/assets/deck-tense-standoff.webp", alt: "수평선 너머 다가오는 함대들을 주시하는 선상 경계" },
+  deckCommand: { src: "./design/assets/deck-command.webp", alt: "해도와 망원경이 놓인 선장의 지휘실과 항로 회의" },
+  harborRelief: { src: "./design/assets/harbor-relief.png", alt: "구조된 이들을 위한 의료 천막과 구호 물자가 분주한 부두" },
+  harborPlague: { src: "./design/assets/harbor-plague.png", alt: "열병 경고 깃발이 걸리고 인적이 끊긴 빗속의 봉쇄 항구" },
+  harborDeparture: { src: "./design/assets/harbor-departure.png", alt: "붉은 저녁노을을 등지고 닻을 올리는 범선의 출항" },
+  harborBountyInspection: { src: "./design/assets/harbor-bounty-inspection.png", alt: "수배 공고판이 붙은 항구 입구와 삼엄한 검문선" },
+  workbenchAftermath: { src: "./design/assets/workbench-aftermath.png", alt: "풍랑 뒤 그을음과 부서진 도구를 정리하는 사고 후의 작업실" },
+  workbenchHakiTraining: { src: "./design/assets/workbench-haki-training.png", alt: "파도치는 바닷가 모래밭에 세워진 목인과 패기 수련장" },
+  workbenchNegotiation: { src: "./design/assets/workbench-negotiation.png", alt: "동맹 조약서와 저울, 지도 위에 마주 앉은 협상 탁자" },
+  smallBoatDistress: { src: "./design/assets/small-boat-distress.png", alt: "거대한 파도에 돛대가 꺾이고 불빛이 가물거리는 조난선" }
 };
 
 function nextRandom(seed) {
@@ -278,6 +301,7 @@ export function createGame(mode, seed, profile = {}, rules = 3, creationVersion 
     routeIndex: -1, travelHistory: [birth.home], pendingEncounter: null, pendingBranch: false,
     people: {}, trustBy: {}, worldBranch: null, alliance: false, coalition: false, rival: false,
     canonStep: 0, bounty: 0, eternalPose: null, lastHuntAge: -100, lastPublicActAge: -100,
+    reputation: 0, arrestCount: 0, arrestBounty: 0,
     preCanonStep: 0, canonGapRemaining: 0, canonDailyIndex: 0, fates: {},
     ending: null, deathCause: "", finished: false, lastOutcome: "", lastChanges: [], actions: [], journal: [], seen: []
   };
@@ -303,7 +327,12 @@ function sceneCard(life) {
       && life.age >= (stretched(life) ? eraStart(life) + ERA_WAR : life.birth.yearsBeforeCurrent - 2)) return marinefordNews(life);
   }
   if (life.creationVersion >= 4) {
-    if (life.canonStep === canonIfAfter(life) && !life.seen.includes("life_free_rank")) {
+    const ifDue = life.mode === "free" && !life.seen.includes("life_free_rank") && (
+      life.creationVersion >= 20
+        ? (life.canonStep >= canonIfAfter(life) || (life.canonStep >= 5 && (standing(life) >= 55 || (life.bounty || 0) >= 500_000_000 || (life.rankTier || 0) >= 4 || (life.path === "liberator" && (life.trust || 0) >= 60))))
+        : life.canonStep === canonIfAfter(life)
+    );
+    if (ifDue) {
       const rank = yearlyScene(stretched(life) ? life : { ...life, age: life.birth.yearsBeforeCurrent - 1 });
       if (rank.id === "life_free_rank") return rank;
     }
@@ -497,6 +526,7 @@ export function advance(life, action = null) {
   const changes = STATS.filter((stat) => next[stat.key] !== life[stat.key])
     .map((stat) => ({ key: stat.key, delta: next[stat.key] - life[stat.key] }));
   if (next.creationVersion >= 4 && next.bounty !== life.bounty) changes.push({ key: "bounty", delta: next.bounty - life.bounty });
+  if (next.creationVersion >= 20 && (next.reputation || 0) !== (life.reputation || 0)) changes.push({ key: "reputation", delta: (next.reputation || 0) - (life.reputation || 0) });
   if (next.rules === 3) {
     for (const { key } of PERSONALITY) {
       if (next.personality[key] !== life.personality[key]) changes.push({ key: `personality.${key}`, delta: next.personality[key] - life.personality[key] });

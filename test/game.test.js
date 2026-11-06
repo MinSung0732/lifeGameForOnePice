@@ -6,16 +6,17 @@ import { createObservation, tickObservation } from "../src/observation.js";
 import { scenes } from "../src/story.js";
 import { degreeHz, moodFor } from "../src/music.js";
 import { OLD_ERA } from "../src/canon-old-era.js";
-import { encounterAt, presentAge, storyBefore, travelScene } from "../src/world.js";
+import { crewVesselKind, encounterAt, eraStart, isNewWorld, presentAge, ROUTES_V20, storyBefore, travelScene } from "../src/world.js";
 import { fruitFor } from "../src/fruits.js";
-import { bountyScene, pursuerFor } from "../src/bounty.js";
+import { bountyScene, formatBounty, marinePatrolScene, pursuerFor } from "../src/bounty.js";
 import { CANON_BEAT_COUNT, canonScene } from "../src/canon-events.js";
-import { PRE_CANON_BEAT_COUNT, preCanonScene } from "../src/canon-before.js";
+import { PRE_CANON_BEAT_COUNT, preCanonCount, preCanonScene } from "../src/canon-before.js";
 import { canonGapFor } from "../src/canon-interludes.js";
-import { FLEX_IDS, FLEX_IDS_V5, lifeScenes, yearlyScene } from "../src/life-story.js";
+import { FLEX_IDS, FLEX_IDS_V5, lifeScenes, rankOpportunity, yearlyScene } from "../src/life-story.js";
 import { canonBondScene } from "../src/canon-bonds.js";
 import { rosterFor } from "../src/canon-crews.js";
-import { attachCanonContact, pendingCanonContactScene } from "../src/canon-relationships.js";
+import { attachCanonContact, canonRelationshipLine, pendingCanonContactScene } from "../src/canon-relationships.js";
+import { FATES } from "../src/fates.js";
 import { peopleSummary } from "../src/people.js";
 
 function play(mode, seed, picks = {}, profile = { species: "인간" }, rules = 3, version = 3) {
@@ -1427,4 +1428,314 @@ test("collectMilestones detects affiliation, devil fruit, haki, bounty, and rela
     rosterFor({ ...loguetownCrew, preCanonStep: 36 }, 10).map((p) => p.name),
     ["몽키 D. 루피", "롤로노아 조로", "나미", "우솝", "상디", "토니토니 쵸파", "니코 로빈", "프랑키", "브룩"]
   );
+  assert.equal(crewVesselKind(before, 0), "hat");
+  assert.equal(crewVesselKind({ ...before, preCanonStep: 1 }, eraStart(before)), "dinghy");
+  assert.equal(crewVesselKind({ ...before, preCanonStep: 4 }, eraStart(before)), "merry");
+  assert.equal(crewVesselKind({ ...before, preCanonStep: 34 }, eraStart(before)), "sunny");
+  assert.equal(crewVesselKind({ ...before, seen: ["life_marineford_news"] }, eraStart(before)), "sunny");
+});
+
+test("거리비례 물자량과 원작·임의 지명이 융합된 항로 선택지가 올바르게 제공된다", () => {
+  const life = createGame("original", 7, { species: "인간" }, 3, 20);
+  life.location = "위스키 피크";
+  life.supplies = 50;
+
+  const voyage = travelScene(life, 22);
+  const near = voyage.choices.find((c) => c.id === "near");
+  const mid = voyage.choices.find((c) => c.id === "mid");
+  const far = voyage.choices.find((c) => c.id === "far");
+
+  assert.ok(near && mid && far, "단거리, 중거리, 원거리 선택지가 모두 제공되어야 한다");
+  assert.match(near.label, /^\[단거리\]/);
+  assert.match(mid.label, /^\[중거리\]/);
+  assert.match(far.label, /^\[원거리\]/);
+
+  // 물자 소모량 비교 (단거리 < 중거리 < 원거리)
+  const costOf = (choice) => Number(choice.risk.match(/물자 (\d+) 필요/)[1]);
+  assert.ok(costOf(near) < costOf(mid), "단거리는 중거리보다 물자 소모가 적어야 한다");
+  assert.ok(costOf(mid) < costOf(far), "중거리는 원거리보다 물자 소모가 적어야 한다");
+
+  // 임의 지명 표기 검증
+  assert.match(far.label, /\(임의 지명\)/, "가상의 미개척 지점은 '(임의 지명)'으로 명시되어야 한다");
+
+  // 임의 지명 방문 시 내러티브 검증
+  const state = structuredClone(life);
+  const result = far.apply(state);
+  assert.match(result, /임의 지명으로 적힌/, "임의 지명에 닿으면 해도 바깥의 외딴 부두 내러티브가 나온다");
+  assert.equal(state.supplies, 50 - costOf(far));
+
+  // 신세계/낙원 지리 구분 검증
+  assert.equal(isNewWorld("워터 세븐"), false);
+  assert.equal(isNewWorld("알라바스타 · 나노하나"), false);
+  assert.equal(isNewWorld("드레스로자"), true);
+  assert.equal(isNewWorld("와노국 외해"), true);
+  assert.equal(isNewWorld("검은 번개 여울(임의 지명)"), true);
+  assert.equal(isNewWorld("물안개 암초군(임의 지명)"), false);
+});
+
+test("평판 시스템(명성/악명)과 해군·해적 진급 조건, 악명에 따른 현상금 배율이 올바르게 동작한다", () => {
+  // 1. 초기값 검증
+  const life = createGame("original", 42, { species: "인간" }, 3, 20);
+  assert.equal(life.reputation, 0, "평판은 기본값 0으로 시작해야 한다");
+  assert.equal(life.arrestCount, 0, "체포 실적은 0으로 시작해야 한다");
+  assert.equal(life.arrestBounty, 0, "수감 현상금은 0으로 시작해야 한다");
+
+  // 2. 평판 변화 추적 검증
+  const testBountyLife = {
+    ...life, path: "pirate", creationVersion: 20, age: 25, reputation: 0,
+    bounty: 10_000_000, lastPublicActAge: -100, journal: []
+  };
+  const bScene = bountyScene(testBountyLife, 25, { id: "life_bounty_act_25", age: 25, act: 2, species: "all" });
+  assert.ok(bScene);
+  const witnessChoice = bScene.choices.find((c) => c.id === "witness");
+  assert.ok(witnessChoice);
+  const stateWitness = structuredClone(testBountyLife);
+  witnessChoice.apply(stateWitness);
+  assert.equal(stateWitness.reputation, 5, "증언 선택 시 명성이 5 증가해야 한다");
+
+  const interveneChoice = bScene.choices.find((c) => c.id === "intervene");
+  const stateIntervene = structuredClone(testBountyLife);
+  interveneChoice.apply(stateIntervene);
+  assert.equal(stateIntervene.reputation, -10, "개입 선택 시 악명이 10 쌓여야 한다");
+
+  // 3. 악명에 따른 현상금 증가 배율 검증 (bountyScene)
+  const outlawRenown = { ...life, path: "pirate", creationVersion: 20, lastPublicActAge: -100, reputation: 50, bounty: 10_000_000, journal: [] };
+  const outlawInfamy = { ...life, path: "pirate", creationVersion: 20, lastPublicActAge: -100, reputation: -80, bounty: 10_000_000, journal: [] };
+  const sceneRenown = bountyScene(outlawRenown, 25, { id: "test", age: 25, act: 2, species: "all" });
+  const sceneInfamy = bountyScene(outlawInfamy, 25, { id: "test", age: 25, act: 2, species: "all" });
+  assert.ok(sceneRenown && sceneInfamy, "현상금 사건이 생성되어야 한다");
+  const gainRenown = sceneRenown.choices.find((c) => c.id === "intervene").bounty;
+  const gainInfamy = sceneInfamy.choices.find((c) => c.id === "intervene").bounty;
+  assert.ok(gainInfamy > gainRenown, "악명이 높을수록(+음수) 현상금 증가량이 명성 상태보다 커야 한다");
+
+  // 4. 해군 초계 및 체포 수감 시스템 검증 (marinePatrolScene)
+  const marineLife = {
+    ...life, path: "marine", creationVersion: 20, homebound: false, age: 24,
+    lastMarinePatrolAge: -100, location: "로그타운", journal: []
+  };
+  const patrol = marinePatrolScene(marineLife, 24, { id: "base", age: 24, act: 2, species: "all" });
+  if (patrol) {
+    const arrestChoice = patrol.choices.find((c) => c.id === "board_arrest");
+    assert.ok(arrestChoice, "나포 및 직접 체포 선택지가 있어야 한다");
+    const patrolState = structuredClone(marineLife);
+    arrestChoice.apply(patrolState);
+    assert.equal(patrolState.arrestCount, 1, "해적 체포 시 arrestCount가 증가해야 한다");
+    assert.ok(patrolState.arrestBounty > 0, "해적 체포 시 arrestBounty가 증가해야 한다");
+    assert.ok(patrolState.reputation > 0, "해적 체포 시 명성이 상승해야 한다");
+  }
+
+  // 5. 해군 진급 조건 검증 (rankOpportunity)
+  // 계급: ["상사", "소위", "소령", "대령", "중장"]
+  const marineCandidate = {
+    ...life, path: "marine", rankTier: 0, creationVersion: 20, careerStartAge: 18, lastRankOfferAge: 18,
+    skill: 40, reputation: 10, arrestCount: 1, arrestBounty: 5_000_000, journal: []
+  };
+  const baseCard = { id: "base", age: 25, act: 2, species: "all" };
+  const marineOffer = rankOpportunity(marineCandidate, 25, baseCard);
+  assert.ok(marineOffer, "조건 충족 시 상사 진급 제안이 와야 한다");
+  assert.equal(marineOffer.title, "상사의 제안");
+
+  // 악명 보유 시 해군 진급 불가 검증 (감찰/보류)
+  const corruptMarine = { ...marineCandidate, reputation: -10 };
+  assert.equal(rankOpportunity(corruptMarine, 25, baseCard), null, "악명이 있는 해군은 진급할 수 없다");
+
+  // 체포 실적 부족 시 진급 불가 검증
+  const inexperiencedMarine = { ...marineCandidate, arrestCount: 0 };
+  assert.equal(rankOpportunity(inexperiencedMarine, 25, baseCard), null, "체포 실적이 없으면 상사로 진급할 수 없다");
+
+  // 6. 해적 진급 조건 검증 (자신의 현상금 및 악명/의적 명성)
+  // 계급: ["선원", "간부", "부선장"]
+  const pirateCandidate = {
+    ...life, path: "pirate", rankTier: 1, creationVersion: 20, careerStartAge: 18, lastRankOfferAge: 18,
+    skill: 55, bounty: 30_000_000, reputation: -15, journal: []
+  };
+  const pirateOffer = rankOpportunity(pirateCandidate, 25, baseCard);
+  assert.ok(pirateOffer, "현상금 2,500만 이상 및 악명 보유 시 간부 진급 제안이 와야 한다");
+  assert.equal(pirateOffer.title, "간부의 제안");
+
+  // 현상금 부족 시 진급 불가 검증
+  const poorPirate = { ...pirateCandidate, bounty: 10_000_000 };
+  assert.equal(rankOpportunity(poorPirate, 25, baseCard), null, "현상금이 부족하면 간부로 진급할 수 없다");
+
+  // 부선장 진급 제안 검증
+  const firstMateCandidate = {
+    ...life, path: "pirate", rankTier: 2, creationVersion: 20, careerStartAge: 18, lastRankOfferAge: 18,
+    skill: 68, bounty: 100_000_000, reputation: -30, journal: []
+  };
+  const mateOffer = rankOpportunity(firstMateCandidate, 25, baseCard);
+  assert.ok(mateOffer, "현상금 8,000만 이상 및 악명 보유 시 부선장 진급 제안이 와야 한다");
+  assert.equal(mateOffer.title, "부선장의 제안");
+
+  // 의적(높은 명성의 해적)도 진급 가능 검증
+  const chivalrousPirate = { ...firstMateCandidate, reputation: 50 };
+  const chivalrousOffer = rankOpportunity(chivalrousPirate, 25, baseCard);
+  assert.ok(chivalrousOffer, "악명이 없더라도 높은 의적 명성이 있으면 부선장 진급이 가능해야 한다");
+
+  // 7. 이전 버전(creationVersion < 20) 하위 호환성 유지 검증
+  const legacyLife = createGame("original", 42, { species: "인간" }, 3, 19);
+  assert.equal(legacyLife.reputation, 0);
+  assert.equal(rankOpportunity({ ...legacyLife, path: "marine", rankTier: 0, skill: 40, trust: 40, careerStartAge: 18, lastRankOfferAge: 18, journal: [] }, 25, baseCard)?.title, "상사의 제안");
+});
+
+test("대규모 서사 개편: 일관된 화자 시점, 순수인간 특화, 원작 관계망, 시스템 연동 및 조기 IF 검증", () => {
+  // 1. 일관된 화자 시점 검증 (선장 및 해군 지휘관)
+  const ordersCard = lifeScenes.find((c) => c.id === "life_orders");
+  assert.ok(ordersCard, "life_orders 카드가 존재해야 한다");
+
+  // v20 선장 시점
+  const captain = createGame("free", 1, { species: "인간" }, 3, 20);
+  captain.role = "선장";
+  captain.independent = true;
+  captain.path = "pirate";
+  const captainBody = ordersCard.body(captain);
+  assert.match(captainBody, /선장으로서 결단을 내려야 했다/, "선장일 때는 선장 결단 서사가 나와야 한다");
+  const captainArt = typeof ordersCard.art === "function" ? ordersCard.art(captain) : ordersCard.art;
+  assert.equal(captainArt, "deckCommand", "선장 명령 장면은 deckCommand 그림이어야 한다");
+
+  // v20 해군 장교 시점
+  const marineOfficer = createGame("free", 1, { species: "인간" }, 3, 20);
+  marineOfficer.path = "marine";
+  marineOfficer.rankTier = 3;
+  marineOfficer.role = "소령";
+  const marineBody = ordersCard.body(marineOfficer);
+  assert.match(marineBody, /함선 지휘관으로서 현장 판단을 내려야 했다/, "해군 지휘관일 때는 현장 판단 서사가 나와야 한다");
+
+  // v19 이전 버전 하위 호환성 (하급 선원 시점 유지)
+  const legacyLife = createGame("free", 1, { species: "인간" }, 3, 19);
+  legacyLife.role = "선장";
+  legacyLife.independent = true;
+  legacyLife.path = "pirate";
+  assert.match(ordersCard.body(legacyLife), /선장은 이익이 적은 구조 요청을 지나치려 했다/, "이전 버전은 기존 선원 시점을 유지해야 한다");
+
+  // 2. 28년 만에 재회한 라이벌 서사 및 위압적 굴복 검증
+  const rivalCard = lifeScenes.find((c) => c.id === "life_rival_return");
+  const emperor = createGame("free", 1, { species: "인간" }, 3, 20);
+  emperor.rival = true;
+  emperor.role = "사황";
+  emperor.bounty = 3_000_000_000;
+  assert.match(rivalCard.body(emperor), /바다의 거물이 된 깃발을 보고 함포를 거두며 극도로 긴장했다/, "사황일 때는 거물 깃발에 긴장하는 서사가 나와야 한다");
+  const fightChoice = rivalCard.choices.find((c) => c.id === "fight");
+  const fightLabel = typeof fightChoice.label === "function" ? fightChoice.label(emperor) : fightChoice.label;
+  assert.match(fightLabel, /위압적인 기세로 상대 선단을 굴복시킨다/, "사황일 때는 위압적인 기세 선택지가 제공되어야 한다");
+  const fightResult = fightChoice.apply(emperor);
+  assert.match(fightResult, /압도적인 위압감 앞에 상대 선단은 무기를 거두고 고개를 숙였다/, "성공 서사 출력 확인");
+  assert.equal(emperor.rival, false, "라이벌 관계가 청산되어야 한다");
+  assert.ok((emperor.reputation || 0) >= 15, "명성이 올라야 한다");
+
+  // 3. 비능력자(순수인간) 특화 경로 검증
+  const fruitCard = lifeScenes.find((c) => c.id === "life_fruit_find");
+  const humanLife = createGame("free", 1, { species: "인간" }, 3, 20);
+  const rejectChoice = fruitCard.choices.find((c) => c.id === "leave");
+  const oldSkill = humanLife.skill;
+  const oldHealth = humanLife.health;
+  rejectChoice.apply(humanLife);
+  assert.equal(humanLife.pureHuman, true, "열매 거부 시 pureHuman 특화 플래그가 설정되어야 한다");
+  assert.equal(humanLife.skill, oldSkill + 15, "기술 +15 보너스가 적용되어야 한다");
+  assert.equal(humanLife.health, oldHealth + 10, "건강 +10 보너스가 적용되어야 한다");
+
+  // 4. 원작 모드(original) 원작 인물 관계망 검증
+  const origLife = createGame("original", 1, { species: "인간" }, 3, 20);
+  assert.equal(canonRelationshipLine(origLife), "아직 접점 없음", "초기에는 접점 없음 표시");
+  origLife.people.canonContacts = { luffy: { score: 40, encounters: 2, meetings: 2 } };
+  assert.match(canonRelationshipLine(origLife), /루피/, "v20 원작 모드에서는 인물 관계가 요약 표기되어야 한다");
+
+  const legacyOrig = createGame("original", 1, { species: "인간" }, 3, 19);
+  legacyOrig.people.canonContacts = { luffy: { score: 40, encounters: 2, meetings: 2 } };
+  assert.equal(canonRelationshipLine(legacyOrig), "더 자유로운 모드에서 관계를 기록합니다", "v19 이전 원작 모드는 기존 안내문 유지");
+
+  // 5. 시스템 연동 사건 검증 (성격 70+, 소꿉친구 재회, 해군 수감 포상, 악명 대치, IF 통치)
+  const allOldEra = OLD_ERA.map((e) => `life_old_${e.id}`);
+  const allFatesDone = Object.fromEntries(Object.values(FATES).flat().map((f) => [f.key, { step: 99, marks: [] }]));
+
+  // 5-1. 야망 70+
+  const ambitionLife = createGame("free", 1, { species: "인간" }, 3, 20);
+  ambitionLife.age = 35;
+  ambitionLife.path = "pirate";
+  ambitionLife.leftHome = true;
+  ambitionLife.careerStartAge = 18;
+  ambitionLife.lastRankOfferAge = 35;
+  ambitionLife.seen = ["life_leave_home", "life_first_station", ...allOldEra];
+  ambitionLife.fates = { ...allFatesDone };
+  ambitionLife.personality.ambition = 75;
+  const ambitionScene = yearlyScene(ambitionLife);
+  assert.equal(ambitionScene.id, "life_personality_ambition", "야망 70 이상 시 야망 서사가 등장해야 한다");
+  assert.equal(ambitionScene.art, "deckCommand");
+
+  // 5-2. 소꿉친구 재회
+  const friendLife = createGame("free", 1, { species: "인간" }, 3, 20);
+  friendLife.age = 31; // age + 1 = 32 (32 % 4 === 0)
+  friendLife.friendName = "타로";
+  friendLife.path = "pirate";
+  friendLife.leftHome = true;
+  friendLife.homebound = false;
+  friendLife.careerStartAge = 18;
+  friendLife.lastRankOfferAge = 31;
+  friendLife.lastPublicActAge = 32;
+  friendLife.seen = ["life_leave_home", "life_first_station", ...allOldEra];
+  friendLife.fates = { ...allFatesDone };
+  const friendScene = yearlyScene(friendLife);
+  assert.equal(friendScene.id, "life_friend_reunion", "30세 이후 소꿉친구 성인 재회 서사가 등장해야 한다");
+  assert.equal(friendScene.art, "harborReunion");
+
+  // 5-3. 해군 수감 실적 특별 포상
+  const marineLife = createGame("free", 1, { species: "인간" }, 3, 20);
+  marineLife.age = 25;
+  marineLife.path = "marine";
+  marineLife.leftHome = true;
+  marineLife.careerStartAge = 18;
+  marineLife.lastRankOfferAge = 25;
+  marineLife.lastMarinePatrolAge = 26;
+  marineLife.people.lastBondAge = 26;
+  marineLife.seen = ["life_leave_home", "life_first_station", ...allOldEra];
+  marineLife.fates = { ...allFatesDone };
+  marineLife.arrestCount = 3;
+  const marineScene = yearlyScene(marineLife);
+  assert.equal(marineScene.id, "life_marine_commendation", "체포 실적 2회 이상 시 해군 본부 특별 포상 서사가 등장해야 한다");
+
+  // 5-4. 악명 대치
+  const infamyLife = createGame("free", 1, { species: "인간" }, 3, 20);
+  infamyLife.age = 25;
+  infamyLife.path = "pirate";
+  infamyLife.leftHome = true;
+  infamyLife.careerStartAge = 18;
+  infamyLife.lastRankOfferAge = 25;
+  infamyLife.lastPublicActAge = 26;
+  infamyLife.seen = ["life_leave_home", "life_first_station", ...allOldEra];
+  infamyLife.fates = { ...allFatesDone };
+  infamyLife.reputation = -35;
+  const infamyScene = yearlyScene(infamyLife);
+  assert.equal(infamyScene.id, "life_infamy_standoff", "악명 -25 이하 시 바다를 뒤흔든 악명 대치 서사가 등장해야 한다");
+
+  // 5-5. 사황 영지 통치
+  const yonkoLife = createGame("free", 1, { species: "인간" }, 3, 20);
+  yonkoLife.age = 30;
+  yonkoLife.path = "pirate";
+  yonkoLife.leftHome = true;
+  yonkoLife.careerStartAge = 18;
+  yonkoLife.lastRankOfferAge = 30;
+  yonkoLife.lastPublicActAge = 31;
+  yonkoLife.seen = ["life_leave_home", "life_first_station", ...allOldEra];
+  yonkoLife.fates = { ...allFatesDone };
+  yonkoLife.worldBranch = "emperor";
+  yonkoLife.role = "사황";
+  const yonkoScene = yearlyScene(yonkoLife);
+  assert.equal(yonkoScene.id, "life_emperor_decree", "사황 분기 선택 후 사황 통치 서사가 등장해야 한다");
+
+  // 6. 자유로운 모드(free) 조기 IF (드레스로자 canonStep >= 5) 검증
+  const dressrosaLife = createGame("free", 1, { species: "인간" }, 3, 20);
+  dressrosaLife.age = 45;
+  dressrosaLife.index = 999;
+  dressrosaLife.preCanonStep = preCanonCount(dressrosaLife);
+  dressrosaLife.seen = ["life_marineford_news", ...allOldEra];
+  dressrosaLife.fates = { ...allFatesDone };
+  dressrosaLife.path = "pirate";
+  dressrosaLife.role = "선장";
+  dressrosaLife.independent = true;
+  dressrosaLife.canonStep = 5;
+  dressrosaLife.bounty = 600_000_000;
+  dressrosaLife.skill = 80;
+  dressrosaLife.trust = 80;
+  dressrosaLife.health = 80;
+  const earlyIfScene = getScene(dressrosaLife);
+  assert.equal(earlyIfScene.id, "life_free_rank", "드레스로자 시점에서 높은 현상금/신뢰 보유 시 조기 사황 IF가 열려야 한다");
 });

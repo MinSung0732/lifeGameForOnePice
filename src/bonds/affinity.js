@@ -76,7 +76,7 @@ export default [
           bad: { text: "다음 날 아침 {name}은 머리가 깨질 듯 아팠고, 술값은 전부 {name}의 이름으로 달려 있었다.", effects: { health: -8, supplies: -6 } }
         } }
     ] },
-  { id: "zoro_60", key: "zoro", threshold: 60, from: 0, to: 0, art: "deck", title: "새벽 갑판의 수련",
+  { id: "zoro_60", key: "zoro", threshold: 60, from: 0, to: 0, art: (life) => life?.creationVersion >= 20 ? "deckDuelChallenge" : "deck", title: "새벽 갑판의 수련",
     body: "신세계의 항구에서 다시 마주친 조로는 새벽마다 무거운 추를 들고 수련하고 있었다. 한참 {name}의 손을 보던 그가 칼을 쥐는 법이 엉망이라고 했다. 해가 뜨기 전까지만이라면 상대해 주겠다고 했다.",
     choices: [
       { id: "spar", label: "진검으로 상대해 달라고 청한다", hint: "조로는 봐주지 않는다",
@@ -248,7 +248,7 @@ export default [
     ] },
 
   // 프랑키
-  { id: "franky_30", key: "franky", threshold: 30, from: 2, art: "workbench", title: "콜라 한 병의 수리",
+  { id: "franky_30", key: "franky", threshold: 30, from: 2, art: (life) => life?.creationVersion >= 20 ? "workbenchSkillTraining" : "workbench", title: "콜라 한 병의 수리",
     body: "항구에서 {name}의 배 바닥에 물이 새고 있었다. 지나가던 프랑키가 선글라스를 내리고 선체를 툭툭 두드리더니, 이건 배가 울고 있는 소리라고 했다. 콜라 몇 병만 주면 슈퍼하게 고쳐 주겠다며 양팔을 모아 포즈를 잡았다.",
     choices: [
       { id: "cola", label: "콜라를 사 와서 맡긴다", hint: "연료비는 들지만 솜씨는 확실하다",
@@ -476,7 +476,7 @@ export default [
     ] },
 
   // 네펠타리 비비 (알라바스타 이후, 공주로서 나라를 지키는 시기)
-  { id: "vivi_30", key: "vivi", threshold: 30, from: 2, to: 1, art: "arcAlabasta", title: "왕실 문장이 찍힌 편지",
+  { id: "vivi_30", key: "vivi", threshold: 30, from: 2, to: 1, art: (life) => life?.creationVersion >= 20 ? "workbenchReportLetters" : "arcAlabasta", title: "왕실 문장이 찍힌 편지",
     body: "{name}에게 알라바스타 왕실의 문장이 찍힌 편지가 도착했다. 비비였다. 그날 도와준 사람들을 하나하나 기억하고 있다며, 나라는 조금씩 비를 되찾고 있다고 적혀 있었다. 끝에는 답장을 기다린다는 말이 있었다.",
     choices: [
       { id: "reply", label: "정성껏 답장을 쓴다", hint: "글솜씨보다 마음이 닿아야 한다",

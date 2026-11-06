@@ -144,16 +144,110 @@
           <div class="age-timeline-labels"><span>태어난 해 · 0세</span><strong id="timeline-age"></strong><span id="timeline-end"></span></div>
           <div id="age-progress" class="age-track" role="meter" aria-label="원작 현재 시점까지 흐른 세월" aria-valuemin="0" aria-valuemax="66" aria-valuenow="0"><span id="age-fill"></span></div>
         </div>
-        <nav class="route-trail" aria-label="지나온 항로"><span>항로</span><strong id="route-trail"></strong></nav>
-        <p class="route-trail" id="crew-line" hidden><span>같은 시기 원작 소식</span><strong id="crew-news"></strong></p>
 
-        <aside class="life-strip" aria-label="현재의 삶">
-          <div><span>이름·출신</span><strong id="life-name"></strong></div>
-          <div><span>일·소속</span><strong id="life-work"></strong></div>
-          <div><span>직책·힘</span><strong id="life-role"></strong><small id="life-power"></small></div>
-          <div><span>목표</span><strong id="life-goal"></strong></div>
-          <div class="life-crew"><span>곁의 사람</span><strong id="life-crew"></strong></div>
-          <div class="life-relationships"><span>원작 인물 관계</span><strong id="life-relationships"></strong></div>
+        <aside class="life-strip" aria-label="현재의 삶과 항해">
+          <!-- 좌측: 내 캐릭터 정보 (신상 · 소속 · 직책·힘 · 목표 · 평판) -->
+          <div class="life-pane char-pane">
+            <div class="char-top-row">
+              <div class="char-cell char-name-cell">
+                <span>이름·출신</span>
+                <strong id="life-name"></strong>
+              </div>
+              <div class="char-cell char-work-cell">
+                <span>일·소속</span>
+                <strong id="life-work"></strong>
+              </div>
+              <div class="char-cell char-goal-cell">
+                <span>목표</span>
+                <strong id="life-goal"></strong>
+              </div>
+            </div>
+            <div class="char-bot-row">
+              <div class="char-cell char-power-cell">
+                <span>직책·힘</span>
+                <strong id="life-role"></strong>
+                <small id="life-power"></small>
+              </div>
+              <div class="char-cell char-rep-cell" id="life-reputation" aria-label="바다의 평판">
+                <span id="reputation-title">바다의 평판</span>
+                <div class="reputation-inline">
+                  <div class="reputation-badge-wrap">
+                    <!-- Antique Compass Sun Icon (명성) -->
+                    <svg class="reputation-icon reputation-sun" id="reputation-sun-icon" viewBox="0 0 32 32" aria-hidden="true">
+                      <defs>
+                        <clipPath id="sun-gauge-clip">
+                          <path d="M 16 2 L 18 11 L 26 6 L 21 14 L 30 16 L 21 18 L 26 26 L 18 21 L 16 30 L 14 21 L 6 26 L 11 18 L 2 16 L 11 14 L 6 6 L 14 11 Z"/>
+                        </clipPath>
+                        <linearGradient id="sun-grad" x1="0" y1="1" x2="0" y2="0">
+                          <stop offset="0%" stop-color="#8b5e28"/>
+                          <stop offset="50%" stop-color="#b8860b"/>
+                          <stop offset="100%" stop-color="#dfa83e"/>
+                        </linearGradient>
+                      </defs>
+                      <path d="M 16 2 L 18 11 L 26 6 L 21 14 L 30 16 L 21 18 L 26 26 L 18 21 L 16 30 L 14 21 L 6 26 L 11 18 L 2 16 L 11 14 L 6 6 L 14 11 Z" fill="rgba(123, 89, 54, 0.12)"/>
+                      <g clip-path="url(#sun-gauge-clip)">
+                        <rect id="sun-gauge-rect" x="0" y="32" width="32" height="0" fill="url(#sun-grad)"/>
+                      </g>
+                      <path d="M 16 2 L 18 11 L 26 6 L 21 14 L 30 16 L 21 18 L 26 26 L 18 21 L 16 30 L 14 21 L 6 26 L 11 18 L 2 16 L 11 14 L 6 6 L 14 11 Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+                      <circle cx="16" cy="16" r="3.2" fill="none" stroke="currentColor" stroke-width="1.1"/>
+                    </svg>
+                    <!-- Vintage Jolly Roger Skull Icon (악명) -->
+                    <svg class="reputation-icon reputation-skull" id="reputation-skull-icon" viewBox="0 0 32 32" aria-hidden="true" hidden>
+                      <defs>
+                        <clipPath id="skull-gauge-clip">
+                          <path d="M 9 14 C 9 8.5 12 5.5 16 5.5 C 20 5.5 23 8.5 23 14 C 23 16.5 21.5 18 20 19 L 20 23.5 C 20 24.5 19 25 18 25 L 14 25 C 13 25 12 24.5 12 23.5 L 12 19 C 10.5 18 9 16.5 9 14 Z"/>
+                        </clipPath>
+                        <linearGradient id="skull-grad" x1="0" y1="1" x2="0" y2="0">
+                          <stop offset="0%" stop-color="#4a1515"/>
+                          <stop offset="60%" stop-color="#802020"/>
+                          <stop offset="100%" stop-color="#b03030"/>
+                        </linearGradient>
+                      </defs>
+                      <path d="M 5 5 L 27 27 M 27 5 L 5 27" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+                      <circle cx="5" cy="5" r="1.6" fill="currentColor"/>
+                      <circle cx="27" cy="5" r="1.6" fill="currentColor"/>
+                      <circle cx="5" cy="27" r="1.6" fill="currentColor"/>
+                      <circle cx="27" cy="27" r="1.6" fill="currentColor"/>
+                      <path d="M 9 14 C 9 8.5 12 5.5 16 5.5 C 20 5.5 23 8.5 23 14 C 23 16.5 21.5 18 20 19 L 20 23.5 C 20 24.5 19 25 18 25 L 14 25 C 13 25 12 24.5 12 23.5 L 12 19 C 10.5 18 9 16.5 9 14 Z" fill="rgba(128, 32, 32, 0.12)"/>
+                      <g clip-path="url(#skull-gauge-clip)">
+                        <rect id="skull-gauge-rect" x="0" y="32" width="32" height="0" fill="url(#skull-grad)"/>
+                      </g>
+                      <path d="M 9 14 C 9 8.5 12 5.5 16 5.5 C 20 5.5 23 8.5 23 14 C 23 16.5 21.5 18 20 19 L 20 23.5 C 20 24.5 19 25 18 25 L 14 25 C 13 25 12 24.5 12 23.5 L 12 19 C 10.5 18 9 16.5 9 14 Z" fill="none" stroke="currentColor" stroke-width="1.3"/>
+                      <ellipse cx="13.2" cy="13.5" rx="1.6" ry="2" fill="var(--ink)"/>
+                      <ellipse cx="18.8" cy="13.5" rx="1.6" ry="2" fill="var(--ink)"/>
+                      <path d="M 16 16.2 L 15.2 18 L 16.8 18 Z" fill="var(--ink)"/>
+                      <path d="M 14 22 H 18 M 15 20.5 V 24 M 17 20.5 V 24" stroke="var(--ink)" stroke-width="0.9"/>
+                    </svg>
+                  </div>
+                  <div class="reputation-text">
+                    <strong class="reputation-strong"><span id="reputation-kind">명성</span> <span id="reputation-val">+0</span></strong>
+                    <small id="reputation-desc">바다에 이름을 알리기 전</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 우측: 항해 및 인맥 (항로 · 원작 소식 · 곁의 사람 · 원작 관계) -->
+          <div class="life-pane world-pane">
+            <nav class="route-trail" aria-label="지나온 항로">
+              <span>항로</span>
+              <strong id="route-trail"></strong>
+            </nav>
+            <p class="route-trail" id="crew-line" hidden>
+              <span>같은 시기 원작 소식</span>
+              <strong id="crew-news"></strong>
+              <canvas id="crew-fx" class="crew-fx" width="38" height="14" aria-hidden="true"></canvas>
+            </p>
+            <div class="life-crew">
+              <span>곁의 사람</span>
+              <strong id="life-crew"></strong>
+            </div>
+            <div class="life-relationships">
+              <span>원작 인물 관계</span>
+              <strong id="life-relationships"></strong>
+            </div>
+          </div>
         </aside>
 
         <button id="growth-toggle" class="text-button growth-toggle" type="button" aria-expanded="false" aria-controls="growth-panels">능력·성격 펼치기</button>

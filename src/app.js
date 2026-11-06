@@ -1,5 +1,5 @@
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, collectMilestones, createGame, getScene, personalitySummary, replay, saveRecord } from "./game.js";
-import { crewNews, eraStart, presentAge, stretched } from "./world.js";
+import { crewNews, crewVesselKind, eraStart, presentAge, stretched } from "./world.js";
 import { peopleSummary } from "./people.js";
 import { canonRelationshipLine, canonRelationshipSummary } from "./canon-relationships.js";
 import { crewLine } from "./crew.js";
@@ -144,8 +144,65 @@ function renderLifeStrip() {
   byId("life-role").textContent = life.role;
   byId("life-power").textContent = `${powerSummary()}${life.creationVersion >= 4 && life.bounty ? ` · 현상금 ${formatBounty(life.bounty)}` : ""}`;
   byId("life-goal").textContent = life.goal;
+  renderReputation();
   byId("life-crew").textContent = byId("life-crew").title = crewLine(life);
   byId("life-relationships").textContent = byId("life-relationships").title = canonRelationshipLine(life);
+}
+
+function reputationDesc(rep) {
+  if (rep >= 70) return "세계를 비추는 드높은 명성";
+  if (rep >= 40) return "바다 사람들이 믿고 의지하는 영웅";
+  if (rep >= 20) return "여러 섬에 알려진 신뢰의 이름";
+  if (rep > 0) return "부두에 퍼지기 시작한 호평";
+  if (rep === 0) return "바다에 이름을 알리기 전";
+  if (rep > -20) return "선술집에서 수군대는 거친 소문";
+  if (rep > -40) return "해군 검문선이 주시하는 경계 대상";
+  if (rep > -70) return "마을 사람들이 문을 걸어 잠그는 흉명";
+  return "바다 전체를 공포에 떨게 하는 대해적";
+}
+
+function renderReputation() {
+  const card = byId("life-reputation");
+  if (!card) return;
+  const rep = life.reputation || 0;
+  const isRenown = rep >= 0;
+  card.dataset.state = isRenown ? "renown" : "infamy";
+  const sunIcon = byId("reputation-sun-icon");
+  const skullIcon = byId("reputation-skull-icon");
+  if (sunIcon) sunIcon.hidden = !isRenown;
+  if (skullIcon) skullIcon.hidden = isRenown;
+  const kind = byId("reputation-kind");
+  if (kind) kind.textContent = isRenown ? "명성" : "악명";
+  const val = byId("reputation-val");
+  if (val) val.textContent = isRenown ? `+${rep}` : `${Math.abs(rep)}`;
+
+  const percent = Math.min(100, Math.max(0, Math.abs(rep)));
+  const fillY = 32 - (32 * (percent / 100));
+  const fillH = 32 * (percent / 100);
+  if (isRenown) {
+    const sunRect = byId("sun-gauge-rect");
+    if (sunRect) {
+      sunRect.setAttribute("y", fillY.toFixed(1));
+      sunRect.setAttribute("height", fillH.toFixed(1));
+    }
+  } else {
+    const skullRect = byId("skull-gauge-rect");
+    if (skullRect) {
+      skullRect.setAttribute("y", fillY.toFixed(1));
+      skullRect.setAttribute("height", fillH.toFixed(1));
+    }
+  }
+
+  const desc = byId("reputation-desc");
+  if (desc) {
+    let extra = "";
+    if (life.creationVersion >= 20) {
+      if (life.path === "marine" && (life.arrestCount || life.arrestBounty)) {
+        extra = ` · 수감 ${life.arrestCount}명(${formatBounty(life.arrestBounty)})`;
+      }
+    }
+    desc.textContent = `${reputationDesc(rep)}${extra}`;
+  }
 }
 
 function powerSummary() {
@@ -187,6 +244,7 @@ function renderTimeline() {
 
 function statLabel(stat) {
   if (stat.key === "bounty") return "현상금";
+  if (stat.key === "reputation") return (life?.reputation || 0) >= 0 ? "명성" : "악명";
   if (stat.key.startsWith("personality.")) return PERSONALITY.find((entry) => entry.key === stat.key.slice(12))?.label || stat.key;
   if (stat.key === "bond") {
     if (!life.guardianName && life.creationVersion >= 3) return stat.label;
@@ -302,6 +360,114 @@ function renderAgeTimeline(scene) {
 }
 
 let lastSceneKey = "";
+let crewFxRaf = 0;
+
+const CREW_PAL = {
+  w: "#ffffff", c: "#f7ecd5", g: "#f0b938", r: "#d6382e", d: "#7a2018",
+  k: "#1d272a", m: "#8c5832", b: "#5c361a", s: "#2e6f73", f: "#8ec5d1", o: "#f28c28"
+};
+const CREW_SPRITES = {
+  hat: [
+    "....gggg....",
+    "..gggggggg..",
+    ".gggggggggg.",
+    ".rrrrrrrrrr.",
+    "gggggggggggg"
+  ],
+  dinghy: [
+    ".....gg.....",
+    "....rrrr....",
+    ".....kk.w...",
+    "..mmmmmmmm..",
+    "...bbbbbb..."
+  ],
+  merry: [
+    ".....kk.....",
+    "...wwwwww...",
+    "...wwrrww...",
+    "c..wwwwww...",
+    "ccmmmmmmmm..",
+    ".bbbbbbbbbb."
+  ],
+  sunny: [
+    ".....kk.....",
+    "...wwwwww...",
+    ".g.wwrrww...",
+    "gogwwwwww...",
+    ".grrrrrrrr..",
+    ".bbbbbbbbbb."
+  ]
+};
+
+function drawCrewFx(now = 0) {
+  const canvas = byId("crew-fx");
+  if (!canvas || !life || life.rules !== 3 || byId("game").hidden) return;
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  const t = motionOn ? now * 0.0045 : 0;
+  const kind = crewVesselKind(life, getScene(life)?.age ?? life.age);
+  const sprite = CREW_SPRITES[kind];
+  // Trailing wake dots on the left ("loading" trail connecting from the text)
+  for (let i = 0; i < 3; i += 1) {
+    const phase = (t * 1.4 - i * 0.33) % 1;
+    const pulse = motionOn ? ((phase + 1) % 1) : 0.6;
+    const dx = 2 + i * 4;
+    const dy = 10 + Math.round(Math.sin(t * 1.8 + i * 1.3) * (motionOn ? 1 : 0));
+    ctx.fillStyle = pulse < 0.45 ? CREW_PAL.w : CREW_PAL.f;
+    ctx.fillRect(dx, dy, 2, 1);
+  }
+  // Scrolling pixel waves along the bottom
+  for (let x = 13; x < w; x += 1) {
+    const wave = Math.sin(x * 0.48 - t * 2.4);
+    const wy = 11 + (wave > 0.35 ? 0 : 1);
+    ctx.fillStyle = wave > 0.55 ? CREW_PAL.w : CREW_PAL.f;
+    ctx.fillRect(x, wy, 1, 1);
+    ctx.fillStyle = CREW_PAL.s;
+    ctx.fillRect(x, wy + 1, 1, h - wy - 1);
+  }
+  // Bobbing pixel sprite (straw hat / dinghy / Going Merry / Thousand Sunny)
+  const bob = motionOn ? (Math.sin(t * 2.1) > 0 ? -1 : 0) : 0;
+  const sx = 19;
+  const sy = (kind === "hat" ? 6 : 5) + bob;
+  for (let r = 0; r < sprite.length; r += 1) {
+    const row = sprite[r];
+    for (let c = 0; c < row.length; c += 1) {
+      const ch = row[c];
+      if (ch !== ".") {
+        ctx.fillStyle = CREW_PAL[ch];
+        ctx.fillRect(sx + c, sy + r, 1, 1);
+      }
+    }
+  }
+  // Tiny sea spray sparkle at the bow when moving
+  if (motionOn && ((now / 260) | 0) % 2 === 0) {
+    ctx.fillStyle = CREW_PAL.w;
+    ctx.fillRect(sx - 2, 10 + bob, 1, 1);
+  }
+}
+
+function syncCrewFx() {
+  if (crewFxRaf) {
+    cancelAnimationFrame(crewFxRaf);
+    crewFxRaf = 0;
+  }
+  if (!life || life.rules !== 3 || byId("game").hidden) return;
+  if (!motionOn) {
+    drawCrewFx(0);
+    return;
+  }
+  const loop = (now) => {
+    if (!life || life.rules !== 3 || byId("game").hidden || !motionOn) {
+      crewFxRaf = 0;
+      return;
+    }
+    drawCrewFx(now);
+    crewFxRaf = requestAnimationFrame(loop);
+  };
+  crewFxRaf = requestAnimationFrame(loop);
+}
 
 function sceneTone(scene) {
   const key = `${scene.id} ${scene.art?.src || ""}`;
@@ -344,6 +510,43 @@ function renderSceneAtmosphere(scene, arrivedPlace = "") {
   badge.hidden = !badgeText;
 }
 
+let currentSceneImageSrc = "";
+let sceneImageToken = 0;
+
+function updateSceneImage(img, src, alt) {
+  if (!img) return;
+  const targetSrc = src || "";
+  const targetAlt = alt || "";
+  if (!currentSceneImageSrc) currentSceneImageSrc = img.getAttribute("src") || "";
+  if (currentSceneImageSrc === targetSrc && img.getAttribute("src") === targetSrc) {
+    img.alt = targetAlt;
+    return;
+  }
+  if (typeof Image === "undefined") {
+    img.src = targetSrc;
+    img.alt = targetAlt;
+    currentSceneImageSrc = targetSrc;
+    return;
+  }
+  const token = ++sceneImageToken;
+  const preloader = new Image();
+  preloader.src = targetSrc;
+  const apply = () => {
+    if (token !== sceneImageToken) return;
+    img.src = targetSrc;
+    img.alt = targetAlt;
+    currentSceneImageSrc = targetSrc;
+  };
+  if (typeof preloader.decode === "function") {
+    preloader.decode().then(apply).catch(apply);
+  } else if (preloader.complete) {
+    apply();
+  } else {
+    preloader.onload = apply;
+    preloader.onerror = apply;
+  }
+}
+
 function renderGame(focusTitle = false, statsUpdated = false, arrivedPlace = "") {
   const scene = getScene(life);
   if (!scene) return renderEnding();
@@ -357,8 +560,7 @@ function renderGame(focusTitle = false, statsUpdated = false, arrivedPlace = "")
   byId("scene-chapter").textContent = `${life.journal.length + 1}번째 장면 · ${scene.timeLabel || passage}`;
   byId("scene-title").textContent = scene.title;
   byId("scene-body").textContent = scene.body;
-  byId("scene-image").src = scene.art.src;
-  byId("scene-image").alt = scene.art.alt;
+  updateSceneImage(byId("scene-image"), scene.art.src, scene.art.alt);
   byId("route-trail").textContent = (life.travelHistory || [life.birth.home]).join(" → ");
   byId("crew-line").hidden = life.rules !== 3;
   byId("crew-news").textContent = byId("crew-news").title = life.rules === 3
@@ -370,6 +572,7 @@ function renderGame(focusTitle = false, statsUpdated = false, arrivedPlace = "")
         ? preCanonStatus(life) : crewNews(life, scene.age) : "";
   // Rule 16 says once, beside the canon line, that the canon calendar is stretched for this game.
   if (stretched(life) && scene.age >= eraStart(life)) byId("crew-news").textContent += " · 원작 시간은 게임에 맞춰 늘려 표시";
+  syncCrewFx();
   if (!statsUpdated) {
     const changeText = describeChanges(life.lastChanges);
     byId("scene-result").textContent = [life.lastOutcome, changeText].filter(Boolean).join(" · ");
@@ -489,6 +692,7 @@ function initMotion(toggle) {
     motionOn = !motionOn;
     try { localStorage.setItem(MOTION_KEY, JSON.stringify({ on: motionOn })); } catch {}
     show();
+    syncCrewFx();
   });
   show();
 }
@@ -497,6 +701,7 @@ function initMotion(toggle) {
 // in its meter's color that fly into that stat or trait; bounty particles go to the role line.
 function changeTarget(key) {
   const target = key === "bounty" ? byId("life-power")
+    : key === "reputation" ? byId("life-reputation")
     : document.querySelector(key.startsWith("personality.") ? `#personality-grid .trait-${key.slice(12)}` : `#stats-grid .stat-${key}`);
   // On phones the panels may be folded; particles then fly into the toggle instead.
   const fallback = byId("growth-toggle");
@@ -536,7 +741,9 @@ function burst(row, target, delta) {
 
 // A dice check gets its own beat: the die tumbles through numbers, lands on the roll, then shows the verdict.
 async function playDice({ roll, target, success, tier }) {
-  const reduced = !motionOn;
+  const kind = tier === "great" ? "great" : success ? "success" : "fail";
+  diceResult(kind);
+  if (!motionOn) return;
   const overlay = document.createElement("div");
   overlay.className = "fx-overlay dice-overlay";
   const card = document.createElement("div");
@@ -558,24 +765,20 @@ async function playDice({ roll, target, success, tier }) {
   let skipped = false;
   overlay.addEventListener("click", () => { skipped = true; skip?.(); });
   requestAnimationFrame(() => overlay.classList.add("show"));
-  if (!reduced) {
-    // Flicker through random faces, slowing down like a die losing momentum.
-    for (let delay = 45; delay < 230 && !skipped; delay *= 1.16) {
-      die.textContent = String(1 + Math.floor(Math.random() * 100));
-      diceTick();
-      await pause(delay);
-    }
+  // Flicker through random faces, slowing down like a die losing momentum.
+  for (let delay = 45; delay < 230 && !skipped; delay *= 1.16) {
+    die.textContent = String(1 + Math.floor(Math.random() * 100));
+    diceTick();
+    await pause(delay);
   }
   // Three verdicts look and feel different: a gold burst, a green pulse, or a red shake.
-  const kind = tier === "great" ? "great" : success ? "success" : "fail";
   die.classList.remove("rolling");
   die.classList.add(kind);
   die.textContent = String(roll);
   verdict.className = `dice-verdict ${kind}`;
   verdict.textContent = { great: "대성공!", success: "성공", fail: "실패" }[kind];
   card.classList.add(`verdict-${kind}`);
-  diceResult(kind);
-  if (kind === "great" && !reduced) {
+  if (kind === "great") {
     for (let index = 0; index < 18; index += 1) {
       const spark = document.createElement("span");
       spark.className = "dice-spark";
@@ -588,7 +791,7 @@ async function playDice({ roll, target, success, tier }) {
   skipped = false;
   await pause(kind === "great" ? 1600 : 1100);
   overlay.classList.add("leaving");
-  await pause(reduced ? 0 : 240);
+  await pause(240);
   overlay.remove();
 }
 
@@ -639,7 +842,18 @@ function powerFxForChoice(state, choiceId, chosenLabel = "", outcome = "", chose
 async function playChanges(changes, outcome = "", chosenLabel = "", powerFx = null) {
   const cleanOutcome = outcome.replace(/^주사위 \d+ \(\d+ 이상 성공\) · (?:대성공|성공|실패)\.\s*/, "").trim();
   if (!changes.length && !cleanOutcome) return false;
-  const reduced = !motionOn;
+  if (!motionOn) {
+    if (powerFx) diceResult(powerFx.kind.startsWith("fruit") ? "fruit" : "haki");
+    const resultLine = byId("scene-result");
+    const changeText = describeChanges(changes);
+    resultLine.textContent = [life.lastOutcome, changeText].filter(Boolean).join(" · ");
+    resultLine.hidden = !life.lastOutcome && !changeText;
+    renderLifeStrip();
+    renderStats();
+    renderPersonality();
+    return true;
+  }
+  const reduced = false;
   const overlay = document.createElement("div");
   overlay.className = "fx-overlay";
   const card = document.createElement("div");
@@ -1039,8 +1253,13 @@ function flyCardTo(card, target, maxOffset = 140) {
 
 async function playMilestones(milestones) {
   if (!milestones.length) return;
-  const reduced = !motionOn;
   renderLifeStrip();
+  if (!motionOn) {
+    const first = milestones[0];
+    diceResult(first.kind === "bounty" ? "bounty" : first.kind === "fruit" ? "fruit" : first.kind.startsWith("haki-") ? "haki" : "great");
+    return;
+  }
+  const reduced = false;
   for (const item of milestones) {
     const overlay = document.createElement("div");
     overlay.className = "fx-overlay milestone-overlay";
@@ -1391,7 +1610,17 @@ document.addEventListener("visibilitychange", scheduleObservation);
 
 if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
   const bar = document.createElement("div");
-  bar.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;";
+  bar.className = "dev-patch-bar";
+  bar.style.cssText = "display:flex;gap:6px;align-items:center;font-size:12px;margin-left:auto;";
+
+  const label = document.createElement("span");
+  label.style.cssText = "font-weight:700;color:var(--copper);white-space:nowrap;font-size:11px;";
+  label.textContent = "패치 테스트:";
+
+  const select = document.createElement("select");
+  select.id = "dev-patch-select";
+  select.style.cssText = "min-height:28px;padding:2px 8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:12px;border-radius:2px;cursor:pointer;max-width:250px;";
+
   const jumpTo = (sceneId, seed, patch) => {
     devPreset = true;
     life = createGame("free", seed, { name: "테스트", species: "인간" });
@@ -1410,71 +1639,139 @@ if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
     observation = null;
     renderGame(true);
   };
-  let testFruitIdx = 0;
-  const TEST_FRUITS = [
-    "고무고무 열매(동물계 환수종)",
-    "이글이글 열매(자연계)",
-    "꽃꽃 열매(초인계)",
-    "수술수술 열매(초인계)",
-    "동강동강 열매(초인계)",
-    "어둠어둠 열매(자연계)",
-    "고요고요 열매(초인계)",
-    "쿠릉쿠릉 열매(자연계)",
-    "얼음얼음 열매(자연계)",
-    "모래모래 열매(자연계)",
-    "번쩍번쩍 열매(자연계)",
-    "뭉게뭉게 열매(자연계)",
-    "눈눈 열매(자연계)",
-    "가스가스 열매(자연계)",
-    "흔들흔들 열매(초인계)",
-    "실실 열매(초인계)",
-    "떡떡 열매(초인계)",
-    "도르도르 열매(초인계)",
-    "새새 열매 모델 불사조(동물계 환수종)"
+
+  const PATCH_OPTIONS = [
+    {
+      group: "서사 모순 해결 및 지휘관 시점",
+      items: [
+        { label: "선장 명령과 결단 (사령실)", fn: () => jumpTo("life_orders", 3, { path: "pirate", job: "해적단 선장", affiliation: "독립 해적단", role: "선장", independent: true, skill: 70 }) },
+        { label: "해군 장교 현장 판단 (지휘관)", fn: () => jumpTo("life_orders", 3, { path: "marine", job: "해군 장교", affiliation: "해군 G-5 지부", role: "소령", rankTier: 3, skill: 70 }) },
+        { label: "28년 만의 라이벌 굴복 (사황 위압)", fn: () => jumpTo("life_rival_return", 3, { path: "pirate", job: "사황", affiliation: "독립 해적단", role: "사황", bounty: 3_500_000_000, rival: true, skill: 90 }) },
+        { label: "비능력자(순수인간) 수련 선택지", fn: () => jumpTo("life_fruit_find", 3, { path: "pirate", job: "해적", affiliation: "독립 해적단", role: "선원", skill: 60 }) }
+      ]
+    },
+    {
+      group: "거물 영지 통치 및 IF 분기",
+      items: [
+        { label: "사황 영지와 깃발 선언", fn: () => jumpTo("life_emperor_decree", 3, { path: "pirate", job: "사황", affiliation: "독립 해적단", role: "사황", worldBranch: "emperor", bounty: 3_500_000_000, skill: 90 }) },
+        { label: "해군 대장의 정의와 결단", fn: () => jumpTo("life_admiral_verdict", 3, { path: "marine", job: "해군 대장", affiliation: "해군 본부", role: "해군 대장", worldBranch: "admiral", rankTier: 5, skill: 90 }) },
+        { label: "혁명군 군대장의 결단", fn: () => jumpTo("life_liberator_strike", 3, { path: "liberator", job: "혁명군 군대장", affiliation: "혁명군", role: "혁명군 군대장", worldBranch: "commander", skill: 90 }) },
+        { label: "드레스로자 조기 사황 IF (5억 현상금)", fn: () => {
+          devPreset = true;
+          life = createGame("free", 3, { name: "테스트", species: "인간" });
+          Object.assign(life, {
+            index: 999,
+            age: 45,
+            preCanonStep: 99,
+            canonStep: 5,
+            path: "pirate",
+            job: "해적단 선장",
+            affiliation: "독립 해적단",
+            role: "선장",
+            independent: true,
+            bounty: 600_000_000,
+            skill: 80,
+            health: 80,
+            trust: 80
+          });
+          observation = null;
+          renderGame(true);
+        } }
+      ]
+    },
+    {
+      group: "잠든 시스템 연동 사건",
+      items: [
+        { label: "소꿉친구 부두 성인 재회", fn: () => jumpTo("life_friend_reunion", 3, { path: "pirate", job: "해적단 선장", affiliation: "독립 해적단", role: "선장", friendName: "타로", friendBond: 65, skill: 70 }) },
+        { label: "해군 본부 수감 실적 특별 포상", fn: () => jumpTo("life_marine_commendation", 3, { path: "marine", job: "해군 장교", affiliation: "해군 본부", role: "대령", rankTier: 4, arrestCount: 3, skill: 75 }) },
+        { label: "바다를 뒤흔든 악명 군함 대치", fn: () => jumpTo("life_infamy_standoff", 3, { path: "pirate", job: "해적단 선장", affiliation: "독립 해적단", role: "선장", reputation: -35, bounty: 250_000_000, skill: 75 }) },
+        { label: "야망 70+ 거대 세력 패권 도전", fn: () => jumpTo("life_personality_ambition", 3, { path: "pirate", job: "해적단 선장", affiliation: "독립 해적단", role: "선장", bounty: 450_000_000, personality: { ambition: 75, freedom: 60, empathy: 40, loyalty: 50, caution: 30 }, skill: 80 }) },
+        { label: "원작 모드 인물 관계망 (루피/조로 접점)", fn: () => {
+          devPreset = true;
+          life = createGame("original", 3, { name: "테스트", species: "인간" });
+          Object.assign(life, {
+            age: 42,
+            path: "pirate",
+            job: "해적",
+            affiliation: "독립 해적단",
+            role: "선원",
+            people: {
+              canonContacts: {
+                luffy: { score: 35, meetings: 2 },
+                zoro: { score: 20, meetings: 1 },
+                ace: { score: 15, meetings: 1 }
+              }
+            }
+          });
+          observation = null;
+          renderGame(true);
+        } }
+      ]
+    },
+    {
+      group: "종합 결과 및 엔딩",
+      items: [
+        { label: "개편 종합 생애 일지 엔딩", fn: () => {
+          devPreset = true;
+          life = Object.assign(createGame("free", 3, { name: "테스트", species: "인간" }), {
+            age: 62, careerStartAge: 19, path: "pirate", job: "사황", affiliation: "독립 해적단", role: "사황", worldBranch: "emperor",
+            devilFruit: null, pureHuman: true, haki: { observation: 2, armament: 2, conqueror: 1 }, bounty: 3_500_000_000, reputation: 65,
+            people: {
+              mate: { name: "도윈", bond: 75, fate: "곁", together: true },
+              canonContacts: { luffy: { score: 50, meetings: 3, lastOrder: 1 }, zoro: { score: 35, meetings: 2 } }
+            },
+            ending: "present", finished: true,
+            journal: [
+              { id: "life_career", age: 19, title: "처음 고른 소속", choice: "동료와 작은 해적단을 꾸린다" },
+              { id: "life_fruit_find", age: 27, title: "물결에 밀려온 상자", choice: "열매를 사양하고 바다와 호흡하는 단련을 택한다" },
+              { id: "life_orders", age: 30, title: "명령과 판단", choice: "선원들의 뜻을 따라 항로를 유지한다" },
+              { id: "life_haki_training", age: 38, title: "기척을 읽는 수련", choice: "신체와 패기의 극한을 연마한다" },
+              { id: "life_free_rank", age: 45, title: "와노국 이후의 새 자리", choice: "사황의 자리를 노린다" },
+              { id: "life_emperor_decree", age: 50, title: "사황의 영역과 깃발", choice: "가맹하지 못한 섬들에게 깃발을 빌려주고 보호한다" },
+              { id: "canon_arc_egghead_0", age: 62, title: "미래섬을 흔든 방송" }
+            ]
+          });
+          renderEnding();
+        } }
+      ]
+    }
   ];
-  for (const [label, fn] of [
-    ["[소속/직책]", () => jumpTo("life_career", 3, {})],
-    ["[악마의 열매]", () => jumpTo("life_fruit_find", 3, { path: "pirate", job: "해적", affiliation: "독립 해적단", role: "선원" })],
-    ["[능력사용]", () => {
-      const devilFruit = TEST_FRUITS[testFruitIdx++ % TEST_FRUITS.length];
-      jumpTo("life_power_trial", 3, {
-        path: "pirate", job: "해적", affiliation: "독립 해적단", role: "선원",
-        devilFruit, fruitMastery: 2, haki: { observation: 2, armament: 2, conqueror: 1 }
-      });
-    }],
-    ["[패왕색]", () => jumpTo("life_conqueror_sign", 9, { path: "pirate", job: "해적단 선장", affiliation: "테스트 해적단", role: "선장" })],
-    ["[견문·무장색]", () => jumpTo("life_haki_training", 3, { path: "pirate", job: "해적", affiliation: "독립 해적단", role: "간부" })],
-    ["[현상금 수배서]", () => jumpTo("life_enemy", 3, { path: "pirate", job: "해적단 선장", affiliation: "테스트 해적단", role: "선장", bounty: 15_000_000 })],
-    ["[원작인연]", () => jumpTo("__canon__", 3, { age: eraStart(createGame("free", 3, { name: "테스트", species: "인간" })) + 2, location: "이스트 블루 · 로그 타운", path: "pirate", job: "해적", affiliation: "독립 해적단", role: "선원", preCanonStep: 8 })],
-    ["[전장/불꽃]", () => jumpTo("life_marineford_news", 3, { path: "pirate", job: "해적단 선장", affiliation: "테스트 해적단", role: "선장", preCanonStep: 26 })],
-    ["[엔딩]", () => {
-      devPreset = true;
-      life = Object.assign(createGame("free", 3, { name: "테스트", species: "인간" }), {
-        age: 62, careerStartAge: 19, path: "pirate", job: "흰 수염 해적단 선원", affiliation: "흰 수염 해적단", canonCrew: "흰 수염 해적단", role: "선원", goal: "끝까지 바다를 누비는 것",
-        devilFruit: "이글이글 열매", haki: { observation: 2, armament: 2, conqueror: 1 }, bounty: 550_000_000,
-        people: {
-          mate: { name: "도윈", bond: 75, fate: "곁", together: true },
-          canonContacts: { luffy: { score: 35, meetings: 2, lastOrder: 1 } }
-        },
-        ending: "present", finished: true,
-        journal: [
-          { id: "life_career", age: 19, title: "처음 고른 소속", choice: "동료와 작은 해적단을 꾸린다" },
-          { id: "life_fruit_find", age: 27, title: "물결에 밀려온 상자", choice: "확신 없이 열매를 먹는다" },
-          { id: "life_haki_training", age: 38, title: "기척을 읽는 수련", choice: "무장색의 기초를 배운다" },
-          { id: "life_conqueror_sign", age: 55, title: "말보다 먼저 온 기세", choice: "동료와 거리를 두고 다스리는 법을 배운다" },
-          { id: "canon_arc_egghead_0", age: 62, title: "미래섬을 흔든 방송" }
-        ]
-      });
-      renderEnding();
-    }]
-  ]) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "text-button";
-    btn.textContent = label;
-    btn.addEventListener("click", fn);
-    bar.append(btn);
-  }
+
+  const actionsMap = new Map();
+  const defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  defaultOption.textContent = "패치 테스트 선택...";
+  select.append(defaultOption);
+
+  PATCH_OPTIONS.forEach((grp, gIdx) => {
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = grp.group;
+    grp.items.forEach((item, iIdx) => {
+      const key = `${gIdx}_${iIdx}`;
+      actionsMap.set(key, item.fn);
+      const opt = document.createElement("option");
+      opt.value = key;
+      opt.textContent = item.label;
+      optgroup.append(opt);
+    });
+    select.append(optgroup);
+  });
+
+  const executeCurrent = () => {
+    const fn = actionsMap.get(select.value);
+    if (fn) fn();
+  };
+
+  select.addEventListener("change", executeCurrent);
+
+  const runBtn = document.createElement("button");
+  runBtn.type = "button";
+  runBtn.className = "text-button";
+  runBtn.textContent = "이동";
+  runBtn.style.cssText = "min-height:28px;padding:2px 10px;border:1px solid var(--copper);color:var(--copper);background:transparent;cursor:pointer;font-weight:700;font-size:12px;";
+  runBtn.addEventListener("click", executeCurrent);
+
+  bar.append(label, select, runBtn);
   document.querySelector(".masthead").append(bar);
 }
 

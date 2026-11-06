@@ -215,7 +215,7 @@ export default [
     ]
   },
   {
-    id: "teach_pie", person: "마셜 D. 티치", art: "deck",
+    id: "teach_pie", person: "마셜 D. 티치", art: (life) => life?.creationVersion >= 20 ? "deckNightWatch" : "deck",
     title: "체리 파이와 밤 당번",
     body: "밤 당번을 함께 서게 된 티치가 어디서 구했는지 체리 파이를 한 판 들고 나왔다. 제하하 웃으며 한 조각을 내밀었다. 별을 보던 티치가 문득, 사람은 무엇을 기다릴 줄 알아야 한다고 중얼거렸다.",
     choices: [
@@ -236,7 +236,7 @@ export default [
     ]
   },
   {
-    id: "ace_flame", person: "포트거스 D. 에이스", art: "deck",
+    id: "ace_flame", person: "포트거스 D. 에이스", art: (life) => life?.creationVersion >= 20 ? "deckNightWatch" : "deck",
     title: "추운 밤의 불꽃",
     body: "겨울 섬 근처를 지나던 밤, 갑판 위 당번들이 추위에 떨었다. 에이스가 모자를 눌러쓰고 나와 손바닥 위에 작은 불을 피웠다. 둘러앉은 형제들 틈에서, 대장이 내게 요즘 이 배가 편하냐고 물었다.",
     choices: [
@@ -368,7 +368,7 @@ export default [
     ]
   },
   {
-    id: "roger_apprentices", person: "골 D. 로저", art: "deck",
+    id: "roger_apprentices", person: "골 D. 로저", art: (life) => life?.creationVersion >= 20 ? "deckDuelChallenge" : "deck",
     title: "견습들의 싸움",
     body: "견습 선원 샹크스와 버기가 또 갑판에서 뒹굴며 싸웠다. 말리러 간 나까지 엉켜 셋이 굴렀다. 그때 로저가 나타나 셋을 한꺼번에 들어 올리더니, 웃음을 터뜨리며 싸울 거면 제대로 싸우라고 했다.",
     choices: [
