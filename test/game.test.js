@@ -1377,6 +1377,21 @@ test("rule 20 gives low-ranked marines canon supervisor and earned-friend scenes
     "earned Straw Hat affinity remains claimable after the war-era boundary");
 });
 
+test("소꿉친구 획득 이펙트의 도착지에 친구가 표시되고 합류 상태가 구분된다", async () => {
+  const { crewFor, crewLine } = await import("../src/crew.js");
+  const before = createGame("free", 27, { species: "인간" });
+  const after = structuredClone(before);
+  after.people.mate = { name: "로웰", bond: 60, fate: "곁" };
+
+  assert.ok(collectMilestones(before, after).some((item) => item.kind === "bond" && item.targetId === "life-crew"));
+  assert.match(crewLine(after), /로웰\(소꿉친구 · 동행 전\)/);
+  after.people.mate.together = true;
+  assert.match(crewLine(after), /로웰\(어릴 적 친구 · 동료\)/);
+  after.people.mate.together = false;
+  after.people.mate.fate = "다른 길";
+  assert.ok(!crewFor(after).some((person) => person.name === "로웰"));
+});
+
 test("collectMilestones detects affiliation, devil fruit, haki, bounty, and relationship changes", () => {
   const before = createGame("free", 1, { species: "인간" });
   assert.deepEqual(collectMilestones(before, before), []);
