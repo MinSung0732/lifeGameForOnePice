@@ -20,3 +20,8 @@ export function routeChartFor(life) {
 
   return { current, previous, connections, zone };
 }
+
+export function routeMapLabel(name, kind) {
+  const limit = kind === "next" ? 7 : kind === "previous" ? 8 : 10;
+  return name.length > limit ? `${name.slice(0, limit - 1)}…` : name;
+}
