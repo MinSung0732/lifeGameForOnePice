@@ -42,7 +42,7 @@ export function powerFxForChoice(state, choiceId, chosenLabel = "", outcome = ""
   if (/패왕색/.test(explicit) && !haki.conqueror) return null;
 
   const text = chosenLabel + " " + outcome;
-  const hasConq = haki.conqueror > 0 && (/패왕색|압도|터뜨려/.test(text) || (/기세/.test(text) && !/견문색|무장색/.test(text)));
+  const hasConq = haki.conqueror > 0 && (/패왕색/.test(text) || (!/견문색|무장색|기척|검게 물든/.test(text) && /기세|압도|터뜨려/.test(text)));
   const hasArm = haki.armament > 0 && /무장색|검게 물든|칼날을 맞받/.test(text);
   const hasObs = haki.observation > 0 && /견문색|기척|속마음/.test(text);
   const kind = hasConq ? "haki-conqueror" : hasArm && hasObs ? (haki.armament >= haki.observation ? "haki-armament" : "haki-observation")
