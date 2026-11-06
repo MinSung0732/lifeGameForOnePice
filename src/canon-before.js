@@ -142,7 +142,9 @@ export const preCanonAge = (life, step = life.preCanonStep) => stretched(life)
   ? Math.max(life.age, eraStart(life) + Math.floor(step * ERA_WAR / beatsFor(life).length)) : life.birth.yearsBeforeCurrent - 2;
 const presentAt = (life) => preCanonAge(life);
 const STRETCH_NOTE = " 이 기록에서는 원작의 몇 해를 스무 해 남짓에 걸쳐 풀어 놓았다. 원작 인물의 나이는 원작을 따른다.";
-const nearby = (life, beat) => beat.places.some((place) => life.location.includes(place));
+const nearby = (life, beat) => beat.places.some((place) => life.location.includes(place))
+  || life.creationVersion >= 21 && life.canonCrew === "밀짚모자 일당"
+    && preCanonCrewDestination(life) === life.location;
 
 export function preCanonScene(life) {
   if (life.creationVersion < 5 || life.preCanonStep >= beatsFor(life).length || life.age < presentAt(life) - (stretched(life) ? 0 : 1)
