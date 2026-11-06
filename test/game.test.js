@@ -19,6 +19,45 @@ import { attachCanonContact, canonEraFor, canonPowerAt, canonRelationshipLine, c
 import { FATES } from "../src/fates.js";
 import { peopleSummary } from "../src/people.js";
 import { DUTIES } from "../src/adventures.js";
+import { routeChartFor } from "../src/route-map.js";
+
+test("미니맵은 실제 항해 기록·항로 연결만 사용하고 모르는 좌표를 만들지 않는다", () => {
+  const sea = createGame("free", 17, { species: "인간" });
+  const visited = { ...sea, location: "샤본디 제도",
+    travelHistory: ["이스트 블루 · 로그 타운", "워터 세븐", "샤본디 제도", "샤본디 제도"] };
+  const map = routeChartFor(visited);
+  assert.equal(map.current, "샤본디 제도");
+  assert.equal(map.previous, "워터 세븐");
+  assert.equal(map.zone, "crossing");
+  assert.deepEqual(map.connections, ROUTES_V20["샤본디 제도"].map(({ dest }) => dest));
+  assert.deepEqual(visited.travelHistory, ["이스트 블루 · 로그 타운", "워터 세븐", "샤본디 제도", "샤본디 제도"], "지도 표시가 저장 기록을 수정하면 안 된다");
+
+  const sky = routeChartFor({ ...sea, location: "위대한 항로 상공 · 스카이피아",
+    travelHistory: ["위대한 항로 상공 · 스카이피아"] });
+  assert.equal(sky.zone, "paradise");
+  assert.equal(sky.previous, null);
+  assert.equal(sky.connections[0], "자야 · 모크 타운");
+
+  const underwater = routeChartFor({ ...sea, location: "위대한 항로 해저 · 어인섬" });
+  assert.equal(underwater.zone, "crossing");
+  assert.equal(underwater.connections[0], "펑크 하자드");
+
+  const blue = routeChartFor({ ...sea, location: "이스트 블루 · 로그 타운" });
+  assert.equal(blue.zone, "blue");
+  assert.equal(blue.connections[0], "리버스 마운틴");
+
+  const aliased = routeChartFor({ ...sea, location: "위대한 항로 · 알라바스타 나노하나" });
+  assert.deepEqual(aliased.connections, ROUTES_V20["알라바스타 · 나노하나"].map(({ dest }) => dest));
+
+  const unknown = routeChartFor({ ...sea, location: "좌표 미등록 새 섬",
+    travelHistory: ["이스트 블루 · 로그 타운", "좌표 미등록 새 섬"] });
+  assert.equal(unknown.zone, "unknown");
+  assert.equal(unknown.previous, "이스트 블루 · 로그 타운");
+  assert.deepEqual(unknown.connections, [], "지도가 섬이나 이동 경로를 지어내면 안 된다");
+
+  const legacy = routeChartFor({ ...visited, creationVersion: 7 });
+  assert.deepEqual(legacy.connections, [], "기존 규칙의 세이브에 새 항로를 사실처럼 표시하지 않는다");
+});
 
 function play(mode, seed, picks = {}, profile = { species: "인간" }, rules = 3, version = 3) {
   let life = createGame(mode, seed, profile, rules, version);
