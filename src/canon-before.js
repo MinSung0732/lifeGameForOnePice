@@ -1,5 +1,5 @@
 import { arcScene } from "./canon-arcs.js";
-import { canonRelationshipChanged } from "./canon-relationships.js";
+import { canonRelationshipChanged, custodyDivergenceText } from "./canon-relationships.js";
 import { EXTRA_BEFORE, takenText } from "./canon-timeline.js";
 import { ERA_WAR, eraStart, stretched } from "./world.js";
 // Rule 5 follows the published arc order without assigning exact days to the voyage.
@@ -136,17 +136,18 @@ export function preCanonScene(life) {
   const arc = arcScene(life, beat, presentAt(life));
   if (arc) return arc;
   const fruitTaken = Boolean(life.people?.fruitOwner);
+  const custodyDiverge = custodyDivergenceText(life, beat.id, nearby(life, beat) ? beat.near : beat.far, nearby(life, beat));
   // Rule 12 keeps nearby choices when only a fruit changed hands; older rules dropped them and still replay that way.
-  const diverged = Boolean(life.worldBranch || fruitTaken && life.creationVersion < 12);
+  const diverged = Boolean(life.worldBranch || fruitTaken && life.creationVersion < 12 || custodyDiverge);
   const choices = !diverged && nearby(life, beat) ? beat.choices : undefined;
   // A taken fruit rewrites only the scenes that show its power; the rest of the canon still happens.
-  const body = takenText(life, beat.id) || (life.worldBranch
+  const body = custodyDiverge || takenText(life, beat.id) || (life.worldBranch
     ? `원작 기준 기록에는 ${beat.far} ${life.birth.name}의 세계도 같은 길을 갔다고 단정할 수 없다.`
     : nearby(life, beat) ? beat.near : beat.far);
   return { id: `canon_before_${beat.id}`, age: presentAt(life), act: 3, species: "all", yearly: true,
     urgent: true, preCanonBeat: true, manual: !choices, art: beat.art || "deck", title: beat.title, body,
     ...(stretched(life) && life.preCanonStep === 0 ? { body: body + STRETCH_NOTE } : {}),
-    timeLabel: fruitTaken || life.worldBranch || canonRelationshipChanged(life) ? `IF 세계선 · ${beat.time}` : beat.time, canon: beat.canon, choices };
+    timeLabel: fruitTaken || life.worldBranch || canonRelationshipChanged(life) || custodyDiverge ? `IF 세계선 · ${beat.time}` : beat.time, canon: beat.canon, choices };
 }
 
 export function preCanonStatus(life) {

@@ -1,6 +1,302 @@
 import { crewTie } from "./canon-crews.js";
 import { storyBefore } from "./world.js";
 
+const CHARACTER_POWERS = {
+  luffy: {
+    east_blue: 48,
+    alabasta: 68,
+    skypiea: 76,
+    enies_lobby: 88,
+    marineford: 102,
+    fishman: 120,
+    dressrosa: 135,
+    whole_cake: 152,
+    wano_present: 182
+  },
+  zoro: {
+    east_blue: 44,
+    alabasta: 64,
+    skypiea: 72,
+    enies_lobby: 80,
+    marineford: 90,
+    fishman: 112,
+    dressrosa: 124,
+    whole_cake: 135,
+    wano_present: 158
+  },
+  sanji: {
+    east_blue: 42,
+    alabasta: 62,
+    skypiea: 70,
+    enies_lobby: 78,
+    marineford: 88,
+    fishman: 110,
+    dressrosa: 118,
+    whole_cake: 132,
+    wano_present: 152
+  },
+  jinbe: {
+    marineford: 110,
+    fishman: 122,
+    whole_cake: 128,
+    wano_present: 138,
+    default: 110
+  },
+  usopp: {
+    east_blue: 25,
+    alabasta: 35,
+    enies_lobby: 50,
+    marineford: 55,
+    fishman: 65,
+    dressrosa: 78,
+    wano_present: 84
+  },
+  chopper: {
+    alabasta: 38,
+    enies_lobby: 60,
+    marineford: 68,
+    fishman: 78,
+    wano_present: 92
+  },
+  robin: {
+    alabasta: 62,
+    enies_lobby: 72,
+    marineford: 78,
+    fishman: 90,
+    wano_present: 118
+  },
+  franky: {
+    enies_lobby: 72,
+    marineford: 78,
+    fishman: 92,
+    wano_present: 115
+  },
+  brook: {
+    marineford: 72,
+    fishman: 85,
+    whole_cake: 105,
+    wano_present: 110
+  },
+  crocodile: {
+    alabasta: 82,
+    marineford: 108,
+    wano_present: 130,
+    default: 95
+  },
+  blackbeard: {
+    skypiea: 92,
+    marineford: 140,
+    wano_present: 185,
+    default: 120
+  },
+  bigMom: {
+    whole_cake: 195,
+    wano_present: 195,
+    default: 195
+  },
+  aokiji: {
+    default: 175
+  },
+  kizaru: {
+    default: 175
+  },
+  smoker: {
+    east_blue: 65,
+    marineford: 80,
+    fishman: 95,
+    default: 80
+  },
+  ace: {
+    default: 98
+  },
+  law: {
+    marineford: 82,
+    fishman: 118,
+    dressrosa: 122,
+    wano_present: 162,
+    default: 115
+  },
+  sabo: {
+    dressrosa: 142,
+    wano_present: 148,
+    default: 142
+  },
+  demaro: {
+    default: 15
+  },
+  foxy: {
+    default: 36
+  },
+  bonney: {
+    marineford: 68,
+    wano_present: 118,
+    default: 80
+  },
+  vegapunk: {
+    default: 15
+  },
+  dorry: {
+    default: 82
+  },
+  wapol: {
+    default: 40
+  },
+  vivi: {
+    default: 28
+  },
+  rebecca: {
+    default: 42
+  },
+  hachi: {
+    default: 46
+  }
+};
+
+export function canonEraFor(life, beatId) {
+  if (beatId) {
+    if (["departure", "zoro", "buggy", "usopp", "baratie", "arlong", "loguetown", "bounty_30m"].includes(beatId)) return "east_blue";
+    if (["laboon", "whiskey", "reverse_mountain", "vivi_join", "little_garden", "drum", "chopper_join", "alabasta", "alabasta_war", "rainbase", "alubarna", "rain", "alabasta_end", "robin_join", "bounty_100m"].includes(beatId)) return "alabasta";
+    if (["jaya", "knock_up", "skypiea", "skypiea_trial", "upper_yard", "maxim", "skypiea_bell", "davy", "aokiji_ice"].includes(beatId)) return "skypiea";
+    if (["water_seven", "water_7", "franky_house", "usopp_duel", "cp9", "sea_train", "enies_lobby", "gear_second", "bridge", "buster_call", "merry", "post_enies", "thousand_sunny", "bounty_300m", "garp", "thriller_bark", "thriller_shadows", "oars", "moria", "thriller_aftermath"].includes(beatId)) return "enies_lobby";
+    if (["supernovas", "sabaody", "sabaody_auction", "sabaody_scatter", "amazon_lily", "impel_down", "marineford", "war_after"].includes(beatId)) return "marineford";
+    if (["training", "reunion", "fishman", "punk_hazard"].includes(beatId)) return "fishman";
+    if (["dressrosa", "zou"].includes(beatId)) return "dressrosa";
+    if (["whole_cake", "reverie"].includes(beatId)) return "whole_cake";
+    if (["wano", "egghead", "elbaf"].includes(beatId)) return "wano_present";
+  }
+  if (life?.seen?.includes("life_marineford_news")) {
+    const step = life.canonStep || 0;
+    if (step >= 10) return "wano_present";
+    if (step >= 7) return "whole_cake";
+    if (step >= 4) return "dressrosa";
+    return "fishman";
+  }
+  const preStep = life?.preCanonStep || 0;
+  if (preStep >= 30) return "marineford";
+  if (preStep >= 20) return "enies_lobby";
+  if (preStep >= 10) return "alabasta";
+  return "east_blue";
+}
+
+export function canonPowerAt(key, life, beatId) {
+  const profile = CHARACTER_POWERS[key];
+  if (!profile) return 50;
+  const era = canonEraFor(life, beatId);
+  return profile[era] || profile.default || profile.wano_present || profile.east_blue || 50;
+}
+
+export function playerCombatRating(life) {
+  if (!life) return 50;
+  let power = Math.round((life.skill || 0) * 0.7 + (life.health || 0) * 0.3);
+  const haki = life.haki || {};
+  power += (haki.armament || 0) * 16;
+  power += (haki.observation || 0) * 10;
+  power += (haki.conqueror || 0) * 22;
+  if (life.devilFruit) {
+    power += 15 + Math.min(30, (life.fruitMastery || 1) * 10);
+  }
+  if (life.path === "marine") {
+    const tierBonus = [0, 5, 12, 22, 32, 44, 58, 70];
+    power += tierBonus[Math.min(tierBonus.length - 1, Math.max(0, life.rankTier || 0))];
+  } else if (life.path === "pirate") {
+    if (life.fleetBounty) {
+      power += Math.min(35, Math.floor(life.fleetBounty / 100_000_000) * 6);
+    }
+  }
+  if (life.pureHuman) power += 10;
+  return Math.max(10, power);
+}
+
+export function computeCaptureDiceTarget(contactKey, life, beatId) {
+  const oppPower = canonPowerAt(contactKey, life, beatId);
+  const myPower = playerCombatRating(life);
+  const diff = oppPower - myPower;
+  let target = Math.round(55 + diff * 0.7);
+
+  // Authority & force disparity penalty for low-rank Marines:
+  // A rookie seaman or petty officer (rankTier <= 1) attempting to solo arrest a high-threat pirate (oppPower >= 85)
+  if (life?.path === "marine" && (life.rankTier || 0) <= 1 && oppPower >= 85) {
+    const hasHighHaki = (life.haki?.armament || 0) >= 2 || (life.haki?.conqueror || 0) >= 1;
+    if (!hasHighHaki) {
+      target += 15;
+    }
+  }
+
+  return Math.max(15, Math.min(95, target));
+}
+
+export function computeContestDiceTarget(contactKey, life, beatId) {
+  const oppPower = canonPowerAt(contactKey, life, beatId);
+  const myPower = playerCombatRating(life);
+  const diff = oppPower - myPower;
+  let target = Math.round(50 + diff * 0.6);
+  return Math.max(15, Math.min(95, target));
+}
+
+export function custodyContactStatus(life, key = "luffy") {
+  return life?.people?.canonContacts?.[key]?.custody || null;
+}
+
+export function custodyDivergenceText(life, beatId, defaultText = "", isNear = false) {
+  if (!life || life.creationVersion < 20) return null;
+  const contacts = life.people?.canonContacts;
+  if (!contacts) return null;
+
+  const luffyCustody = contacts.luffy?.custody;
+  if (["held", "transferred"].includes(luffyCustody)) {
+    const statusLabel = luffyCustody === "held" ? "호송선 구금" : "해군 본부 수감";
+    const luffyBeats = [
+      "departure", "zoro", "buggy", "usopp", "baratie", "arlong", "bounty_30m",
+      "loguetown", "reverse_mountain", "laboon", "whiskey", "vivi_join", "drum", "chopper_join",
+      "alabasta_war", "rainbase", "alubarna", "rain", "alabasta_end", "robin_join", "bounty_100m",
+      "jaya", "knock_up", "skypiea_trial", "upper_yard", "maxim", "skypiea_bell", "davy", "aokiji_ice",
+      "water_seven", "franky_house", "usopp_duel", "cp9", "sea_train", "enies_lobby", "gear_second",
+      "bridge", "buster_call", "merry", "post_enies", "thousand_sunny", "bounty_300m", "garp",
+      "thriller_shadows", "oars", "moria", "thriller_aftermath", "supernovas", "sabaody_auction",
+      "sabaody_scatter", "amazon_lily", "impel_down",
+      "training", "reunion", "fishman", "punk_hazard", "dressrosa", "zou", "whole_cake", "wano", "egghead", "elbaf"
+    ];
+
+    if (luffyBeats.includes(beatId)) {
+      if (beatId === "impel_down") {
+        return `밀짚모자 루피가 이미 해군에 체포되어 ${statusLabel} 상태인 세계선이다. 해저 감옥 임펠 다운과 마린포드 주변의 경계는 유례없이 삼엄해졌고, 선장을 구출하려는 밀짚모자 일당 잔당들의 움직임이 바다의 긴장을 고조시켰다.`;
+      }
+      if (beatId === "sabaody_scatter") {
+        return `선장 루피가 체포되어 ${statusLabel} 중인 가운데, 선장을 탈환하려던 밀짚모자 일당이 샤본디 제도에서 해군 전력과 충돌해 뿔뿔이 흩어졌다는 비보가 전해졌다.`;
+      }
+      if (beatId === "reunion") {
+        return `원작의 약속 시각이었지만 샤본디 제도에 진짜 밀짚모자 루피의 모습은 없었다. 선장이 여전히 해군에 구금된 채, 흩어졌던 일당은 은밀히 구출 계획을 도모하고 있었다.`;
+      }
+      if (beatId === "dressrosa") {
+        return `도플라밍고의 몰락을 알리는 신문이 바다에 뿌려졌지만 루피의 이름은 없었다. 선장이 수감된 사이 혁명군과 트라팔가 로의 결탁이 드레스로자를 뒤흔들었다는 보고가 들어왔다.`;
+      }
+      if (beatId === "wano") {
+        return `와노국에서 사황의 패권이 흔들렸으나, 새 사황의 자리에 밀짚모자 루피는 오르지 못했다. 수감된 루피의 공백 속에 신세계는 예측할 수 없는 혼돈의 군웅할거로 치달았다.`;
+      }
+      if (["egghead", "elbaf"].includes(beatId)) {
+        return `밀짚모자 루피가 수감된 채 흐른 시간 속에서 바다의 역사는 원작의 궤도를 크게 벗어났다. 베가펑크의 방송과 거인의 나라 소식 속에서도 갇힌 선장의 행방은 여전히 암운에 싸여 있다.`;
+      }
+
+      if (isNear) {
+        return `[IF 세계선] 밀짚모자 루피가 해군에 ${statusLabel}된 상황이다. 선장을 잃은 일당의 잔당들이 호송망을 추적한다는 소문 속에, 이곳 현장의 질서는 원작과 크게 다른 양상으로 흘러갔다.`;
+      }
+      return `[IF 세계선] 신문에는 밀짚모자 루피가 ${statusLabel} 중이라는 소식이 여전히 대서특필되어 있었다. 선장의 부재 속에서 원작의 사건은 전혀 다른 결말로 뒤틀리고 있었다.`;
+    }
+  }
+
+  for (const [key, record] of Object.entries(contacts)) {
+    if (["held", "transferred"].includes(record.custody)) {
+      const person = CHARACTERS[key];
+      if (person && (defaultText.includes(person.name) || defaultText.includes(person.display))) {
+        const statusLabel = record.custody === "held" ? "호송선 구금" : "본부 수감";
+        return `[IF 세계선] ${person.display}이(가) 해군에 ${statusLabel} 중인 세계선이다. 그 사람의 부재 속에 사건의 전개는 원작의 기록과 크게 달라졌다.`;
+      }
+    }
+  }
+
+  return null;
+}
+
 const CHARACTERS = {
   luffy: { name: "몽키 D. 루피", display: "루피", group: "밀짚모자 일당", captureable: true },
   zoro: { name: "롤로노아 조로", display: "조로", group: "밀짚모자 일당", captureable: true },
@@ -164,26 +460,56 @@ function interactionChoices(life, contact, beatId, index, age) {
         return `${contact.display}가 부탁한 일을 끝까지 마쳤다. 짧은 감사 인사는 다음 만남에도 두 사람 사이에 남았다.`;
       }
     });
-    if (life.mode === "free" && contact.captureable && !["pending", "held", "transferred"].includes(previous.custody) && previous.captureAttempts < 3) {
-      choices.push({
-        id: "canon_contact_capture", label: previous.score <= -20 ? `${contact.display}의 경계가 흐트러진 틈을 노린다` : `${contact.display}의 퇴로를 막는다`,
-        needs: { skill: 60, health: 40 }, risk: "기술 60 · 건강 40 필요 · 주사위 결과가 변수", failRisk: "건강 -20 · 관계에 파장이 있을 수 있음",
-        personality: { ambition: 4, loyalty: 4, caution: -3 },
-        apply: (state) => {
-          const record = noteMeeting(state, contact.key, beatId, age, -45, "capture");
-          record.captureAttempts += 1;
-          record.custody = "pending";
-          record.custodyDivergenceSeen = false;
-          state.people.pendingCanonContact = { key: contact.key, beatId, index, age, place: state.location, attempt: record.captureAttempts };
-          return `${object(contact.display)} 제압해 수갑을 채웠다. 정식 인계 전, 현장에서 어떻게 처리할지 결정해야 한다.`;
-        },
-        fail: (state) => {
-          const record = noteMeeting(state, contact.key, beatId, age, -18, "capture_failed");
-          record.captureAttempts += 1;
-          state.health -= 20;
-          return `${subject(contact.display)} 틈을 뚫고 달아났다. 포위망은 무너졌고, 둘 사이의 경계는 더 짙어졌다.`;
-        }
-      });
+    if ((life.mode === "free" || (life.mode === "original" && life.creationVersion >= 20)) && contact.captureable && !["pending", "held", "transferred"].includes(previous.custody) && previous.captureAttempts < 3) {
+      if (life.creationVersion >= 20) {
+        const oppPower = canonPowerAt(contact.key, life, beatId);
+        const myPower = playerCombatRating(life);
+        const target = computeCaptureDiceTarget(contact.key, life, beatId);
+        const rankWarning = (life.path === "marine" && (life.rankTier || 0) <= 1 && oppPower >= 85) ? " · 수병/하사 단독 체포 극히 불리" : "";
+        choices.push({
+          id: "canon_contact_capture", label: previous.score <= -20 ? `${contact.display}의 경계가 흐트러진 틈을 노린다` : `${contact.display}의 퇴로를 막는다`,
+          needs: { skill: Math.min(100, Math.round(oppPower * 0.65)), health: Math.min(100, Math.round(oppPower * 0.45)) },
+          risk: `상대 전투력 ${oppPower} vs 내 전투력 ${myPower}${rankWarning} · 실패 시 건강 -20`,
+          failRisk: "건강 -20 · 관계에 파장이 있을 수 있음",
+          diceTarget: () => target,
+          diceLabel: "체포 판정",
+          personality: { ambition: 4, loyalty: 4, caution: -3 },
+          apply: (state) => {
+            const record = noteMeeting(state, contact.key, beatId, age, -45, "capture");
+            record.captureAttempts += 1;
+            record.custody = "pending";
+            record.custodyDivergenceSeen = false;
+            state.people.pendingCanonContact = { key: contact.key, beatId, index, age, place: state.location, attempt: record.captureAttempts };
+            return `${object(contact.display)} 제압해 수갑을 채웠다. 정식 인계 전, 현장에서 어떻게 처리할지 결정해야 한다.`;
+          },
+          fail: (state) => {
+            const record = noteMeeting(state, contact.key, beatId, age, -18, "capture_failed");
+            record.captureAttempts += 1;
+            state.health -= 20;
+            return `${subject(contact.display)} 틈을 뚫고 달아났다. 포위망은 무너졌고, 둘 사이의 경계는 더 짙어졌다.`;
+          }
+        });
+      } else {
+        choices.push({
+          id: "canon_contact_capture", label: previous.score <= -20 ? `${contact.display}의 경계가 흐트러진 틈을 노린다` : `${contact.display}의 퇴로를 막는다`,
+          needs: { skill: 60, health: 40 }, risk: "기술 60 · 건강 40 필요 · 주사위 결과가 변수", failRisk: "건강 -20 · 관계에 파장이 있을 수 있음",
+          personality: { ambition: 4, loyalty: 4, caution: -3 },
+          apply: (state) => {
+            const record = noteMeeting(state, contact.key, beatId, age, -45, "capture");
+            record.captureAttempts += 1;
+            record.custody = "pending";
+            record.custodyDivergenceSeen = false;
+            state.people.pendingCanonContact = { key: contact.key, beatId, index, age, place: state.location, attempt: record.captureAttempts };
+            return `${object(contact.display)} 제압해 수갑을 채웠다. 정식 인계 전, 현장에서 어떻게 처리할지 결정해야 한다.`;
+          },
+          fail: (state) => {
+            const record = noteMeeting(state, contact.key, beatId, age, -18, "capture_failed");
+            record.captureAttempts += 1;
+            state.health -= 20;
+            return `${subject(contact.display)} 틈을 뚫고 달아났다. 포위망은 무너졌고, 둘 사이의 경계는 더 짙어졌다.`;
+          }
+        });
+      }
     }
     return choices;
   }
@@ -198,7 +524,30 @@ function interactionChoices(life, contact, beatId, index, age) {
       return `${subject(contact.display)} 도움을 받아들였다. 고마움이 오래갈지, 그날의 일로 끝날지는 아직 알 수 없었다.`;
     }
   };
-  const contest = {
+  const contest = life.creationVersion >= 20 ? (() => {
+    const oppPower = canonPowerAt(contact.key, life, beatId);
+    const myPower = playerCombatRating(life);
+    const target = computeContestDiceTarget(contact.key, life, beatId);
+    return {
+      id: "canon_contact_contest", label: previous.score < 0 ? `${contact.display} 앞에서 이번에는 물러서지 않는다` : `${contact.display}와 실력을 조심스레 겨룬다`,
+      needs: { skill: Math.min(100, Math.round(oppPower * 0.55)), health: Math.min(100, Math.round(oppPower * 0.35)) },
+      risk: `상대 전투력 ${oppPower} vs 내 전투력 ${myPower} · 실패 시 건강 -20`,
+      failRisk: "건강 -20 · 관계에 파장이 있을 수 있음",
+      diceTarget: () => target,
+      diceLabel: "겨루기 판정",
+      personality: { ambition: 5, caution: -3 },
+      apply: (state) => {
+        noteMeeting(state, contact.key, beatId, age, previous.score < 0 ? -8 : 4, "contest");
+        state.skill += 3;
+        return `${withName(contact.display)} 짧게 겨뤘다. 승패보다 서로의 이름을 기억하게 된 일이 더 오래 남았다.`;
+      },
+      fail: (state) => {
+        noteMeeting(state, contact.key, beatId, age, -15, "contest_failed");
+        state.health -= 20;
+        return `${contact.display}의 움직임을 따라가지 못했다. 다친 몸을 추스르는 동안 그 사람은 시야 밖으로 사라졌다.`;
+      }
+    };
+  })() : {
     id: "canon_contact_contest", label: previous.score < 0 ? `${contact.display} 앞에서 이번에는 물러서지 않는다` : `${contact.display}와 실력을 조심스레 겨룬다`,
     needs: { skill: 50, health: 35 }, risk: "기술 50 · 건강 35 필요 · 결과는 알 수 없음", failRisk: "건강 -20 · 관계에 파장이 있을 수 있음",
     personality: { ambition: 5, caution: -3 },

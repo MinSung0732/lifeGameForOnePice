@@ -1,5 +1,5 @@
 import { arcScene } from "./canon-arcs.js";
-import { canonRelationshipChanged } from "./canon-relationships.js";
+import { canonRelationshipChanged, custodyDivergenceText } from "./canon-relationships.js";
 import { EXTRA_AFTER, takenText } from "./canon-timeline.js";
 import { ERA_REUNION, ERA_WAR, ERA_YEARS, eraStart, stretched } from "./world.js";
 // Rule-4 canon milestones. Relative time labels avoid claiming an unpublished manga calendar.
@@ -86,8 +86,9 @@ export function canonScene(life) {
   if (stretched(life) && canonAge(life) > life.age) return null;
   const arc = arcScene(life, beat, canonAge(life));
   if (arc) return arc;
-  const diverged = life.worldBranch || life.people?.fruitOwner || canonRelationshipChanged(life);
   const body = typeof beat.body === "function" ? beat.body(life) : beat.body;
+  const custodyDiverge = custodyDivergenceText(life, beat.id, body, false);
+  const diverged = life.worldBranch || life.people?.fruitOwner || canonRelationshipChanged(life) || Boolean(custodyDiverge);
   const canHelpFishman = life.location.includes("어인섬") || life.location === "샤본디 제도" || life.birth.species === "어인";
   const canHelpPunk = ["펑크 하자드", "드레스로자"].includes(life.location) || ["marine", "liberator"].includes(life.path);
   const choices = (beat.id === "fishman" && !canHelpFishman || beat.id === "punk_hazard" && !canHelpPunk)
@@ -96,7 +97,7 @@ export function canonScene(life) {
     ...beat, id: `canon_${beat.id}`, age: canonAge(life),
     act: 3, art: beat.art || "deck", yearly: true, urgent: true, canonBeat: true, manual: !choices, choices,
     timeLabel: `${diverged ? "IF 세계선 · " : ""}${stretched(life) ? beat.time.replace(/약 ?2년 뒤/, "긴 공백 뒤") : beat.time}`,
-    body: takenText(life, beat.id) || (life.worldBranch && life.canonStep >= 2
+    body: custodyDiverge || takenText(life, beat.id) || (life.worldBranch && life.canonStep >= 2
       ? `원작 기준으로는 ${body} ${life.birth.name}의 세계는 이미 갈라졌다. 같은 결말이라고 단정할 수 없다.`
       : body)
   };

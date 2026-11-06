@@ -363,7 +363,11 @@ function nextCanonDue(life) {
 
 // Rule 3: an ability-gated choice can still be attempted; the target roll grows with how far short each ability falls.
 function diceTarget(choice, life) {
-  if (life.creationVersion < 3 || !choice.needs) return 0;
+  if (life.creationVersion < 3) return 0;
+  if (choice.diceTarget) {
+    return typeof choice.diceTarget === "function" ? choice.diceTarget(life) : choice.diceTarget;
+  }
+  if (!choice.needs) return 0;
   const shortfall = Object.entries(choice.needs).reduce((sum, [key, need]) => sum + Math.max(0, need - life[key]), 0);
   // Rule 11: a risky action still rolls when the ability is there, so a strong hand fails about one time in ten.
   if (!shortfall) return life.creationVersion >= 11 ? 10 : 0;
@@ -401,8 +405,9 @@ export function getScene(life) {
         const risk = typeof choice.risk === "function" ? choice.risk(life) : choice.risk;
         const target = diceTarget(choice, life);
         const shown = life.supplies < cost && !risk.includes(`물자 ${cost} 필요`) ? `${risk} · 물자 ${cost} 필요` : risk;
+        const diceLabel = choice.diceLabel || "조건 부족";
         return { id: choice.id, label: typeof choice.label === "function" ? choice.label(life) : choice.label,
-          risk: target ? `${shown} · 조건 부족: 주사위 1~100에서 ${target} 이상이면 성공, 실패하면 ${choice.failRisk || "건강 -15"}` : shown,
+          risk: target ? `${shown} · ${diceLabel}: 주사위 1~100에서 ${target} 이상이면 성공, 실패하면 ${choice.failRisk || "건강 -15"}` : shown,
           condition: shown, dice: target || null, diceShort: target > 10 || life.creationVersion < 11, failRisk: target ? choice.failRisk || "건강 -15" : null,
           naming: Boolean(choice.naming), disabled: !canChoose(choice, life) };
       })

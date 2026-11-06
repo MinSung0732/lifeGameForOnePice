@@ -9,13 +9,13 @@ import { OLD_ERA } from "../src/canon-old-era.js";
 import { crewVesselKind, encounterAt, eraStart, isNewWorld, presentAge, ROUTES_V20, sailToNextPort, storyBefore, travelScene } from "../src/world.js";
 import { fruitFor } from "../src/fruits.js";
 import { bountyScene, formatBounty, marinePatrolScene, pursuerFor } from "../src/bounty.js";
-import { CANON_BEAT_COUNT, canonScene } from "../src/canon-events.js";
+import { CANON_BEAT_COUNT, canonAge, canonScene } from "../src/canon-events.js";
 import { PRE_CANON_BEAT_COUNT, preCanonCount, preCanonScene } from "../src/canon-before.js";
 import { canonGapFor } from "../src/canon-interludes.js";
 import { FLEX_IDS, FLEX_IDS_V5, lifeScenes, rankOpportunity, yearlyScene } from "../src/life-story.js";
 import { canonBondScene } from "../src/canon-bonds.js";
 import { rosterFor } from "../src/canon-crews.js";
-import { attachCanonContact, canonRelationshipLine, pendingCanonContactScene } from "../src/canon-relationships.js";
+import { attachCanonContact, canonEraFor, canonPowerAt, canonRelationshipLine, computeCaptureDiceTarget, computeContestDiceTarget, custodyContactStatus, custodyDivergenceText, pendingCanonContactScene, playerCombatRating } from "../src/canon-relationships.js";
 import { FATES } from "../src/fates.js";
 import { peopleSummary } from "../src/people.js";
 import { DUTIES } from "../src/adventures.js";
@@ -1807,4 +1807,85 @@ test("항로 이동 및 출항 연동, 일상 막간 선택지 다양화, 진급
   assert.ok(rankScene, "수감 실적과 명성을 갖춘 수병에게 상사 진급 제안이 나와야 한다");
   assert.equal(rankScene.id, "life_rank_1_23", "상사 진급 제안 장면 ID가 일치해야 한다");
   assert.equal(rankScene.title, "상사의 제안", "상사의 제안 타이틀이 일치해야 한다");
+});
+
+test("원작 인물 전투력의 시대별 성장, 플레이어 전력 비교 기반 주사위 판정, 수감 시 원작 소식 분기 검증", () => {
+  // 1. 루피 및 주요 인물의 시대별 전투력 성장 검증
+  const dummy = createGame("free", 1, { species: "인간" }, 3, 20);
+  assert.equal(canonPowerAt("luffy", dummy, "loguetown"), 48, "이스트 블루 루피 전투력");
+  assert.equal(canonPowerAt("luffy", dummy, "alabasta_war"), 68, "알라바스타 루피 전투력");
+  assert.equal(canonPowerAt("luffy", dummy, "enies_lobby"), 88, "에니에스 로비(기어 2) 루피 전투력");
+  assert.equal(canonPowerAt("luffy", dummy, "sabaody_auction"), 102, "샤본디 제도 루피 전투력");
+  dummy.seen = ["life_marineford_news"];
+  assert.equal(canonPowerAt("luffy", dummy, "reunion"), 120, "2년 뒤 재집결 루피 전투력");
+  assert.equal(canonPowerAt("luffy", dummy, "dressrosa"), 135, "드레스로자(기어 4) 루피 전투력");
+  assert.equal(canonPowerAt("luffy", dummy, "whole_cake"), 152, "홀케이크(스네이크맨) 루피 전투력");
+  assert.equal(canonPowerAt("luffy", dummy, "wano"), 182, "와노국(기어 5 니카 사황) 루피 전투력");
+  assert.equal(canonPowerAt("bigMom", dummy, "whole_cake"), 195, "사황 빅 맘 전투력");
+  assert.equal(canonPowerAt("demaro", dummy, "reunion"), 15, "가짜 루피 데마로 블랙 전투력");
+
+  // 2. 수병(rankTier 0) vs 사황 루피 체포 판정 검증 (단순 기술 100으로 10+ 주사위 잡기 방지)
+  const seaman = createGame("free", 1, { species: "인간" }, 3, 20);
+  seaman.path = "marine";
+  seaman.rankTier = 0; // 수병
+  seaman.skill = 100;
+  seaman.health = 100;
+  assert.equal(playerCombatRating(seaman), 100, "패기/직급 없는 수병의 기본 전투력");
+  
+  // 수병이 와노국/엘바프 루피(182)를 체포하려 할 때
+  const seamanVsWanoTarget = computeCaptureDiceTarget("luffy", seaman, "wano");
+  assert.equal(seamanVsWanoTarget, 95, "수병이 사황 루피를 체포하려 할 때는 주사위 목표치 95(극악 난이도)여야 한다");
+
+  // 반면 이스트 블루 루피(48)를 상대할 때
+  const seamanVsEastTarget = computeCaptureDiceTarget("luffy", seaman, "loguetown");
+  assert.ok(seamanVsEastTarget <= 25, "기술 100의 해군이 이스트 블루 루피 체포 시 현실적 성공 확률을 가져야 한다");
+
+  // 중장(rankTier 5) + 패기 보유자 vs 와노국 루피
+  const viceAdmiral = createGame("free", 1, { species: "인간" }, 3, 20);
+  viceAdmiral.path = "marine";
+  viceAdmiral.rankTier = 5;
+  viceAdmiral.skill = 90;
+  viceAdmiral.health = 90;
+  viceAdmiral.haki = { armament: 2, observation: 1, conqueror: 0 };
+  const vaRating = playerCombatRating(viceAdmiral);
+  assert.ok(vaRating >= 170, "중장 직급과 패기를 갖춘 해군의 전투력");
+  const vaVsWanoTarget = computeCaptureDiceTarget("luffy", viceAdmiral, "wano");
+  assert.ok(vaVsWanoTarget >= 45 && vaVsWanoTarget <= 65, "고위 장교와 사황의 대치는 팽팽한 주사위 목표치를 가져야 한다");
+
+  // 실제 인물 조우 선택지(attachCanonContact)에 전력 및 동적 주사위 판정 반영 검증
+  const attachedWano = attachCanonContact(seaman, "elbaf", 0, seaman.age, { choices: [] });
+  const captureWano = attachedWano.choices.find((c) => c.id === "canon_contact_capture");
+  assert.ok(captureWano, "체포 선택지가 제공되어야 한다");
+  assert.equal(captureWano.diceTarget(), 95, "수병의 사황 체포 주사위 목표치는 95여야 한다");
+  assert.match(captureWano.risk, /상대 전투력 182 vs 내 전투력 100/, "상대와 자신의 전투력이 위험 설명에 표기되어야 한다");
+  assert.match(captureWano.risk, /수병\/하사 단독 체포 극히 불리/, "하급 해군의 거물 체포 불리 경고가 표기되어야 한다");
+
+  const attachedEast = attachCanonContact(seaman, "loguetown", 0, seaman.age, { choices: [] });
+  const captureEast = attachedEast.choices.find((c) => c.id === "canon_contact_capture");
+  assert.ok(captureEast, "이스트 블루 체포 선택지가 제공되어야 한다");
+  assert.equal(captureEast.diceTarget(), 19, "기술 100 수병의 이스트 블루 루피 체포 주사위 목표치는 19여야 한다");
+  assert.match(captureEast.risk, /상대 전투력 48 vs 내 전투력 100/, "이스트 블루 루피 전투력이 올바르게 비교되어야 한다");
+
+  // 3. 루피 수감(custody: held/transferred) 시 원작 소식 IF 분기 검증
+  const custodyMarine = createGame("free", 1, { species: "인간" }, 3, 20);
+  custodyMarine.people = {
+    canonContacts: {
+      luffy: { custody: "transferred", meetings: 1, score: -50 }
+    }
+  };
+  custodyMarine.preCanonStep = 5; // arlong
+  custodyMarine.age = 20;
+  custodyMarine.birth.yearsBeforeCurrent = 22;
+  custodyMarine.location = "바다 건너";
+  const preBeat = preCanonScene(custodyMarine);
+  assert.ok(preBeat, "원작 소식 장면이 생성되어야 한다");
+  assert.match(preBeat.body, /수감|선장의 부재|세계선/, "루피가 수감되었을 때 원작 소식은 루피의 자유 항해가 아닌 수감 세계선을 반영해야 한다");
+
+  // 정상전쟁 이후 소식 분기
+  custodyMarine.seen = ["life_marineford_news"];
+  custodyMarine.canonStep = 2; // reunion
+  custodyMarine.age = canonAge(custodyMarine);
+  const postBeat = canonScene(custodyMarine);
+  assert.ok(postBeat, "사후 원작 소식 장면이 생성되어야 한다");
+  assert.match(postBeat.body, /구금|수감|구출 계획/, "샤본디 재집결 소식에서도 루피 수감 상태가 반영되어야 한다");
 });
