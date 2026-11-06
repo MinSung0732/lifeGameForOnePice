@@ -2134,7 +2134,7 @@ test("선장은 항로를 선택하고 선원은 선장과 항해사의 항로�
   assert.deepEqual(travelScene({ ...base, role: "선장" }, base.age).choices.map((choice) => choice.id), ["sail", "prepare"], "이전 직책이 남아도 밀짚모자 선원은 선장이 아니다");
   const captain = { ...base, independent: true, role: "선장", canonCrew: null, affiliation: "독립 해적단" };
   assert.ok(travelScene(captain, captain.age).choices.some((choice) => choice.id === "far"));
-  const former = { ...base, creationVersion: 20 };
+  const former = { ...base, creationVersion: 20, crewFollowFrom: null };
   assert.ok(travelScene(former, former.age).choices.some((choice) => choice.id === "far"), "과거 저장 규칙은 동일한 선택지를 유지한다");
 
   const scattered = { ...base, seen: ["canon_before_sabaody_scatter"] };
@@ -2164,4 +2164,19 @@ test("밀짚모자 원작 여정은 자야·하늘섬·샤본디 분산·재집�
   assert.ok(after.indexOf("어인섬") > after.indexOf("샤본디 제도"));
   assert.ok(after.indexOf("펑크 하자드") > after.indexOf("어인섬"));
   assert.ok(after.indexOf("엘바프") > after.indexOf("에그헤드 외해"));
+});
+
+test("규칙 20의 기존 기록은 마지막 행동 이후부터 선장 항로에 동참한다", () => {
+  const old = createGame("free", 73, { species: "인간" }, 3, 20);
+  const record = saveRecord(old);
+  const legacy = replay(record);
+  assert.equal(legacy.crewFollowFrom, null);
+  record.crewFollowFrom = record.actions.length;
+  const resumed = replay(record);
+  assert.equal(resumed.crewFollowFrom, 0);
+  assert.deepEqual(replay(saveRecord(resumed)), resumed);
+  const subordinate = { ...resumed, path: "pirate", role: "동료", canonCrew: "밀짚모자 일당", independent: false };
+  assert.deepEqual(travelScene(subordinate, subordinate.age).choices.map((choice) => choice.id), ["sail", "prepare"]);
+  assert.throws(() => replay({ ...record, crewFollowFrom: -1 }));
+  assert.throws(() => replay({ ...record, crewFollowFrom: record.actions.length + 1 }));
 });
