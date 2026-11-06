@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#f5f1e7">
   <meta name="description" content="원피스 세계의 다섯 출생지에서 한 사람의 삶을 살아 보는 비공식 웹게임 시범판">
   <title>한 사람의 바다</title>
-  <link rel="stylesheet" href="./styles.css?v=20261107-8">
-  <script type="module" src="./src/app.js?v=20261107-7"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261107-9">
+  <script type="module" src="./src/app.js?v=20261107-8"></script>
 </head>
 <body>
   <div class="page-shell">
@@ -234,6 +234,21 @@
               <span>항로</span>
               <strong id="route-trail"></strong>
             </nav>
+            <section class="route-map" aria-label="현재 항로 미니맵">
+              <div class="route-map-heading"><span>항해도</span><strong id="route-map-place">현재 위치</strong></div>
+              <div class="route-map-zones" aria-label="현재 항해 구간">
+                <span data-route-zone="blue">4대 블루</span>
+                <span data-route-zone="paradise">낙원</span>
+                <span data-route-zone="crossing">샤본디·심해</span>
+                <span data-route-zone="new">신세계</span>
+              </div>
+              <svg id="route-map-svg" class="route-map-svg" viewBox="0 0 520 164" role="img" aria-label="현재 위치와 인접 항로를 보여주는 개념도"></svg>
+              <div class="route-map-status">
+                <span id="route-map-previous">이전: 출항 전</span>
+                <span id="route-map-neighbors">연결 항로 확인 전</span>
+              </div>
+              <p class="route-map-note">게임 항로 연결을 그린 개념도 · 실제 거리·방위와 다름</p>
+            </section>
             <p class="route-trail" id="crew-line" hidden>
               <span>같은 시기 원작 소식</span>
               <strong id="crew-news"></strong>
