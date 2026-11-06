@@ -708,17 +708,19 @@ export function travelScene(life, age) {
 }
 
 function distanceProportionalTravelScene(life, age) {
-  const routes = ROUTES_V20[life.location] || ROUTES_V20[routeFor(life)[0]] || [
+  const routes = routeOptionsFor(life) || routeOptionsFor(life, routeFor(life)[0]) || [
     { dest: "위스키 피크", dist: "단거리", cost: 10, note: "기록지침 항로" },
     { dest: "리틀 가든", dist: "중거리", cost: 18, note: "중거리 항로" },
-    { dest: "돌소금 여울(임의 지명)", dist: "원거리", cost: 26, note: "원거리 항로" }
+    { dest: life.creationVersion >= 22 ? "알라바스타 · 나노하나" : "돌소금 여울(임의 지명)",
+      dist: "원거리", cost: 26, note: "원거리 항로" }
   ];
   const newWorld = isNewWorld(life.location);
   const candidates = newWorld
     ? ["드레스로자", "그린 비트", "조", "와노국 외해", "엘바프", "스핑크스 섬", "하치노스 근해", "에그헤드 외해", "붉은 이끼 환초(임의 지명)", "거인나무 환초(임의 지명)"]
     : ["쌍둥이 언덕", "위스키 피크", "리틀 가든", "드럼섬", "알라바스타 · 나노하나", "자야 · 모크 타운", "롱 링 롱 랜드", "워터 세븐", "샤본디 제도", "물안개 암초군(임의 지명)", "해류목 군도(임의 지명)"];
   const currentDestNames = routes.map((r) => r.dest);
-  const poseOptions = candidates.filter((place) => place !== life.location && place !== "어인섬" && !currentDestNames.includes(place));
+  const poseOptions = candidates.filter((place) => place !== life.location && place !== "어인섬"
+    && (life.creationVersion < 22 || !place.includes("(임의 지명)")) && !currentDestNames.includes(place));
   const poseDestination = poseOptions[yearRoll(life.seed ^ 0x6d3c, age) % (poseOptions.length || 1)] || (newWorld ? "엘바프" : "워터 세븐");
 
   function visit(state, place, cost) {
@@ -728,6 +730,9 @@ function distanceProportionalTravelScene(life, age) {
     state.pendingEncounter = encounterAt(state);
     if (place.includes("(임의 지명)")) {
       return `${state.birth.name}의 배는 지도에 임의 지명으로 적힌 ${place}에 닻을 내렸다. 해도에는 없던 작은 부두와 거친 암초 너머로 새로운 풍경이 펼쳐졌다.`;
+    }
+    if (state.creationVersion >= 22 && ["위대한 항로 상공 · 스카이피아", "스릴러 바크", "에니에스 로비", "아마존 릴리 외해", "바라티에"].includes(place)) {
+      return `${state.birth.name}은 특별한 항로를 거쳐 ${place}에 도착했다. 곧 이곳에서만 겪을 수 있는 사건이 기다리고 있었다.`;
     }
     return `${state.birth.name}의 배는 ${place}에 닿았다. 낡은 해도에는 없던 부두의 소란이 먼저 들렸다.`;
   }
@@ -740,6 +745,18 @@ function distanceProportionalTravelScene(life, age) {
   const near = routes[0];
   const mid = routes[1] || routes[0];
   const far = routes[2] || routes[1] || routes[0];
+  const detour = life.creationVersion >= 22 ? routes[3] : null;
+  const travelLabel = (route, ordinary) => life.creationVersion >= 22 && route.special
+    ? ({
+      sky: "노크 업 스트림을 타고 구름바다로 오른다",
+      fog: "마의 삼각지대의 안개 속으로 진입한다",
+      justice: "해상 열차와 수송로를 따라 사법의 섬으로 간다",
+      calm: "캄 벨트를 건너 여인섬 근해를 정찰한다"
+    }[route.special] || ordinary) : ordinary;
+  const travelRisk = (route, cost, ordinary) => life.creationVersion >= 22 && route.special
+    ? `물자 ${cost} 필요 · ${route.note}` : ordinary;
+  const canSail = (state, route, cost) => state.supplies >= cost
+    && (state.creationVersion < 22 || specialRouteReady(state, route));
 
   const nearCost = life.location === "샤본디 제도" && near.dest === "어인섬" ? 30 : near.cost;
   const midCost = life.location === "샤본디 제도" && mid.dest === "어인섬" ? 30 : mid.cost;
@@ -758,27 +775,37 @@ function distanceProportionalTravelScene(life, age) {
   const choices = [
     {
       id: "near",
-      label: `[단거리] 기록지침을 따라 ${ro(near.dest)} 간다`,
-      available: (state) => state.supplies >= nearCost,
-      risk: nearRisk,
+      label: travelLabel(near, `[단거리] 기록지침을 따라 ${ro(near.dest)} 간다`),
+      available: (state) => canSail(state, near, nearCost),
+      risk: travelRisk(near, nearCost, nearRisk),
       personality: { caution: 4 },
       apply: (state) => visit(state, near.dest, nearCost)
     },
     {
       id: "mid",
-      label: `[중거리] 바닷길을 넓혀 ${ro(mid.dest)} 간다`,
-      available: (state) => state.supplies >= midCost,
-      risk: midRisk,
+      label: travelLabel(mid, `[중거리] 바닷길을 넓혀 ${ro(mid.dest)} 간다`),
+      available: (state) => canSail(state, mid, midCost),
+      risk: travelRisk(mid, midCost, midRisk),
       personality: { freedom: 4 },
       apply: (state) => visit(state, mid.dest, midCost)
     },
     {
       id: "far",
-      label: `[원거리] 먼 바다를 건너 ${ro(far.dest)} 간다`,
-      available: (state) => state.supplies >= farCost,
-      risk: farRisk,
+      label: travelLabel(far, `[원거리] 먼 바다를 건너 ${ro(far.dest)} 간다`),
+      when: () => life.creationVersion < 22 || routes.length >= 3,
+      available: (state) => canSail(state, far, farCost),
+      risk: travelRisk(far, farCost, farRisk),
       personality: { ambition: 6, freedom: 5 },
       apply: (state) => visit(state, far.dest, farCost)
+    },
+    {
+      id: "detour",
+      when: () => Boolean(detour),
+      label: detour ? travelLabel(detour, `[특수 항로] ${ro(detour.dest)} 간다`) : "",
+      available: (state) => detour && canSail(state, detour, detour.cost),
+      risk: detour ? travelRisk(detour, detour.cost, `물자 ${detour.cost} 필요 · ${detour.note}`) : "",
+      personality: { freedom: 6, caution: 3 },
+      apply: (state) => visit(state, detour.dest, detour.cost)
     },
     {
       id: "convoy",
@@ -790,7 +817,9 @@ function distanceProportionalTravelScene(life, age) {
     {
       id: "pose",
       label: `영구 지침으로 ${ro(life.eternalPose || near.dest)} 간다`,
-      when: (state) => Boolean(state.eternalPose) && state.eternalPose !== state.location && isNewWorld(state.eternalPose) === newWorld,
+      when: (state) => Boolean(state.eternalPose) && state.eternalPose !== state.location
+        && isNewWorld(state.eternalPose) === newWorld
+        && (state.creationVersion < 22 || !["위대한 항로 상공 · 스카이피아", "에니에스 로비", "스릴러 바크", "아마존 릴리 외해"].includes(state.eternalPose)),
       available: (state) => state.supplies >= 15,
       risk: "물자 15 필요 · 가지고 있는 영구 지침 사용",
       personality: { caution: 4 },
@@ -816,7 +845,9 @@ function distanceProportionalTravelScene(life, age) {
     urgent: true,
     art: "deck",
     title: displayTitle,
-    body: `기록지침과 나침반의 바늘이 제각기 다른 물길을 가리켰다. 거리에 따라 채워 넣을 물자와 식량이 달랐고, 지도에 없는 임의 지명의 작은 섬이나 미개척 암초를 경유할 수도 있었다.`,
+    body: life.creationVersion >= 22
+      ? "기록지침과 해도가 여러 항로를 가리켰다. 드문 미개척 암초보다는 알려진 섬을 중심으로 길을 고르고, 하늘길과 정부 구역 같은 특수 항로에는 별도 준비가 필요하다."
+      : `기록지침과 나침반의 바늘이 제각기 다른 물길을 가리켰다. 거리에 따라 채워 넣을 물자와 식량이 달랐고, 지도에 없는 임의 지명의 작은 섬이나 미개척 암초를 경유할 수도 있었다.`,
     choices
   };
 }
