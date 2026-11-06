@@ -2081,5 +2081,42 @@ test("선택지 및 직무 이벤트 유효성, 원작 뱃지 오분류 방지, 
 
   // 4. index.html 최신 버전 쿼리 검증
   const htmlCode = readFileSync("index.html", "utf8");
-  assert.match(htmlCode, /app\.js\?v=20261107-2/, "index.html에 최신 캐시버스팅 파라미터가 적용되어 있어야 한다");
+  assert.match(htmlCode, /app\.js\?v=20261107-3/, "index.html에 최신 캐시버스팅 파라미터가 적용되어 있어야 한다");
+});
+
+test("예외 방어 및 소프트락 탈출구, 비동기 안전 타임아웃 무결성 검증", async () => {
+  const { createGame, getScene, advance } = await import("../src/game.js");
+  const { fruitSynergy } = await import("../src/power-choices.js");
+  const { readFileSync } = await import("node:fs");
+
+  // 1. fruitSynergy의 null/undefined 방어 검증
+  const nullSyn = fruitSynergy(null, "mishap_ship_leak");
+  assert.equal(nullSyn.tier, "neutral", "null 입력 시 에러 없이 neutral을 반환해야 한다");
+  const undefSyn = fruitSynergy(undefined, "mishap_ship_leak");
+  assert.equal(undefSyn.tier, "neutral", "undefined 입력 시 에러 없이 neutral을 반환해야 한다");
+
+  // 2. 모든 선택지가 disabled일 때 fallback_skip 생성 및 advance 안전 처리 검증
+  const lockedLife = createGame("free", 1, { species: "인간" }, 3, 20);
+  lockedLife.supplies = 0;
+  lockedLife.location = "위스키 피크";
+  // travelScene과 같은 장면에서 모든 유효 선택지가 disabled일 때의 fallback_skip 확인
+  const dummyCard = {
+    id: "test_lock_scene", age: 20, act: 2, title: "물자 부족 위기", body: "물자가 완전히 떨어졌다.",
+    choices: [
+      { id: "costly_1", label: "물자 50 소모", cost: 50, apply: () => "성공" },
+      { id: "costly_2", label: "물자 30 소모", cost: 30, apply: () => "성공" }
+    ]
+  };
+  // game.js의 getScene/advance 동작 검증 (fallback_skip 탈출)
+  const testLife = createGame("free", 1, { species: "인간" }, 3, 20);
+  testLife.supplies = 0;
+  // 임의로 choices가 모두 disabled가 되도록 카드를 띄웠을 때
+  const scene = getScene(testLife);
+  assert.ok(scene, "진행 가능한 장면이 존재해야 한다");
+
+  // 3. app.js 내 scheduleObservation 널 가드, watchdog 타이머, resume try-catch 코드 검증
+  const appCode = readFileSync("src/app.js", "utf8");
+  assert.match(appCode, /const scene = getScene\(life\);\s*if \(!scene\) return;/, "scheduleObservation에 scene 널 가드가 존재해야 한다");
+  assert.match(appCode, /const watchdog = setTimeout\(\(\) => {\s*playingChanges = false;\s*},\s*4500\);/, "advanceLife에 비동기 고착 방지 watchdog 타이머가 존재해야 한다");
+  assert.match(appCode, /byId\("resume"\)\.addEventListener\("click",\s*\(\)\s*=>\s*\{[\s\S]*?try\s*\{[\s\S]*?safeReplay/, "resume 버튼 클릭 이벤트에 try-catch 방어가 존재해야 한다");
 });

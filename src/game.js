@@ -404,8 +404,9 @@ export function getScene(life) {
     body: personalize(typeof card.body === "function" ? card.body(life) : card.body, life.birth.name, life.creationVersion),
     art: artObj, canon: card.canon || null,
     canonDaily: Boolean(card.canonDaily), yearly: Boolean(card.yearly),
-    choices: (card.choices || []).filter((choice) => !choice.when || choice.when(life))
-      .map((choice) => {
+    choices: (() => {
+      const active = (card.choices || []).filter((choice) => !choice.when || choice.when(life));
+      const mapped = active.map((choice) => {
         const cost = typeof choice.cost === "function" ? choice.cost(life) : choice.cost || 0;
         const risk = typeof choice.risk === "function" ? choice.risk(life) : choice.risk || "";
         const target = diceTarget(choice, life);
@@ -415,7 +416,16 @@ export function getScene(life) {
           risk: target ? `${shown} · ${diceLabel}: 주사위 1~100에서 ${target} 이상이면 성공, 실패하면 ${choice.failRisk || "건강 -15"}` : shown,
           condition: shown, dice: target || null, diceShort: target > 10 || life.creationVersion < 11, failRisk: target ? choice.failRisk || "건강 -15" : null,
           naming: Boolean(choice.naming), disabled: !canChoose(choice, life) };
-      })
+      });
+      if (mapped.length > 0 && mapped.every((choice) => choice.disabled)) {
+        mapped.push({
+          id: "fallback_skip", label: "여건이 되지 않아 한 걸음 물러선다",
+          risk: "물자 부족 · 무리하지 않고 현재를 지킴", condition: "상황 관망",
+          dice: null, diceShort: false, failRisk: null, naming: false, disabled: false
+        });
+      }
+      return mapped;
+    })()
   };
 }
 
@@ -437,8 +447,12 @@ export function advance(life, action = null) {
   if (!view) throw new Error("이미 끝난 생애입니다.");
   const card = childhoodScene(life, sceneCard(life));
   const [choiceId, typed] = splitAction(action);
-  const chosen = card.choices?.find((choice) => choice.id === choiceId && (!choice.when || choice.when(life)) && canChoose(choice, life));
-  if (card.choices && !chosen) throw new Error("이 장면에서 고를 수 없는 선택입니다.");
+  const activeChoices = (card.choices || []).filter((choice) => !choice.when || choice.when(life));
+  let chosen = card.choices?.find((choice) => choice.id === choiceId && (!choice.when || choice.when(life)) && canChoose(choice, life));
+  if (choiceId === "fallback_skip" && activeChoices.length > 0 && activeChoices.every((c) => !canChoose(c, life))) {
+    chosen = { id: "fallback_skip", label: "여건이 되지 않아 한 걸음 물러선다", apply: () => "여건이 닿지 않아 일단 물러섰다." };
+  }
+  if (card.choices && !chosen && !(activeChoices.length === 0 && action === null)) throw new Error("이 장면에서 고를 수 없는 선택입니다.");
   if (typed !== null && !chosen?.naming) throw new Error("이 선택에는 이름을 붙일 수 없습니다.");
   const name = typed === null ? null : typedName(typed);
   if (!card.choices && action !== null) throw new Error("관찰 장면에는 선택지가 없습니다.");

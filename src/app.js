@@ -103,6 +103,7 @@ function scheduleObservation() {
   stopTimer();
   if (!life || life.finished) return;
   const scene = getScene(life);
+  if (!scene) return;
   const panel = byId("observation-timeline");
   panel.hidden = scene.choices.length > 0 || scene.manual;
   if (scene.choices.length || scene.manual) {
@@ -1494,6 +1495,7 @@ async function advanceLife(choiceId) {
     let statsUpdated = false;
     if (chose || milestones.length) {
       playingChanges = true;
+      const watchdog = setTimeout(() => { playingChanges = false; }, 4500);
       try {
         const powerFx = chose ? powerFxForChoice(life, choiceId, chosenLabel, life.lastOutcome, chosenRisk) : null;
         const cleanOutcome = (life.lastOutcome || "").replace(/^주사위 \d+ \(\d+ 이상 성공\) · (?:대성공|성공|실패)\.\s*/, "").trim();
@@ -1506,6 +1508,7 @@ async function advanceLife(choiceId) {
       } catch {
         // Keep game progression alive even if a visual animation fails.
       } finally {
+        clearTimeout(watchdog);
         playingChanges = false;
         const leftover = document.querySelector(".fx-overlay");
         if (leftover) leftover.remove();
@@ -1735,11 +1738,16 @@ byId("birth-confirm").addEventListener("click", () => {
 
 byId("resume").addEventListener("click", () => {
   devPreset = false;
-  life = safeReplay(library.lives[library.active]);
-  persist();
-  observation = null;
-  if (life.finished) renderEnding();
-  else renderGame(true);
+  try {
+    life = safeReplay(library.lives[library.active]);
+    persist();
+    observation = null;
+    if (life.finished) renderEnding();
+    else renderGame(true);
+  } catch {
+    showStorageMessage("기록을 복원하지 못했습니다. 새 생애를 시작해 주세요.");
+    byId("resume").hidden = true;
+  }
 });
 
 byId("speed").addEventListener("change", (event) => { speed = Number(event.target.value); scheduleObservation(); });

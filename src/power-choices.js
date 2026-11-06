@@ -490,7 +490,8 @@ const SYNERGY_RULES = {
 };
 
 export function fruitSynergy(fruitText = "", eventKey = "") {
-  const name = fruitText.replace(/\(.*\)$/, "");
+  if (!fruitText) return { tier: "neutral", delta: 0, tag: "", note: "" };
+  const name = String(fruitText).replace(/\(.*\)$/, "");
   for (const group of Object.values(SYNERGY_RULES)) {
     if (!group.events.includes(eventKey)) continue;
     if (group.good[name]) {
