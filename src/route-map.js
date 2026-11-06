@@ -9,7 +9,7 @@ export function routeChartFor(life) {
   const previous = [...history].reverse().find((place) => place && place !== current) || null;
   const key = ROUTE_ALIASES[current] || current;
   const connections = life.creationVersion >= 20
-    ? [...new Set((routeOptionsFor(life, key) || []).map((route) => route.dest).filter((place) => place !== current))].slice(0, 3)
+    ? [...new Set((routeOptionsFor(life, key) || []).map((route) => route.dest).filter((place) => place !== current))].slice(0, life.creationVersion >= 22 ? 4 : 3)
     : [];
 
   let zone = "unknown";
