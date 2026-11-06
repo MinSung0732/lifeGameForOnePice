@@ -2136,6 +2136,11 @@ test("선장은 항로를 선택하고 선원은 선장과 항해사의 항로�
   const former = { ...base, creationVersion: 20 };
   assert.ok(travelScene(former, former.age).choices.some((choice) => choice.id === "far"), "과거 저장 규칙은 동일한 선택지를 유지한다");
 
+  const scattered = { ...base, seen: ["canon_before_sabaody_scatter"] };
+  const training = travelScene(scattered, scattered.age);
+  assert.match(training.title, /수련/);
+  assert.equal(training.choices[0].id, "sail");
+
   const otherCrew = { ...base, canonCrew: "흰 수염 해적단", affiliation: "흰 수염 해적단" };
   const otherTrip = travelScene(otherCrew, otherCrew.age);
   const sailed = structuredClone(otherCrew);
