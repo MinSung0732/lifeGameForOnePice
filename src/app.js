@@ -1,7 +1,7 @@
 import { fruitFxKind, powerFxForChoice } from "./power-fx.js";
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, collectMilestones, createGame, getScene, personalitySummary, replay, saveRecord } from "./game.js";
 import { crewNews, crewVesselKind, eraStart, presentAge, stretched } from "./world.js";
-import { routeChartFor } from "./route-map.js";
+import { routeChartFor, routeMapLabel } from "./route-map.js";
 import { peopleSummary } from "./people.js";
 import { canonRelationshipSummary } from "./canon-relationships.js";
 import { filterRelationshipEntries, relationshipGroups } from "./crew.js";
@@ -500,7 +500,7 @@ function renderRouteMap() {
     group.append(el("circle", { cx: x, cy: y, r: kind === "current" ? 9 : 6,
       class: kind === "current" ? "route-chart-current" : kind === "previous" ? "route-chart-point route-chart-visited-point" : "route-chart-point" }));
     group.append(el("text", { x: labelX, y: labelY, "text-anchor": anchor,
-      class: kind === "previous" ? "route-chart-muted" : "" }, name.length > 10 ? `${name.slice(0, 9)}…` : name));
+      class: kind === "previous" ? "route-chart-muted" : "" }, routeMapLabel(name, kind)));
     svg.append(group);
   };
   svg.append(el("text", { x: 55, y: 28, class: "route-chart-muted" }, "지난 기항지"));
