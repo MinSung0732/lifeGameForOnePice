@@ -825,8 +825,9 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
   .world-pane strong { font-size: 11px; }
   /* Phones fold the stat panels behind a toggle so the scene stays near the top. */
   .growth-toggle { display: block; width: 100%; margin: 0 0 6px; text-align: center; }
-  .growth-panels { display: none; }
+  .growth-panels { display: grid; }
   .growth-panels.open { display: grid; }
+  .growth-panels:not(.open) > .stats-panel { display: none; }
   .scene-hint { font-size: 11px; }
   .save-warning, .storage-message { font-size: 16px; }
   .ending { display: block; padding: 37px 0 52px; }
