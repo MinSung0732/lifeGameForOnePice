@@ -3,7 +3,7 @@ import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, collectMilestones, c
 import { crewNews, crewVesselKind, eraStart, presentAge, stretched } from "./world.js";
 import { peopleSummary } from "./people.js";
 import { canonRelationshipSummary } from "./canon-relationships.js";
-import { relationshipGroups } from "./crew.js";
+import { filterRelationshipEntries, relationshipGroups } from "./crew.js";
 import { canonCount, canonStatus } from "./canon-events.js";
 import { formatBounty } from "./bounty.js";
 import { fateLegacy } from "./fates.js";
@@ -207,44 +207,63 @@ function renderRelationshipsOverview() {
   byId("relations-preview").textContent = preview.join(" · ") || "아직 기록된 인연이나 동료가 없습니다.";
 }
 
+let activeRelationshipsTab = "bonds";
+let relationshipDialogGroups = null;
+
+function renderFilteredRelationships() {
+  const key = activeRelationshipsTab;
+  const all = relationshipDialogGroups?.[key] || [];
+  const query = byId("relations-search").value;
+  const matched = filterRelationshipEntries(all, query);
+  const list = byId(`relations-list-${key}`);
+  list.replaceChildren();
+  for (const person of matched) {
+    const row = document.createElement("li");
+    const name = document.createElement("strong");
+    name.textContent = person.name;
+    const role = document.createElement("small");
+    role.textContent = person.role;
+    row.append(name, role);
+    list.append(row);
+  }
+  if (!matched.length) {
+    const empty = document.createElement("li");
+    empty.className = "relations-empty";
+    empty.textContent = query.trim() ? "검색 결과가 없습니다." : key === "bonds"
+      ? "아직 기록된 인연이 없습니다." : key === "crew"
+        ? "현재 함께 활동하는 사람이 없습니다." : "아직 산하 세력이 없습니다.";
+    list.append(empty);
+  }
+  const unit = key === "factions" ? "개" : "명";
+  byId("relations-filter-count").textContent =
+    `${all.length}${unit} 중 ${matched.length}${unit} 표시`;
+}
+
 function selectRelationshipsTab(tab, focus = false) {
   const available = ["bonds", "crew", ...(byId("relations-tab-factions").hidden ? [] : ["factions"])];
   const chosen = available.includes(tab) ? tab : "bonds";
+  if (activeRelationshipsTab !== chosen) byId("relations-search").value = "";
+  activeRelationshipsTab = chosen;
   for (const key of ["bonds", "crew", "factions"]) {
     const active = chosen === key;
     byId(`relations-tab-${key}`).setAttribute("aria-selected", String(active));
     byId(`relations-tab-${key}`).tabIndex = active ? 0 : -1;
     byId(`relations-pane-${key}`).hidden = !active;
   }
+  renderFilteredRelationships();
+  byId(`relations-pane-${chosen}`).scrollTop = 0;
   if (focus) byId(`relations-tab-${chosen}`).focus();
 }
 
 function openRelationshipsDialog() {
   if (!life) return;
   stopTimer();
-  const groups = relationshipGroups(life);
+  relationshipDialogGroups = relationshipGroups(life);
   for (const key of ["bonds", "crew", "factions"]) {
-    const list = byId(`relations-list-${key}`);
-    list.replaceChildren();
-    byId(`relations-tab-${key}-count`).textContent = String(groups[key].length);
-    if (!groups[key].length) {
-      const empty = document.createElement("li");
-      empty.className = "relations-empty";
-      empty.textContent = key === "bonds" ? "아직 기록된 인연이 없습니다."
-        : key === "crew" ? "현재 함께 활동하는 사람이 없습니다." : "아직 산하 세력이 없습니다.";
-      list.append(empty);
-    }
-    for (const person of groups[key]) {
-      const row = document.createElement("li");
-      const name = document.createElement("strong");
-      name.textContent = person.name;
-      const role = document.createElement("small");
-      role.textContent = person.role;
-      row.append(name, role);
-      list.append(row);
-    }
+    byId(`relations-tab-${key}-count`).textContent = String(relationshipDialogGroups[key].length);
   }
-  byId("relations-tab-factions").hidden = !groups.factions.length;
+  byId("relations-tab-factions").hidden = !relationshipDialogGroups.factions.length;
+  byId("relations-search").value = "";
   selectRelationshipsTab("bonds");
   byId("relations-dialog").showModal();
 }
@@ -1711,6 +1730,7 @@ function selectedProfile() {
 }
 
 byId("relations-open").addEventListener("click", openRelationshipsDialog);
+byId("relations-search").addEventListener("input", renderFilteredRelationships);
 byId("relations-close").addEventListener("click", () => byId("relations-dialog").close());
 byId("relations-dialog").addEventListener("close", scheduleObservation);
 for (const key of ["bonds", "crew", "factions"]) {
