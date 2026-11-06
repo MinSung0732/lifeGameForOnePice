@@ -158,7 +158,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 21 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 22 }));
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -869,7 +869,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 20);
+  assert.equal(createGame("original", 0).creationVersion, 21);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -2119,4 +2119,64 @@ test("예외 방어 및 소프트락 탈출구, 비동기 안전 타임아웃 �
   assert.match(appCode, /const scene = getScene\(life\);\s*if \(!scene\) return;/, "scheduleObservation에 scene 널 가드가 존재해야 한다");
   assert.match(appCode, /const watchdog = setTimeout\(\(\) => {\s*playingChanges = false;\s*},\s*4500\);/, "advanceLife에 비동기 고착 방지 watchdog 타이머가 존재해야 한다");
   assert.match(appCode, /byId\("resume"\)\.addEventListener\("click",\s*\(\)\s*=>\s*\{[\s\S]*?try\s*\{[\s\S]*?safeReplay/, "resume 버튼 클릭 이벤트에 try-catch 방어가 존재해야 한다");
+});
+
+test("선장은 항로를 선택하고 선원은 선장과 항해사의 항로를 따른다 (규칙 21)", () => {
+  const base = createGame("free", 42, { species: "인간" }, 3, 21);
+  Object.assign(base, { path: "pirate", affiliation: "밀짚모자 일당", role: "동료",
+    canonCrew: "밀짚모자 일당", independent: false, leftHome: true, homebound: false, location: "자야 · 모크 타운" });
+  const crewTrip = travelScene(base, base.age);
+  assert.deepEqual(crewTrip.choices.map((choice) => choice.id), ["sail", "prepare"]);
+  const prepared = structuredClone(base);
+  crewTrip.choices[0].apply(prepared);
+  assert.equal(prepared.location, "자야 · 모크 타운", "선원의 선택으로 원작 항로를 앞질러 가지 않는다");
+
+  assert.deepEqual(travelScene({ ...base, role: "선장" }, base.age).choices.map((choice) => choice.id), ["sail", "prepare"], "이전 직책이 남아도 밀짚모자 선원은 선장이 아니다");
+  const captain = { ...base, independent: true, role: "선장", canonCrew: null, affiliation: "독립 해적단" };
+  assert.ok(travelScene(captain, captain.age).choices.some((choice) => choice.id === "far"));
+  const former = { ...base, creationVersion: 20, crewFollowFrom: null };
+  assert.ok(travelScene(former, former.age).choices.some((choice) => choice.id === "far"), "과거 저장 규칙은 동일한 선택지를 유지한다");
+
+  const scattered = { ...base, seen: ["canon_before_sabaody_scatter"] };
+  const training = travelScene(scattered, scattered.age);
+  assert.match(training.title, /수련/);
+  assert.equal(training.choices[0].id, "sail");
+
+  const otherCrew = { ...base, canonCrew: "흰 수염 해적단", affiliation: "흰 수염 해적단" };
+  const otherTrip = travelScene(otherCrew, otherCrew.age);
+  const sailed = structuredClone(otherCrew);
+  otherTrip.choices[1].apply(sailed);
+  assert.notEqual(sailed.location, otherCrew.location, "다른 해적단의 선원도 선장이 정한 항로로 이동한다");
+});
+
+test("밀짚모자 원작 여정은 자야·하늘섬·샤본디 분산·재집결·신세계 순으로 이어진다", async () => {
+  const { preCanonCrewDestination, preCanonCount } = await import("../src/canon-before.js");
+  const { canonCrewDestination, canonCount } = await import("../src/canon-events.js");
+  const life = createGame("free", 47, { species: "인간" }, 3, 21);
+  const before = Array.from({ length: preCanonCount(life) }, (_, step) => preCanonCrewDestination(life, step));
+  assert.ok(before.includes("자야 · 모크 타운"));
+  assert.ok(before.includes("스카이피아"));
+  assert.ok(before.indexOf("스카이피아") > before.indexOf("자야 · 모크 타운"));
+  assert.equal(before.at(-1), null, "쿠마에게 흩어진 뒤에는 루피의 단독 항로를 따라가지 않는다");
+  const after = Array.from({ length: canonCount(life) }, (_, step) => canonCrewDestination(life, step));
+  assert.equal(after[0], null);
+  assert.ok(after.includes("샤본디 제도"));
+  assert.ok(after.indexOf("어인섬") > after.indexOf("샤본디 제도"));
+  assert.ok(after.indexOf("펑크 하자드") > after.indexOf("어인섬"));
+  assert.ok(after.indexOf("엘바프") > after.indexOf("에그헤드 외해"));
+});
+
+test("규칙 20의 기존 기록은 마지막 행동 이후부터 선장 항로에 동참한다", () => {
+  const old = createGame("free", 73, { species: "인간" }, 3, 20);
+  const record = saveRecord(old);
+  const legacy = replay(record);
+  assert.equal(legacy.crewFollowFrom, null);
+  record.crewFollowFrom = record.actions.length;
+  const resumed = replay(record);
+  assert.equal(resumed.crewFollowFrom, 0);
+  assert.deepEqual(replay(saveRecord(resumed)), resumed);
+  const subordinate = { ...resumed, path: "pirate", role: "동료", canonCrew: "밀짚모자 일당", independent: false };
+  assert.deepEqual(travelScene(subordinate, subordinate.age).choices.map((choice) => choice.id), ["sail", "prepare"]);
+  assert.throws(() => replay({ ...record, crewFollowFrom: -1 }));
+  assert.throws(() => replay({ ...record, crewFollowFrom: record.actions.length + 1 }));
 });

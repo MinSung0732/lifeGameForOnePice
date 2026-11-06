@@ -68,6 +68,25 @@ const beatsFor = (life) => life.creationVersion >= 10 ? BEATS_V10 : BEATS;
 export const canonCount = (life) => beatsFor(life).length;
 export const canonIfAfter = (life) => beatsFor(life).findIndex((beat) => beat.id === "egghead");
 
+const STRAW_HAT_PORTS = {
+  reunion: "샤본디 제도", fishman: "어인섬",
+  punk_hazard: "펑크 하자드", dressrosa: "드레스로자",
+  zou: "조", whole_cake: "홀케이크 아일랜드 외해",
+  wano: "와노국 외해", egghead: "에그헤드 외해", elbaf: "엘바프"
+};
+
+// News-only beats (such as Reverie) do not redirect the ship.
+export function canonCrewDestination(life, step = life.canonStep) {
+  let place = null;
+  const beats = beatsFor(life);
+  for (let i = 0; i <= step && i < beats.length; i += 1) {
+    place = STRAW_HAT_PORTS[beats[i].id] || place;
+  }
+  return place;
+}
+
+
+
 // Rule 16: the beats before the crew reunites share the years apart; the rest spread to the present.
 export function canonAge(life, step = life.canonStep) {
   const beats = beatsFor(life);

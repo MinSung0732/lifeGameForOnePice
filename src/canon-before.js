@@ -1,7 +1,7 @@
 import { arcScene } from "./canon-arcs.js";
 import { canonRelationshipChanged, custodyDivergenceText } from "./canon-relationships.js";
 import { EXTRA_BEFORE, takenText } from "./canon-timeline.js";
-import { ERA_WAR, eraStart, stretched } from "./world.js";
+import { ERA_WAR, eraStart, followsCaptain, stretched } from "./world.js";
 // Rule 5 follows the published arc order without assigning exact days to the voyage.
 const EAST = "https://one-piece.com/story/east_blue/index.html";
 const ALABASTA = "https://one-piece.com/story/alabasta/index.html";
@@ -119,6 +119,22 @@ const garpAt = BEATS_V17.findIndex((beat) => beat.id === "garp");
 const postersAt = BEATS_V17.findIndex((beat) => beat.id === "bounty_300m");
 [BEATS_V17[garpAt], BEATS_V17[postersAt]] = [BEATS_V17[postersAt], BEATS_V17[garpAt]];
 const beatsFor = (life) => life.creationVersion >= 17 ? BEATS_V17 : life.creationVersion >= 10 ? BEATS_V10 : BEATS;
+export function preCanonCrewDestination(life, step = life.preCanonStep) {
+  const beat = beatsFor(life)[step];
+  if (!beat || ["amazon_lily", "impel_down", "breakout"].includes(beat.id)) return null;
+  const east = {
+    departure: "이스트 블루 · 푸샤 마을", coby: "이스트 블루 · 푸샤 마을",
+    zoro: "셸즈 타운", buggy: "오렌지 마을", usopp: "시럽 마을",
+    baratie: "바라티에", arlong: "아론 파크", bounty_30m: "아론 파크",
+    reverse_mountain: "리버스 마운틴"
+  };
+  if (east[beat.id]) return east[beat.id];
+  const place = beat.places?.[0];
+  if (place === "알라바스타") return "알라바스타 · 나노하나";
+  if (place === "자야") return "자야 · 모크 타운";
+  return place || null;
+}
+
 export const preCanonCount = (life) => beatsFor(life).length;
 
 // Older rules put every pre-war beat in the one year Luffy sets out; rule 16 spreads them over ERA_WAR years.
@@ -126,7 +142,9 @@ export const preCanonAge = (life, step = life.preCanonStep) => stretched(life)
   ? Math.max(life.age, eraStart(life) + Math.floor(step * ERA_WAR / beatsFor(life).length)) : life.birth.yearsBeforeCurrent - 2;
 const presentAt = (life) => preCanonAge(life);
 const STRETCH_NOTE = " 이 기록에서는 원작의 몇 해를 스무 해 남짓에 걸쳐 풀어 놓았다. 원작 인물의 나이는 원작을 따른다.";
-const nearby = (life, beat) => beat.places.some((place) => life.location.includes(place));
+const nearby = (life, beat) => beat.places.some((place) => life.location.includes(place))
+  || followsCaptain(life) && life.canonCrew === "밀짚모자 일당"
+    && preCanonCrewDestination(life) === life.location;
 
 export function preCanonScene(life) {
   if (life.creationVersion < 5 || life.preCanonStep >= beatsFor(life).length || life.age < presentAt(life) - (stretched(life) ? 0 : 1)

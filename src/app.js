@@ -35,7 +35,13 @@ function showStorageMessage(message) {
 
 function safeReplay(record) {
   try {
-    return replay(record);
+    let state = replay(record);
+    // Keep earlier choices intact, then adopt captain-led travel on the next action.
+    if (record.creationVersion === 20 && record.crewFollowFrom === undefined && !state.finished) {
+      record.crewFollowFrom = record.actions.length;
+      state = replay(record);
+    }
+    return state;
   } catch {
     if (!record || record.version !== 1 || !Array.isArray(record.actions)) throw new Error("저장 기록 형식이 맞지 않습니다.");
     const rules = record.rules === undefined ? 1 : record.rules;
