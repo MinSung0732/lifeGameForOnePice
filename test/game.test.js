@@ -96,7 +96,14 @@ test("22번 특수 항로는 조건과 도착 후 이벤트를 지킨다", () =>
   Object.assign(old, { path: "pirate", independent: true, leftHome: true, homebound: false, location: "자야 · 모크 타운", supplies: 80 });
   const oldVoyage = travelScene(old, old.age);
   assert.match(oldVoyage.choices.find(({ id }) => id === "far").label, /임의 지명/);
-  assert.ok(!oldVoyage.choices.some(({ id }) => id === "detour" && id === "sky_arrival_v22"));
+  assert.equal(oldVoyage.choices.find(({ id }) => id === "detour").when(old), false,
+    "21번 항로에는 22번 특수 선택지가 노출되지 않는다");
+  const chart22 = routeChartFor({ ...base, location: "워터 세븐" });
+  assert.equal(chart22.connections.length, 4, "워터 세븐의 네 경로 모두 미니맵에 표시해야 한다");
+  assert.ok(chart22.connections.includes("스릴러 바크"));
+  const chart21 = routeChartFor({ ...old, location: "워터 세븐" });
+  assert.equal(chart21.connections.length, 3);
+
   assert.equal(encounterAt({ ...old, location: "위대한 항로 상공 · 스카이피아" }), null,
     "21번 세이브에는 새 도착 이벤트가 끼어들지 않는다");
 });
