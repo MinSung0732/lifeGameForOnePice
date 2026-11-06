@@ -499,9 +499,9 @@ export function advance(life, action = null) {
     if (line) outcome = `${outcome || ""} ${line}`.trim();
   }
   // A career move that later renames the role (a village job, a liaison post) still keeps the carried rank's title.
-  if (next.carriedRank && (next.homebound || next.canonCrew && next.mode === "original")) {
+  if (next.carriedRank && (next.homebound || next.canonCrew && (next.mode === "original" || next.creationVersion >= 21))) {
     next.rankTier = 0;
-    if (!next.homebound) next.role = "견습 선원";
+    if (!next.homebound) next.role = next.creationVersion >= 21 && next.canonCrew === "밀짚모자 일당" ? "동료" : "견습 선원";
     delete next.carriedRank;
   }
   if (next.carriedRank) {
