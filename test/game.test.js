@@ -1433,6 +1433,9 @@ test("인연 검색은 이름과 관계를 구별 없이 찾으며 빈 결과도
   assert.deepEqual(filterRelationshipEntries(entries, "d. 루피"), [entries[1]]);
   assert.deepEqual(filterRelationshipEntries(entries, "해적단"), [entries[3]]);
   assert.deepEqual(filterRelationshipEntries(entries, "사보"), []);
+  const many = Array.from({ length: 50 }, (_, index) => ({ name: `동료 ${index + 1}`, role: "선원" }));
+  assert.equal(filterRelationshipEntries(many, "").length, 50, "인원이 많아도 목록을 누락하지 않는다");
+  assert.deepEqual(filterRelationshipEntries(many, "동료 50"), [many[49]]);
 });
 
 test("collectMilestones detects affiliation, devil fruit, haki, bounty, and relationship changes", () => {
