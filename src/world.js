@@ -340,6 +340,103 @@ export const ROUTES_V20 = {
   ]
 };
 
+
+// Rule 22 keeps the original 25 custom stops for replays, but offers just four as
+// optional detours in new voyages. Restricted canon destinations have story gates.
+const CHARTERED_DETOURS_V22 = new Set([
+  "물안개 암초군(임의 지명)", "거품여울 군도(임의 지명)",
+  "해저 산호길(임의 지명)", "검은 번개 여울(임의 지명)"
+]);
+const CANON_ROUTES_V22 = {
+  "이스트 블루 · 로그 타운": [
+    { dest: "리버스 마운틴", dist: "단거리", cost: 10, note: "위대한 항로로 향하는 운하" },
+    { dest: "바라티에", dist: "중거리", cost: 18, note: "이스트 블루의 해상 레스토랑" },
+    { dest: "오렌지 마을", dist: "원거리", cost: 26, note: "버기의 소란이 지나간 항구" }
+  ],
+  "이스트 블루 · 푸샤 마을": [
+    { dest: "셸즈 타운", dist: "단거리", cost: 10, note: "해군 기지가 있는 섬" },
+    { dest: "오렌지 마을", dist: "중거리", cost: 18, note: "오렌지 마을의 부두" },
+    { dest: "이스트 블루 · 로그 타운", dist: "원거리", cost: 28, note: "위대한 항로 입구로 향하는 항구" }
+  ],
+  "셸즈 타운": [
+    { dest: "오렌지 마을", dist: "단거리", cost: 10, note: "이웃 항로의 정박지" },
+    { dest: "시럽 마을", dist: "중거리", cost: 18, note: "해안의 조용한 마을" },
+    { dest: "이스트 블루 · 로그 타운", dist: "원거리", cost: 26, note: "그랜드 라인 출항 준비" }
+  ],
+  "오렌지 마을": [
+    { dest: "셸즈 타운", dist: "단거리", cost: 10, note: "해군 기지로 돌아가는 길" },
+    { dest: "시럽 마을", dist: "중거리", cost: 18, note: "해안의 작은 마을" },
+    { dest: "바라티에", dist: "원거리", cost: 26, note: "해상 레스토랑에 기항" }
+  ],
+  "시럽 마을": [
+    { dest: "바라티에", dist: "단거리", cost: 12, note: "식량을 구할 수 있는 바다 식당" },
+    { dest: "아론 파크", dist: "중거리", cost: 20, note: "코코야시 인근 해역" },
+    { dest: "이스트 블루 · 로그 타운", dist: "원거리", cost: 28, note: "리버스 마운틴 출항 기지" }
+  ],
+  "바라티에": [
+    { dest: "아론 파크", dist: "단거리", cost: 12, note: "코코야시 마을 근해" },
+    { dest: "이스트 블루 · 로그 타운", dist: "중거리", cost: 20, note: "위대한 항로 입구의 항구" },
+    { dest: "시럽 마을", dist: "원거리", cost: 26, note: "옛 동쪽 항로로 돌아가기" }
+  ],
+  "아론 파크": [
+    { dest: "이스트 블루 · 로그 타운", dist: "단거리", cost: 12, note: "그랜드 라인 출항 준비" },
+    { dest: "바라티에", dist: "중거리", cost: 18, note: "해상 식당으로 귀항" },
+    { dest: "시럽 마을", dist: "원거리", cost: 26, note: "오래된 동쪽 바닷길" }
+  ],
+  "자야 · 모크 타운": [
+    ...ROUTES_V20["자야 · 모크 타운"].slice(0, 2),
+    { dest: "위대한 항로 상공 · 스카이피아", dist: "특수 항로", cost: 30,
+      note: "노크 업 스트림 · 기술 45, 건강 45 필요", special: "sky" }
+  ],
+  "위대한 항로 상공 · 스카이피아": [
+    { dest: "자야 · 모크 타운", dist: "단거리", cost: 10, note: "구름바다에서 청해로 하강" },
+    { dest: "롱 링 롱 랜드", dist: "중거리", cost: 18, note: "청해 항로로 복귀" }
+  ],
+  "롱 링 롱 랜드": [
+    ...ROUTES_V20["롱 링 롱 랜드"].slice(0, 2),
+    { dest: "스릴러 바크", dist: "특수 항로", cost: 28, note: "마의 삼각지대 안개 속 유령선", special: "fog" }
+  ],
+  "워터 세븐": [
+    ...ROUTES_V20["워터 세븐"].slice(0, 2),
+    { dest: "에니에스 로비", dist: "특수 항로", cost: 28,
+      note: "해상 열차 · 해군 소속 또는 기술 55 필요", special: "justice" },
+    { dest: "스릴러 바크", dist: "특수 항로", cost: 22, note: "마의 삼각지대로 진입", special: "fog" }
+  ],
+  "에니에스 로비": [
+    { dest: "워터 세븐", dist: "단거리", cost: 12, note: "해상 열차로 돌아가는 길" },
+    { dest: "샤본디 제도", dist: "중거리", cost: 22, note: "정부 해역을 벗어나는 바닷길" }
+  ],
+  "스릴러 바크": [
+    { dest: "샤본디 제도", dist: "단거리", cost: 12, note: "마의 삼각지대를 빠져나옴" },
+    { dest: "워터 세븐", dist: "중거리", cost: 18, note: "물의 도시로 되돌아가는 길" },
+    { dest: "롱 링 롱 랜드", dist: "원거리", cost: 28, note: "초원 바다 방향으로 귀항" }
+  ],
+  "샤본디 제도": [
+    ...ROUTES_V20["샤본디 제도"].slice(0, 2),
+    { dest: "아마존 릴리 외해", dist: "특수 항로", cost: 30,
+      note: "캄 벨트 횡단 · 기술 55 필요", special: "calm" }
+  ],
+  "아마존 릴리 외해": [
+    { dest: "샤본디 제도", dist: "중거리", cost: 20, note: "캄 벨트를 벗어나 샤본디로 귀항" }
+  ]
+};
+export const ROUTES_V22 = Object.fromEntries(Object.entries(ROUTES_V20).map(([place, options]) => [
+  place, CANON_ROUTES_V22[place] || options.filter(({ dest }) =>
+    !dest.includes("(임의 지명)") || CHARTERED_DETOURS_V22.has(dest))
+]));
+Object.assign(ROUTES_V22, CANON_ROUTES_V22);
+
+export function routeOptionsFor(life, place = life.location) {
+  const key = place === "위대한 항로 · 알라바스타 나노하나" ? "알라바스타 · 나노하나" : place;
+  return (life.creationVersion >= 22 ? ROUTES_V22 : ROUTES_V20)[key];
+}
+function specialRouteReady(life, route) {
+  if (route.special === "sky") return life.skill >= 45 && life.health >= 45;
+  if (route.special === "justice") return life.path === "marine" || life.skill >= 55;
+  if (route.special === "calm") return life.skill >= 55;
+  return true;
+}
+
 function firstTrust(life, place) {
   let hash = 0;
   for (const char of place) hash = Math.imul(hash ^ char.codePointAt(0), 0x01000193) >>> 0;
@@ -371,7 +468,7 @@ export function sailToNextPort(life) {
   // The Straw Hats depart at their canon beats, not at random side events.
   if (followsCaptain(life) && life.canonCrew === "밀짚모자 일당" && !life.independent) return life.location;
   const cur = life.location;
-  const v20Routes = ROUTES_V20[cur];
+  const v20Routes = routeOptionsFor(life, cur);
   let dest;
   if (v20Routes && v20Routes.length > 0) {
     dest = v20Routes[0].dest;
@@ -386,6 +483,7 @@ export function sailToNextPort(life) {
   }
   if (dest && dest !== cur) {
     moveTo(life, dest);
+    if (life.creationVersion >= 22) life.pendingEncounter = encounterAt(life);
   }
   return life.location;
 }
