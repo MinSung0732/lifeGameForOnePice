@@ -533,6 +533,133 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
   .choice small { line-height: 1.25; }
 }
 
+/* Desktop reading desk: the life dashboard stays beside the current chapter.
+   Narrow screens retain the original stacked layout; long chapters scroll inside their pane. */
+@media (min-width: 1280px) and (min-height: 780px) {
+  .page-shell.game-screen {
+    max-width: 1920px;
+    padding: 0 clamp(28px, 2.5vw, 52px);
+  }
+
+  .page-shell.game-screen .game {
+    display: grid;
+    grid-template-columns: minmax(390px, 33%) minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    gap: 10px 20px;
+    height: calc(100dvh - 72px);
+    min-height: 0;
+    padding: 10px 0 14px;
+  }
+
+  .game > .game-topline,
+  .game > .age-timeline {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+  .game > .game-topline { grid-row: 1; }
+  .game > .age-timeline { grid-row: 2; }
+
+  .game > .life-strip {
+    grid-column: 1;
+    grid-row: 3;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .game .life-pane,
+  .game > .growth-panels > .stats-panel {
+    min-width: 0;
+    background: #faf8f1;
+    border: 1px solid var(--line);
+    padding: 12px 16px;
+  }
+  .game .life-pane.char-pane {
+    display: grid;
+    gap: 12px;
+  }
+  .game .char-top-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 16px; }
+  .game .char-goal-cell { grid-column: 1 / -1; }
+  .game .char-bot-row { grid-template-columns: 1.25fr .75fr; gap: 16px; }
+  .game .char-cell strong { font-size: 13px; }
+  .game .char-cell small { overflow-wrap: anywhere; }
+
+  .game .life-pane.world-pane {
+    display: grid;
+    gap: 8px;
+  }
+  .game .world-pane .route-trail,
+  .game .world-pane .life-crew,
+  .game .world-pane .life-relationships {
+    align-items: start;
+    line-height: 1.45;
+    font-size: 12px;
+  }
+  .game .world-pane span { min-width: 94px; }
+  .game .world-pane strong {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.45;
+    font-size: 12px;
+  }
+  .game .world-pane #route-trail { justify-content: flex-start; }
+
+  .game > .growth-panels {
+    grid-column: 1;
+    grid-row: 4;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    min-height: 0;
+    margin: 0;
+    overflow-y: auto;
+  }
+  .game > .growth-panels > .stats-panel { min-height: 0; }
+  .game > .growth-panels .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 18px;
+  }
+  .game > .growth-panels .stats-panel h2 { margin-bottom: 10px; }
+  .game > .growth-panels .stat-head { line-height: 1.3; }
+  .game > .growth-panels .stat-track { height: 6px; }
+
+  .game > .scene-layout {
+    grid-column: 2;
+    grid-row: 3 / 5;
+    grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
+    align-items: start;
+    gap: 22px;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    padding: 16px;
+    border: 1px solid var(--line);
+    background: #faf8f1;
+  }
+  .game .scene-art img {
+    width: 100%;
+    height: auto;
+    max-height: min(43vh, 420px);
+    aspect-ratio: 1672 / 941;
+    object-fit: cover;
+  }
+  .game .scene-copy {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 8px;
+    scrollbar-gutter: stable;
+  }
+  .game .scene-copy h1 { font-size: clamp(26px, 1.8vw, 33px); }
+  .game .scene-body { font-size: 16px; line-height: 1.7; }
+  .game .choice { padding: 9px 8px; }
+  .game.many-choices .choices { display: block; }
+  .game.many-choices .choice:nth-child(odd) { border-right: 0; }
+}
+
 @media (max-width: 1000px) {
   .page-shell { padding: 0 30px; }
   .intro { gap: 35px; }
