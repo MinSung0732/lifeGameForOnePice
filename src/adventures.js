@@ -1,5 +1,5 @@
 import { formatBounty, pursuerFor } from "./bounty.js";
-import { sailToNextPort, yearRoll } from "./world.js";
+import { followsCaptain, sailToNextPort, yearRoll } from "./world.js";
 import { rollTier } from "./fates.js";
 import { FRUIT_POWER, POWER_CHOICES, fruitSynergy } from "./power-choices.js";
 
@@ -263,7 +263,7 @@ export const DANGERS = [
         apply: (life) => {
           life.trust -= 10;
           if (life.creationVersion >= 20) {
-            if (life.creationVersion >= 21 && life.canonCrew === "밀짚모자 일당") return "동료들이 있는 배로 피했다. 다음 출항 시각과 목적지는 선장의 결정을 기다렸다.";
+            if (followsCaptain(life) && life.canonCrew === "밀짚모자 일당") return "동료들이 있는 배로 피했다. 다음 출항 시각과 목적지는 선장의 결정을 기다렸다.";
             const nextPlace = sailToNextPort(life);
             return `멀어지는 항구에서 종소리가 들리지 않았다. 그 침묵을 뒤로하고 배는 ${nextPlace}에 닿았다.`;
           }
