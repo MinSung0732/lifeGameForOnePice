@@ -90,7 +90,7 @@ const BEATS = [
   { id: "thriller_aftermath", title: "새벽 뒤에도 남은 일", time: "다음 날 · 스릴러 바크", canon: THRILLER, places: ["스릴러 바크"], art: "arcThrillerBark",
     near: "모리아가 패해 그림자들이 돌아왔다. 그러나 승리의 잔치는 쿠마가 나타났다 떠난 뒤에야 열렸다. 배를 떠날 때 브룩은 라분과의 오래된 약속을 다시 품었다.",
     far: "모리아가 쓰러지고 빼앗긴 그림자들이 돌아왔다. 쿠마와의 위험한 대치 뒤 브룩이 일행에 합류해 라분을 다시 만날 길을 택했다." },
-  { id: "sabaody_auction", title: "샤본디의 경매장", time: "얼마 뒤 · 샤본디 제도", canon: SABAODY, places: ["샤본디 제도"],
+  { id: "sabaody_auction", title: "샤본디의 경매장", time: "얼마 뒤 · 샤본디 제도", canon: SABAODY, places: ["샤본디 제도"], art: "arcSabaody",
     near: "샤본디에는 억대 현상금의 신인 해적들이 모였다. 인어 케이미가 경매장에 끌려갔고, 하치가 총에 맞자 루피가 천룡인을 때렸다. 곧이어 경매장의 경비병들이 한꺼번에 쓰러졌는데, 해적왕의 부선장이었던 레일리의 힘이었다. 거리의 사람들은 곧 해군이 온다는 것을 알았다.",
     far: "샤본디 제도의 인신매매 경매장에서 루피가 천룡인을 때렸다. 해군 대장이 움직인다는 소식에 다른 배들까지 출항을 서둘렀다.",
     choices: [
@@ -99,7 +99,7 @@ const BEATS = [
       { id: "ship", label: "자기 배와 동료의 퇴로를 확보한다", risk: "기술 +5", personality: { caution: 5, loyalty: 3 },
         apply: (life) => { life.skill += 5; return "바늘이 가리키는 섬보다 지금 빠져나갈 물길을 먼저 확인했다."; } }
     ] },
-  { id: "sabaody_scatter", title: "흩어진 밀짚모자 일당", time: "그날 · 샤본디 제도", canon: SABAODY, places: ["샤본디 제도"],
+  { id: "sabaody_scatter", title: "흩어진 밀짚모자 일당", time: "그날 · 샤본디 제도", canon: SABAODY, places: ["샤본디 제도"], art: "arcSabaody",
     near: "키자루와 파시피스타가 섬을 뒤흔들었다. 레일리가 대장 키자루를 막아섰지만, 쿠마가 밀짚모자 일당을 한 사람씩 사라지게 했다. 빈 부두에서 남은 배들은 이 일이 패배인지 구조인지조차 알 수 없었다.",
     far: "샤본디에서 쿠마가 밀짚모자 일당을 서로 다른 곳으로 날려 보냈다. 소문만 들은 사람에게는 일당이 완전히 무너진 것처럼 보였다." },
   { id: "amazon_lily", title: "여인섬으로 날아간 루피", time: "흩어진 뒤 · 아마존 릴리", canon: "https://one-piece.com/story/amazon_lily/index.html", places: ["아마존 릴리"], art: "arcAmazonLily",

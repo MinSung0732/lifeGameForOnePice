@@ -437,31 +437,31 @@ const ENCOUNTERS = [
       { id: "treat", label: "치료와 진찰을 부탁한다", available: (life) => life.supplies >= 20, risk: "물자 20 필요 · 건강 +20", personality: { caution: 5 }, apply: (life) => { life.supplies -= 20; life.health += 20; return "진찰은 거칠었지만 돌아갈 힘이 생겼다."; } },
       { id: "listen", label: "준비에 관한 말을 듣는다", risk: "기술 +10", personality: { caution: 5 }, apply: (life) => { life.skill += 10; return "약보다 먼저 필요한 물자와 쉬는 날을 적었다."; } }
     ] },
-  { id: "crocus", place: "쌍둥이 언덕", earliest: 24, latest: 3, latestV3: 0, name: "크로커스", canon: "https://one-piece.com/character/Crocus/index.html",
+  { id: "crocus", place: "쌍둥이 언덕", earliest: 24, latest: 3, latestV3: 0, name: "크로커스", canon: "https://one-piece.com/character/Crocus/index.html", art: "arcTwinCape",
     body: "쌍둥이 언덕의 등대에서 크로커스를 만났다. 항로를 묻자 그는 기록지침과 기다릴 시간을 먼저 확인했다.",
     choices: [
       { id: "ask", label: "기록지침을 살펴 달라고 한다", cost: 10, risk: "기술 +10 · 물자 -10", personality: { caution: 5 }, apply: (life) => { life.skill += 10; life.supplies -= 10; return "새 항로보다 먼저 틀린 기록을 고쳤다."; } },
       { id: "go", label: "인사를 하고 길을 떠난다", risk: "현재 상태 유지", apply: () => "등대의 불빛을 뒤로하고 출항했다." }
     ] },
-  { id: "rayleigh", place: "샤본디 제도", earliest: 10, latest: 3, name: "실버즈 레일리", canon: "https://one-piece.com/character/Silvers_Rayleigh/index.html",
+  { id: "rayleigh", place: "샤본디 제도", earliest: 10, latest: 3, name: "실버즈 레일리", canon: "https://one-piece.com/character/Silvers_Rayleigh/index.html", art: "arcSabaody",
     body: "샤본디 제도에서 코팅 일을 하던 실버즈 레일리를 잠깐 만났다. 그는 배의 상태를 살피고 깊은 바다에 필요한 준비를 물었다.",
     choices: [
       { id: "prepare", label: "코팅과 안전 장비를 의논한다", available: (life) => life.supplies >= 30, risk: "물자 30 필요 · 건강 +10", personality: { caution: 6 }, apply: (life) => { life.supplies -= 30; life.health += 10; return "코팅과 비상 밧줄을 갖춘 뒤에야 출항 날짜를 정했다."; } },
       { id: "wait", label: "더 준비할 때까지 머문다", risk: "기술 +10", personality: { caution: 5 }, apply: (life) => { life.skill += 10; return "서두르지 않고 배의 약한 곳부터 고쳤다."; } }
     ] },
-  { id: "tom", place: "워터 세븐", earliest: 30, latest: 11, name: "톰", canon: "https://one-piece.com/character/Tom/index.html",
+  { id: "tom", place: "워터 세븐", earliest: 30, latest: 11, name: "톰", canon: "https://one-piece.com/character/Tom/index.html", art: "arcWater7",
     body: "워터 세븐의 조선소에서 톰을 만났다. 낡은 배를 다시 쓰려면 배의 약점을 숨기지 말고 먼저 살펴야 한다는 이야기를 들었다.",
     choices: [
       { id: "learn", label: "배의 구조를 함께 점검한다", available: (life) => life.supplies >= 10, risk: "물자 10 필요 · 기술 +20", personality: { caution: 5, ambition: 4 }, apply: (life) => { life.supplies -= 10; life.skill += 20; return "나무가 물을 먹는 자리와 보강할 부분을 기록했다."; } },
       { id: "thank", label: "조언을 듣고 일터로 돌아간다", risk: "기술 +10", personality: { loyalty: 4 }, apply: (life) => { life.skill += 10; return "톰의 작업을 방해하지 않고 자기 배로 돌아왔다."; } }
     ] },
-  { id: "luffy_elbaf", place: "엘바프", earliest: 0, latest: 0, name: "몽키 D. 루피", canon: "https://one-piece.com/story/elbaph/index.html",
+  { id: "luffy_elbaf", place: "엘바프", earliest: 0, latest: 0, name: "몽키 D. 루피", canon: "https://one-piece.com/story/elbaph/index.html", art: "arcElbaf",
     body: "엘바프에서 밀짚모자 루피를 잠깐 마주쳤다. 그는 동료들이 있는 쪽을 묻고 있었고, 항구의 길은 여러 갈래였다.",
     choices: [
       { id: "guide", label: "동료들이 지나간 길을 가리킨다", risk: "짧은 대화 · 지역의 신뢰 +10", personality: { empathy: 5 }, apply: (life) => { life.trust += 10; return "루피는 고맙다며 손을 흔들었다. 이어지는 모험은 그의 동료들과 함께할 일이었다."; } },
       { id: "pass", label: "다른 길목을 살피러 간다", risk: "기술 +10 · 각자의 항로", personality: { caution: 5 }, apply: (life) => { life.skill += 10; return "떠들썩한 항구를 뒤로하고 자기 배의 길을 확인했다."; } }
     ] },
-  { id: "jarul", place: "엘바프", earliest: 63, latest: 3, latestV17: 0, name: "야를", canon: "https://one-piece.com/character/Jarul/index.html",
+  { id: "jarul", place: "엘바프", earliest: 63, latest: 3, latestV17: 0, name: "야를", canon: "https://one-piece.com/character/Jarul/index.html", art: "arcElbaf",
     body: "엘바프에 기항한 날, 장로 야를을 만났다. 그는 다른 배가 무엇을 얻으러 왔는지보다 누구와 함께 돌아갈지를 먼저 물었다.",
     choices: [
       { id: "share", label: "동행의 사정을 솔직히 말한다", risk: "지역의 신뢰 +10", personality: { loyalty: 6, empathy: 5 }, apply: (life) => { life.trust += 10; return "야를은 짧게 고개를 끄덕이고 기항할 자리를 알려 주었다."; } },
@@ -484,7 +484,7 @@ export function encounterScene(life) {
   const encounter = ENCOUNTERS.find((entry) => entry.id === life.pendingEncounter);
   if (!encounter) throw new Error("만남 기록을 찾을 수 없습니다.");
   return { id: `life_meet_${encounter.id}`, age: life.age, act: 2, species: "all", yearly: true, encounter: true,
-    art: "deck", title: `${encounter.name}와의 마주침`, body: encounter.body, canon: encounter.canon, choices: encounter.choices };
+    art: encounter.art || "deck", title: `${encounter.name}와의 마주침`, body: encounter.body, canon: encounter.canon, choices: encounter.choices };
 }
 
 export function isNewWorld(place) {

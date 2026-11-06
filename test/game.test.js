@@ -85,7 +85,9 @@ test("원작 삽화는 대응하는 전후 전쟁 장면과 섬 이벤트에 연
     departure: "arcFoosha", zoro: "arcShellsTown", buggy: "arcOrangeTown", usopp: "arcSyrup",
     baratie: "arcBaratie", arlong: "arcArlongPark", laboon: "arcTwinCape", skypiea_trial: "arcSkypiea",
     skypiea_bell: "arcSkypiea", davy: "arcLongRing", enies_lobby: "arcEniesLobby", merry: "arcMerryFarewell",
-    thriller_shadows: "arcThrillerBark", thriller_aftermath: "arcThrillerBark", amazon_lily: "arcAmazonLily"
+    thriller_shadows: "arcThrillerBark", thriller_aftermath: "arcThrillerBark",
+    supernovas: "arcSabaody", sabaody_auction: "arcSabaody", sabaody_scatter: "arcSabaody",
+    amazon_lily: "arcAmazonLily"
   })) assert.equal(before.get(`canon_before_${id}`), art, `${id} 장면의 그림 연결`);
 
   life.seen = ["life_marineford_news"];

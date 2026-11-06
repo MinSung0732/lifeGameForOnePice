@@ -93,7 +93,7 @@ const ISLAND_EVENTS = [
           return "먼바다에서 섬을 덮치는 파도를 보았다.";
         } }
     ] },
-  { id: "celestial_parade", place: "샤본디 제도", title: "천룡인의 행차",
+  { id: "celestial_parade", place: "샤본디 제도", title: "천룡인의 행차", art: "arcSabaody",
     body: "길 위의 모두가 무릎을 꿇었다. 천룡인이 노예를 끌고 지나갔고, 앞을 막은 아이 하나가 그 걸음 앞에 얼어붙어 있었다.", choices: [
       { id: "kneel", label: "고개를 숙이고 지나가기를 기다린다", risk: "아무도 다치지 않을 수도 있음", personality: { caution: 8, empathy: -4 },
         apply: () => { return "행렬이 지나간 뒤에야 숨을 쉬었다. 아이가 어떻게 됐는지는 보지 못했다."; } },

@@ -76,7 +76,7 @@ export const EXTRA_BEFORE = {
   thriller_aftermath: [
     { id: "zoro_pain", title: "아무 일도 없었다", time: "그날 새벽 · 스릴러 바크",
       far: "쿠마가 루피의 목만 내놓으면 나머지는 살려 주겠다고 하자 조로가 자기 목숨을 대신 내놓겠다고 나섰다. 쿠마는 루피의 고통을 조로에게 떠넘겼고, 피투성이로 서 있던 조로는 상디가 묻자 아무 일도 없었다고만 했다." },
-    { id: "supernovas", title: "샤본디에 모인 억대 신인들", time: "얼마 뒤 · 샤본디 제도", places: ["샤본디 제도"],
+    { id: "supernovas", title: "샤본디에 모인 억대 신인들", time: "얼마 뒤 · 샤본디 제도", places: ["샤본디 제도"], art: "arcSabaody",
       far: "샤본디 제도에 억대 현상금이 걸린 신인 해적들이 한꺼번에 모였다. 키드와 로, 그리고 밀짚모자 일당도 그 가운데 있었다." }
   ],
   impel_down: [

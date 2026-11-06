@@ -750,12 +750,19 @@ function burst(row, target, delta) {
 }
 
 // A dice check gets its own beat: the die tumbles through numbers, lands on the roll, then shows the verdict.
-async function playDice({ roll, target, success, tier }) {
+async function playDice({ roll, target, success, tier }, keepOverlay = false) {
   const kind = tier === "great" ? "great" : success ? "success" : "fail";
   diceResult(kind);
   if (!motionOn) return;
-  const overlay = document.createElement("div");
-  overlay.className = "fx-overlay dice-overlay";
+  let overlay = document.querySelector(".fx-overlay");
+  const isExisting = Boolean(overlay);
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.className = "fx-overlay dice-overlay";
+  } else {
+    overlay.className = "fx-overlay dice-overlay show";
+    overlay.replaceChildren();
+  }
   const card = document.createElement("div");
   card.className = "fx-card dice-card";
   card.setAttribute("role", "status");
@@ -769,12 +776,14 @@ async function playDice({ roll, target, success, tier }) {
   verdict.className = "dice-verdict";
   card.append(goal, die, verdict);
   overlay.append(card);
-  document.body.append(overlay);
+  if (!isExisting) {
+    document.body.append(overlay);
+    requestAnimationFrame(() => overlay.classList.add("show"));
+  }
   let skip;
   const pause = (ms) => new Promise((resolve) => { const timer = setTimeout(resolve, ms); skip = () => { clearTimeout(timer); resolve(); }; });
   let skipped = false;
-  overlay.addEventListener("click", () => { skipped = true; skip?.(); });
-  requestAnimationFrame(() => overlay.classList.add("show"));
+  overlay.addEventListener("click", () => { skipped = true; skip?.(); }, { once: true });
   // Flicker through random faces, slowing down like a die losing momentum.
   for (let delay = 45; delay < 230 && !skipped; delay *= 1.16) {
     die.textContent = String(1 + Math.floor(Math.random() * 100));
@@ -800,9 +809,16 @@ async function playDice({ roll, target, success, tier }) {
   }
   skipped = false;
   await pause(kind === "great" ? 1600 : 1100);
-  overlay.classList.add("leaving");
-  await pause(240);
-  overlay.remove();
+  if (!keepOverlay) {
+    overlay.classList.add("leaving");
+    await pause(240);
+    overlay.remove();
+  } else {
+    card.style.opacity = "0";
+    card.style.transform = "scale(.86)";
+    await pause(120);
+    overlay.replaceChildren();
+  }
 }
 
 function fruitFxKind(fruitText = "") {
@@ -849,7 +865,7 @@ function powerFxForChoice(state, choiceId, chosenLabel = "", outcome = "", chose
   return null;
 }
 
-async function playChanges(changes, outcome = "", chosenLabel = "", powerFx = null) {
+async function playChanges(changes, outcome = "", chosenLabel = "", powerFx = null, keepOverlay = false) {
   const cleanOutcome = outcome.replace(/^주사위 \d+ \(\d+ 이상 성공\) · (?:대성공|성공|실패)\.\s*/, "").trim();
   if (!changes.length && !cleanOutcome) return false;
   if (!motionOn) {
@@ -864,8 +880,16 @@ async function playChanges(changes, outcome = "", chosenLabel = "", powerFx = nu
     return true;
   }
   const reduced = false;
-  const overlay = document.createElement("div");
-  overlay.className = "fx-overlay";
+  let overlay = document.querySelector(".fx-overlay");
+  const isExisting = Boolean(overlay);
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.className = "fx-overlay";
+  } else {
+    overlay.className = "fx-overlay show";
+    overlay.classList.remove("leaving", "bursting", "dice-overlay");
+    overlay.replaceChildren();
+  }
   const card = document.createElement("div");
   card.className = `fx-card${powerFx ? ` milestone-card milestone-${powerFx.kind.startsWith("fruit") ? "fruit" : powerFx.kind}` : ""}`;
   card.setAttribute("role", "status");
@@ -908,12 +932,14 @@ async function playChanges(changes, outcome = "", chosenLabel = "", powerFx = nu
   hint.textContent = "클릭하면 바로 넘어갑니다";
   card.append(hint);
   overlay.append(card);
-  document.body.append(overlay);
+  if (!isExisting) {
+    document.body.append(overlay);
+    requestAnimationFrame(() => overlay.classList.add("show"));
+  }
   if (powerFx) diceResult(powerFx.kind.startsWith("fruit") ? "fruit" : "haki");
   let skip;
   const pause = (ms) => new Promise((resolve) => { const timer = setTimeout(resolve, ms); skip = () => { clearTimeout(timer); resolve(); }; });
-  overlay.addEventListener("click", () => skip?.());
-  requestAnimationFrame(() => overlay.classList.add("show"));
+  overlay.addEventListener("click", () => skip?.(), { once: true });
   await pause(reduced ? 1000 : Math.min(3200, Math.max(1500, 1100 + cleanOutcome.length * 32)));
   let statsUpdated = false;
   if (!reduced) {
@@ -932,9 +958,16 @@ async function playChanges(changes, outcome = "", chosenLabel = "", powerFx = nu
     renderPersonality();
     for (const { key } of rows) changeTarget(key)?.classList.add("fx-hit");
   }
-  overlay.classList.add("leaving");
-  await pause(reduced ? 0 : 260);
-  overlay.remove();
+  if (!keepOverlay) {
+    overlay.classList.add("leaving");
+    await pause(reduced ? 0 : 260);
+    overlay.remove();
+  } else {
+    card.style.opacity = "0";
+    card.style.transform = "scale(.86)";
+    await pause(120);
+    overlay.replaceChildren();
+  }
   document.querySelectorAll(".fx-particle").forEach((dot) => dot.remove());
   return statsUpdated;
 }
@@ -1321,14 +1354,26 @@ async function playMilestones(milestones) {
         card.append(spark);
       }
     }
+    let overlay = document.querySelector(".fx-overlay");
+    const isExisting = Boolean(overlay);
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.className = "fx-overlay";
+    } else {
+      overlay.className = "fx-overlay show";
+      overlay.classList.remove("leaving", "bursting", "dice-overlay");
+      overlay.replaceChildren();
+    }
     overlay.append(card);
-    document.body.append(overlay);
+    if (!isExisting) {
+      document.body.append(overlay);
+      requestAnimationFrame(() => overlay.classList.add("show"));
+    }
     diceResult(item.kind === "bounty" ? "bounty" : item.kind === "fruit" ? "fruit" : item.kind.startsWith("haki-") ? "haki" : "great");
     let skip;
     let skipped = false;
     const pause = (ms) => new Promise((resolve) => { const timer = setTimeout(resolve, ms); skip = () => { clearTimeout(timer); resolve(); }; });
-    overlay.addEventListener("click", () => { skipped = true; skip?.(); });
-    requestAnimationFrame(() => overlay.classList.add("show"));
+    overlay.addEventListener("click", () => { skipped = true; skip?.(); }, { once: true });
     if (bountyNode && !reduced) {
       for (let step = 1; step <= 8 && !skipped; step += 1) {
         await pause(65);
@@ -1345,9 +1390,17 @@ async function playMilestones(milestones) {
       overlay.classList.add("bursting");
       if (flight) await Promise.race([flight, pause(800)]);
     }
-    overlay.classList.add("leaving");
-    await pause(reduced ? 0 : 220);
-    overlay.remove();
+    const isLast = idx === milestones.length - 1;
+    if (isLast) {
+      overlay.classList.add("leaving");
+      await pause(reduced ? 0 : 220);
+      overlay.remove();
+    } else {
+      card.style.opacity = "0";
+      card.style.transform = "scale(.86)";
+      await pause(120);
+      overlay.replaceChildren();
+    }
   }
 }
 
@@ -1372,10 +1425,18 @@ async function advanceLife(choiceId) {
       playingChanges = true;
       try {
         const powerFx = chose ? powerFxForChoice(life, choiceId, chosenLabel, life.lastOutcome, chosenRisk) : null;
-        if (chose && life.lastDice) await playDice(life.lastDice);
-        if (chose) statsUpdated = await playChanges(life.lastChanges, life.lastOutcome, chosenLabel, powerFx);
-        if (milestones.length) await playMilestones(milestones);
-      } finally { playingChanges = false; }
+        const cleanOutcome = (life.lastOutcome || "").replace(/^주사위 \d+ \(\d+ 이상 성공\) · (?:대성공|성공|실패)\.\s*/, "").trim();
+        const hasChanges = Boolean(life.lastChanges?.length || cleanOutcome);
+        const hasMilestones = Boolean(milestones.length);
+
+        if (chose && life.lastDice) await playDice(life.lastDice, hasChanges || hasMilestones);
+        if (chose && hasChanges) statsUpdated = await playChanges(life.lastChanges, life.lastOutcome, chosenLabel, powerFx, hasMilestones);
+        if (hasMilestones) await playMilestones(milestones);
+      } finally {
+        playingChanges = false;
+        const leftover = document.querySelector(".fx-overlay");
+        if (leftover) leftover.remove();
+      }
     }
     if (life.finished) renderEnding();
     else renderGame(true, statsUpdated, before.location !== life.location ? life.location : "");
@@ -1692,6 +1753,7 @@ if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
     {
       group: "잠든 시스템 연동 사건",
       items: [
+        { label: "샤본디 제도 삽화 및 쿠마 사건", fn: () => jumpTo("canon_before_sabaody_scatter", 3, { path: "pirate", location: "샤본디 제도", leftHome: true }) },
         { label: "소꿉친구 부두 성인 재회", fn: () => jumpTo("life_friend_reunion", 3, { path: "pirate", job: "해적단 선장", affiliation: "독립 해적단", role: "선장", friendName: "타로", friendBond: 65, skill: 70 }) },
         { label: "해군 본부 수감 실적 특별 포상", fn: () => jumpTo("life_marine_commendation", 3, { path: "marine", job: "해군 장교", affiliation: "해군 본부", role: "대령", rankTier: 4, arrestCount: 3, skill: 75 }) },
         { label: "바다를 뒤흔든 악명 군함 대치", fn: () => jumpTo("life_infamy_standoff", 3, { path: "pirate", job: "해적단 선장", affiliation: "독립 해적단", role: "선장", reputation: -35, bounty: 250_000_000, skill: 75 }) },
@@ -1785,7 +1847,22 @@ if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
   document.querySelector(".masthead").append(bar);
 }
 
+function preloadArt() {
+  if (typeof Image === "undefined") return;
+  const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 60));
+  idle(() => {
+    for (const art of Object.values(ART)) {
+      if (art?.src) {
+        const img = new Image();
+        img.src = art.src;
+        if (typeof img.decode === "function") img.decode().catch(() => {});
+      }
+    }
+  });
+}
+
 loadLibrary();
 initMotion(byId("motion-toggle"));
 initMusic(byId("sound-toggle"), byId("sound-volume"));
 renderIntro();
+preloadArt();

@@ -76,7 +76,7 @@ export const ART = {
   arcAlabasta: { src: "./design/assets/arc-alabasta.webp", alt: "모래빛 건물과 둥근 지붕이 늘어선 사막 왕국의 항구" },
   arcJaya: { src: "./design/assets/arc-jaya.webp", alt: "구름 기둥이 솟은 바다 앞 낡은 나무 술집과 해적선이 늘어선 항구" },
   arcWater7: { src: "./design/assets/arc-water7.webp", alt: "커다란 분수를 둘러싼 수로 도시와 조선소 크레인, 먼바다에서 일어나는 해일" },
-  arcSabaody: { src: "./design/assets/arc-sabaody.webp", alt: "거품이 떠오르는 거대한 맹그로브 숲과 나무 위 산책로" },
+  arcSabaody: { src: "./design/assets/arc-sabaody.webp", alt: "거품이 떠오르는 거대한 맹그로브 숲과 코팅 선박이 정박한 샤본디 제도의 항구" },
   arcDressrosa: { src: "./design/assets/arc-dressrosa.webp", alt: "꽃이 가득한 바닷가 도시와 거대한 콜로세움, 해바라기 밭의 풍차" },
   arcWano: { src: "./design/assets/arc-wano.webp", alt: "폭포 절벽이 쏟아지는 밤바다와 멀리 불타는 섬" },
   arcWholeCake: { src: "./design/assets/arc-wholecake.webp", alt: "과자처럼 생긴 바위섬들과 수평선의 케이크 모양 섬" },
@@ -319,7 +319,7 @@ function sceneCard(life) {
   if (life.pendingBranch) return branchScene(life);
   if (life.creationVersion >= 20 && life.path && !life.leftHome && !life.homebound && !life.seen.includes("life_leave_home")) {
     const leaveCard = scenes.find((s) => s.id === "life_leave_home");
-    if (leaveCard) return leaveCard;
+    if (leaveCard) return { ...leaveCard, age: life.age, act: 2, species: "all", yearly: true, urgent: true };
   }
   if (life.creationVersion >= 5) {
     if (age === life.age) return authored;
