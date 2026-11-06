@@ -469,12 +469,22 @@ function syncCrewFx() {
   crewFxRaf = requestAnimationFrame(loop);
 }
 
+function isCanonStory(scene) {
+  if (!scene) return false;
+  if (scene.canonDaily || (scene.id && scene.id.startsWith("life_canon_daily_"))) return false;
+  if (/^canon_/.test(scene.id) && !scene.id.startsWith("canon_strawhat_invite")) return true;
+  if (/^life_old_/.test(scene.id)) return true;
+  if (/^life_(roger|marineford|timeskip|new_era|fisher_tiger|tiger_liberation|tom|shanks)_news/.test(scene.id)) return true;
+  if (/^species_[a-z0-9_-]+-(roger|war)/.test(scene.id)) return true;
+  return false;
+}
+
 function sceneTone(scene) {
   const key = `${scene.id} ${scene.art?.src || ""}`;
   if (/drum|ice|snow/i.test(key)) return "snow";
   if (/marineford|merry|wano|punkhazard|fire/i.test(key)) return "fire";
   if (moodFor(scene) === "danger" || /storm|crisis|enemy|clash|raid|danger|enies|impel|thriller/i.test(key)) return "storm";
-  if (moodFor(scene) === "canon") return "canon";
+  if (isCanonStory(scene)) return "canon";
   return "calm";
 }
 
@@ -504,7 +514,7 @@ function renderSceneAtmosphere(scene, arrivedPlace = "") {
     }
   }
   const badgeText = arrivedPlace ? `새로운 기항지 · ${arrivedPlace}`
-    : tone === "canon" ? "원작의 물결"
+    : isCanonStory(scene) ? "원작의 물결"
     : tone === "storm" || tone === "fire" ? "격동의 순간" : "";
   badge.textContent = badgeText;
   badge.hidden = !badgeText;

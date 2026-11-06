@@ -21,7 +21,10 @@ const PHRASES = [
 export function moodFor(scene) {
   if (!scene) return "ending";
   if (/danger|mishap|storm|sea_king|sudden_end|capture|custody|marineford/.test(scene.id)) return "danger";
-  if (scene.canon || /^canon_|^life_canon_/.test(scene.id)) return "canon";
+  if (!scene.canonDaily && !scene.id?.startsWith("life_canon_daily_")
+    && (/^canon_/.test(scene.id) || /^life_old_/.test(scene.id)
+      || /^life_(roger|marineford|timeskip|new_era|fisher_tiger|tiger_liberation|tom|shanks)_news/.test(scene.id)
+      || (scene.canon && !scene.yearly && !scene.choices))) return "canon";
   return "calm";
 }
 
