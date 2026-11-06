@@ -527,6 +527,55 @@ export function routeFor(life) {
 }
 
 const ENCOUNTERS = [
+  // Rule 22 arrival scenes belong to player voyages, not the original crew's scripted chapters.
+  { id: "sky_arrival_v22", minVersion: 22, title: "구름바다의 첫 발자국",
+    place: "위대한 항로 상공 · 스카이피아", earliest: 1000, latest: -1000, name: "스카이피아", art: "arcSkypiea",
+    body: "자야에서 노크 업 스트림을 견딘 배가 구름바다에 닿았다. 아래쪽 바다는 보이지 않았다. 하늘길의 주민은 낯선 배를 조심스레 맞이하며 구름으로 만든 길을 알려 주었다.",
+    choices: [
+      { id: "listen", label: "하늘길과 다이얼 사용법을 배운다", risk: "기술 +8 · 지역의 신뢰 +5", personality: { caution: 5 },
+        apply: (state) => { state.skill += 8; state.trust += 5; return "구름길을 밟는 방법과 다이얼의 소리를 배우며 낯선 하늘에 익숙해졌다."; } },
+      { id: "help", label: "구름 길목을 고치는 주민을 돕는다", available: (state) => state.supplies >= 8,
+        risk: "물자 8 필요 · 지역의 신뢰 +10", personality: { empathy: 5 },
+        apply: (state) => { state.supplies -= 8; state.trust += 10; return "정비용 물자를 건네자 주민들은 안전한 하강길도 알려 주었다."; } }
+    ] },
+  { id: "thriller_arrival_v22", minVersion: 22, title: "안개 속 유령선의 그림자",
+    place: "스릴러 바크", earliest: 1000, latest: -1000, name: "스릴러 바크", art: "arcThrillerBark",
+    body: "마의 삼각지대에 들어선 순간 거대한 배 모양의 섬이 안개를 가르며 나타났다. 누군가는 그림자를 조심하라고 속삭였다. 이곳에서 머무는 시간과 빠져나갈 항로를 먼저 확인해야 했다.",
+    choices: [
+      { id: "trace", label: "닻과 안개 속 퇴로부터 기록한다", risk: "기술 +8 · 신중한 항해", personality: { caution: 5 },
+        apply: (state) => { state.skill += 8; return "표류하는 배들의 흔적을 따라 돌아갈 바닷길을 표시했다."; } },
+      { id: "rescue", label: "도움을 청하는 표류선을 살핀다", risk: "지역의 신뢰 +10 · 건강 -5", personality: { empathy: 5 },
+        apply: (state) => { state.trust += 10; state.health -= 5; return "서둘러 표류선을 구조했다. 안개를 헤치느라 몸이 지쳤지만 돌아갈 길을 잃지는 않았다."; } }
+    ] },
+  { id: "enies_arrival_v22", minVersion: 22, title: "사법의 섬, 닫힌 문",
+    place: "에니에스 로비", earliest: 1000, latest: -1000, name: "에니에스 로비", art: "arcEniesLobby",
+    body: "워터 세븐에서 이어지는 해상 열차와 정부 수송로를 지나 사법의 섬에 닿았다. 감시가 삼엄한 구역이다. 허가된 신분이 아니면 쉽게 발을 들일 수 없었다.",
+    choices: [
+      { id: "records", label: "경비 교대와 탈출용 해상 열차를 살핀다", risk: "기술 +8", personality: { caution: 5 },
+        apply: (state) => { state.skill += 8; return "추적당하지 않도록 출입 기록과 운행표를 확인한 뒤 퇴로를 확보했다."; } },
+      { id: "shelter", label: "수송 중인 부상자를 조용히 돕는다", risk: "건강 +5 · 지역의 신뢰 +5", personality: { empathy: 5 },
+        apply: (state) => { state.health += 5; state.trust += 5; return "구호 일손을 도운 뒤 위험한 정부 구역에서 오래 머물지 않았다."; } }
+    ] },
+  { id: "calm_arrival_v22", minVersion: 22, title: "바람 없는 캄 벨트",
+    place: "아마존 릴리 외해", earliest: 1000, latest: -1000, name: "아마존 릴리 근해", art: "deck",
+    body: "바람이 멎은 캄 벨트에서 해왕류의 그림자가 선체 아래로 지나갔다. 여인섬의 해안은 멀리 보였지만 이방인에게 허락된 땅은 아니었다. 이곳에서는 해안에 내리지 않고 퇴로를 찾는 편이 안전했다.",
+    choices: [
+      { id: "avoid", label: "노 젓는 속도를 맞추며 해왕류를 피한다", risk: "기술 +8", personality: { caution: 6 },
+        apply: (state) => { state.skill += 8; return "해왕류가 지나가기를 기다린 뒤 바다의 고요를 거슬러 돌아갈 길을 찾았다."; } },
+      { id: "wait", label: "무리한 상륙을 포기하고 배를 정비한다", risk: "건강 +5 · 물자 -5", personality: { caution: 5 },
+        apply: (state) => { state.health += 5; state.supplies -= 5; return "해안 가까이 다가가지 않고 선체를 수리해 안전한 물길을 기다렸다."; } }
+    ] },
+  { id: "baratie_arrival_v22", minVersion: 22, title: "바라티에의 바다 식탁",
+    place: "바라티에", earliest: 1000, latest: -1000, name: "바라티에", art: "arcBaratie",
+    body: "바다 한가운데 식당 배가 닻을 내리고 있었다. 여러 바다에서 온 선원과 어부들이 같은 식탁에 앉았다. 항해의 피로를 덜기 전에 이곳의 규칙부터 배워야 했다.",
+    choices: [
+      { id: "eat", label: "식량을 나누며 충분히 쉰다", available: (state) => state.supplies >= 10,
+        risk: "물자 10 필요 · 건강 +10", personality: { empathy: 4 },
+        apply: (state) => { state.supplies -= 10; state.health += 10; return "낯선 항해자들의 이야기를 들으며 한 끼를 든든하게 먹었다."; } },
+      { id: "work", label: "주방의 바쁜 일을 돕는다", risk: "기술 +8 · 지역의 신뢰 +5", personality: { loyalty: 4 },
+        apply: (state) => { state.skill += 8; state.trust += 5; return "식탁과 갑판을 치우는 동안 선원들은 안전한 항로 정보를 나누었다."; } }
+    ] },
+
   { id: "dorry_brogy", place: "리틀 가든", earliest: 100, latest: 3, name: "도리와 브로기", canon: "https://one-piece.com/story/alabasta/index.html",
     body: "리틀 가든에서 도리와 브로기의 결투 소리가 들렸다. 둘은 오래된 승부를 이어 가고 있었다. 지나가는 배는 싸움에 끼어들지 않고 해안에 닻을 내렸다.",
     choices: [
@@ -577,7 +626,7 @@ export function encounterAt(life) {
   const latest = (entry) => life.creationVersion >= 17 && entry.latestV17 !== undefined ? entry.latestV17
     : life.creationVersion >= 3 && entry.latestV3 !== undefined ? entry.latestV3 : entry.latest;
   // Rule 20 ties the side encounter to the actual Elbaf arrival beat, not the coarse post-reunion era.
-  return ENCOUNTERS.find((entry) => life.location === entry.place && beforePresent <= entry.earliest && beforePresent >= latest(entry)
+  return ENCOUNTERS.find((entry) => life.location === entry.place && life.creationVersion >= (entry.minVersion || 1) && beforePresent <= entry.earliest && beforePresent >= latest(entry)
     && (entry.id !== "luffy_elbaf" || life.creationVersion < 20 || life.seen.includes("canon_arc_elbaf_0"))
     && !life.seen.includes(`life_meet_${entry.id}`))?.id || null;
 }
@@ -586,7 +635,7 @@ export function encounterScene(life) {
   const encounter = ENCOUNTERS.find((entry) => entry.id === life.pendingEncounter);
   if (!encounter) throw new Error("만남 기록을 찾을 수 없습니다.");
   return { id: `life_meet_${encounter.id}`, age: life.age, act: 2, species: "all", yearly: true, encounter: true,
-    art: encounter.art || "deck", title: `${encounter.name}와의 마주침`, body: encounter.body, canon: encounter.canon, choices: encounter.choices };
+    art: encounter.art || "deck", title: encounter.title || `${encounter.name}와의 마주침`, body: encounter.body, canon: encounter.canon, choices: encounter.choices };
 }
 
 export function isNewWorld(place) {
