@@ -1383,13 +1383,40 @@ test("소꿉친구 획득 이펙트의 도착지에 친구가 표시되고 합�
   const after = structuredClone(before);
   after.people.mate = { name: "로웰", bond: 60, fate: "곁" };
 
-  assert.ok(collectMilestones(before, after).some((item) => item.kind === "bond" && item.targetId === "life-crew"));
+  assert.ok(collectMilestones(before, after).some((item) => item.kind === "bond" && item.targetId === "life-relationships"));
   assert.match(crewLine(after), /로웰\(소꿉친구 · 동행 전\)/);
   after.people.mate.together = true;
   assert.match(crewLine(after), /로웰\(어릴 적 친구 · 동료\)/);
   after.people.mate.together = false;
   after.people.mate.fate = "다른 길";
   assert.ok(!crewFor(after).some((person) => person.name === "로웰"));
+});
+
+test("인연·동료·세력은 조직 단위 산하 선단을 분리하고 해군 상관을 동료로 보여 준다", async () => {
+  const { relationshipGroups } = await import("../src/crew.js");
+  const initial = createGame("free", 23, { species: "인간" });
+  const mateLife = { ...initial, people: { ...initial.people, mate: { name: "로웰", fate: "곁", bond: 60 } } };
+  const first = relationshipGroups(mateLife);
+  assert.ok(first.bonds.some(({ name }) => name === "로웰"));
+  assert.ok(!first.crew.some(({ name }) => name === "로웰"), "동행하지 않는 소꿉친구는 인연에만 기록");
+  assert.equal(first.factions.length, 0);
+
+  const withFriend = { ...mateLife, people: { ...mateLife.people, mate: { ...mateLife.people.mate, together: true } } };
+  const joined = relationshipGroups(withFriend);
+  assert.ok(joined.bonds.some(({ name }) => name === "로웰"));
+  assert.ok(joined.crew.some(({ name }) => name === "로웰"));
+
+  const captain = { ...initial, path: "pirate", independent: true, careerStartAge: 20, bounty: 1_000_000_000 };
+  const pirate = relationshipGroups(captain);
+  assert.equal(pirate.factions.length, 3);
+  assert.ok(pirate.factions.every(({ role }) => role === "산하 해적단"));
+  assert.ok(pirate.crew.every(({ role }) => role !== "산하 선단"));
+  assert.ok(pirate.crew.every(({ member }) => !member));
+
+  const marine = { ...initial, path: "marine", rankTier: 2, careerStartAge: 20 };
+  const fleet = relationshipGroups(marine);
+  assert.ok(fleet.crew.some(({ role }) => role === "직속 상관" || role === "본부 사령" || role === "부관"));
+  assert.equal(fleet.factions.length, 0);
 });
 
 test("collectMilestones detects affiliation, devil fruit, haki, bounty, and relationship changes", () => {
@@ -1414,7 +1441,7 @@ test("collectMilestones detects affiliation, devil fruit, haki, bounty, and rela
   assert.deepEqual(milestones.map((item) => item.kind), ["rank", "fruit", "haki-conqueror", "haki-observation", "bounty", "bond", "canon-bond"]);
   assert.equal(milestones[0].targetId, "life-role");
   assert.equal(milestones[4].to, 30_000_000);
-  assert.equal(milestones[5].targetId, "life-crew");
+  assert.equal(milestones[5].targetId, "life-relationships");
   assert.equal(milestones[6].targetId, "life-relationships");
 
   const summary = peopleSummary({ ...after, age: 50, careerStartAge: 19, canonCrew: "흰 수염 해적단", affiliation: "흰 수염 해적단" });
