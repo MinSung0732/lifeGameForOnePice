@@ -95,3 +95,10 @@ export function relationshipGroups(life) {
   }
   return { bonds, crew, factions };
 }
+
+// Search the visible tab by person/organization name or relationship label.
+export function filterRelationshipEntries(entries, query) {
+  const term = String(query || "").trim().toLocaleLowerCase();
+  return term ? entries.filter(({ name, role }) =>
+    [name, role].some((value) => String(value || "").toLocaleLowerCase().includes(term))) : entries;
+}
