@@ -587,7 +587,7 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
 .route-map-zones { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
 .route-map-zones span { min-width: 0; padding: 3px 0; border-bottom: 2px solid var(--line); color: var(--muted); font-size: 10px; text-align: center; white-space: nowrap; }
 .route-map-zones span[data-active="true"] { border-bottom-color: var(--sea); color: var(--sea); font-weight: 800; }
-.route-map-svg { display: block; width: 100%; height: 122px; border: 1px solid #b9c4bf; border-radius: 3px;
+.route-map-svg { display: block; width: 100%; height: 122px; overflow: hidden; border: 1px solid #b9c4bf; border-radius: 3px;
   background: radial-gradient(ellipse at 20% 55%, #e5e4d4 0, transparent 48%),
     radial-gradient(ellipse at 88% 25%, #d7e6df 0, transparent 40%), #e8eee8; }
 .route-map-svg .route-chart-line { fill: none; stroke: #72938c; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 5 7; }
@@ -632,18 +632,33 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
   .game > .game-topline { grid-row: 1; }
   .game > .age-timeline { grid-row: 2; }
 
-  .game > .life-strip {
+  .game > .game-status-column {
     grid-column: 1;
-    grid-row: 3;
+    grid-row: 3 / 5;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    min-height: 0;
+    padding: 0 8px 18px 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+  }
+  .game > .game-status-column > .life-strip {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
+    gap: 8px;
     margin: 0;
     padding: 0;
     border: 0;
+    flex: 0 0 auto;
   }
   .game .life-pane,
-  .game > .growth-panels > .stats-panel {
+  .game > .game-status-column > .growth-panels > .stats-panel {
     min-width: 0;
     background: #faf8f1;
     border: 1px solid var(--line);
@@ -664,7 +679,8 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
     display: grid;
     gap: 6px;
   }
-  .game .route-map { display: grid; gap: 5px; }
+  .game .route-map { display: grid; gap: 5px; max-width: 100%; overflow: hidden; }
+  .game .route-map-svg { max-width: 100%; }
   .game .route-map-zones span { min-width: 0; font-size: 10px; padding: 3px 0; }
   .game .route-map-heading span { min-width: 0; }
   .game .route-map-heading strong { min-width: 0; }
@@ -691,9 +707,7 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
   }
   .game .world-pane #route-trail { justify-content: flex-start; }
 
-  .game > .growth-panels {
-    grid-column: 1;
-    grid-row: 4;
+  .game > .game-status-column > .growth-panels {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto;
@@ -701,18 +715,19 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
     gap: 8px;
     min-height: 0;
     margin: 0;
-    overflow-y: auto;
+    overflow: visible;
+    flex: 0 0 auto;
   }
-  .game > .growth-panels > .stats-panel { min-height: 0; }
-  .game > .growth-panels > .relations-panel { min-height: 0; border-radius: 4px; }
+  .game > .game-status-column > .growth-panels > .stats-panel { min-height: 0; }
+  .game > .game-status-column > .growth-panels > .relations-panel { min-height: 0; border-radius: 4px; }
   .game .relations-heading h2 { font-size: 19px; }
-  .game > .growth-panels .stats-grid {
+  .game > .game-status-column > .growth-panels .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px 16px;
   }
-  .game > .growth-panels .stats-panel h2 { margin-bottom: 7px; }
-  .game > .growth-panels .stat-head { line-height: 1.3; }
-  .game > .growth-panels .stat-track { height: 6px; }
+  .game > .game-status-column > .growth-panels .stats-panel h2 { margin-bottom: 7px; }
+  .game > .game-status-column > .growth-panels .stat-head { line-height: 1.3; }
+  .game > .game-status-column > .growth-panels .stat-track { height: 6px; }
 
   .game > .scene-layout {
     grid-column: 2;
