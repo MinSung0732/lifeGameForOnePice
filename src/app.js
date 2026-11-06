@@ -614,6 +614,7 @@ function renderGame(focusTitle = false, statsUpdated = false, arrivedPlace = "")
   byId("scene-chapter").textContent = `${life.journal.length + 1}번째 장면 · ${scene.timeLabel || passage}`;
   byId("scene-title").textContent = scene.title;
   byId("scene-body").textContent = scene.body;
+  if (focusTitle) byId("scene-layout").querySelector(".scene-copy").scrollTop = 0;
   updateSceneImage(byId("scene-image"), scene.art?.src || ART.deck.src, scene.art?.alt || "");
   byId("route-trail").textContent = (life.travelHistory || [life.birth.home]).join(" → ");
   byId("crew-line").hidden = life.rules !== 3;
