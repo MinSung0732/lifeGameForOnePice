@@ -535,11 +535,12 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
 
 
 /* Relationship overview stays small; its dialog owns long individual rosters. */
-.relations-panel { min-width: 0; padding: 12px 14px; border: 1px solid var(--line); background: #faf8f1; }
+.relations-panel { grid-column: 1 / -1; min-width: 0; padding: 12px 14px; border: 1px solid var(--line); background: #faf8f1; }
 .relations-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .relations-heading h2 { margin: 0; font: 700 20px/1.3 "Batang", serif; color: var(--ink); }
 .relations-heading .text-button { flex: 0 0 auto; font-size: 12px; padding: 3px 0; }
-.relations-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.relations-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.relations-summary:has(#relations-factions-metric:not([hidden])) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .relations-metric { min-width: 0; border: 1px solid var(--line); padding: 7px 10px; background: #fffdf8; }
 .relations-metric span { display: block; font-size: 11px; color: var(--muted); }
 .relations-metric strong { display: block; font: 700 18px/1.35 "Batang", serif; color: var(--ink); }
