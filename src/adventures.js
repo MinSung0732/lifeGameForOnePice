@@ -592,6 +592,11 @@ export function withPower(life, key, choices) {
   const set = life.creationVersion >= 15 && POWER_CHOICES[key];
   if (!set) return choices;
   const haki = Math.max(life.haki.observation, life.haki.armament, life.haki.conqueror);
+  // A move narrated with a named Haki type must require that specific skill.
+  const hakiText = (set.haki?.label || "") + " " + (set.haki?.outcomes?.great?.text || "");
+  const canUseHaki = haki > 0
+    && (!/견문색|기척|속마음/.test(hakiText) || life.haki.observation > 0)
+    && (!/무장색|검게 물든/.test(hakiText) || life.haki.armament > 0);
   const fruitName = life.devilFruit?.replace(/\(.*\)$/, "");
   const syn = life.creationVersion >= 20 && fruitName ? fruitSynergy(fruitName, key) : null;
   const fruitBonus = syn?.tier === "bad"
@@ -599,7 +604,7 @@ export function withPower(life, key, choices) {
     : 12 * Math.max(1, life.fruitMastery) + (syn?.delta || 0);
   const extra = [
     life.devilFruit && set.fruit && ["fruit", set.fruit, fruitBonus],
-    haki && set.haki && ["haki", set.haki, 12 * haki],
+    canUseHaki && set.haki && ["haki", set.haki, 12 * haki],
     !life.devilFruit && set.nonuser && ["nonuser", set.nonuser, 0]
   ].filter(Boolean);
   const power = FRUIT_POWER[fruitName] || FRUIT_POWER[life.devilFruit] || "열매의 힘을 끌어내";
