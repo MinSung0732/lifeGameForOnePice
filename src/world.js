@@ -528,7 +528,7 @@ function crewVoyageScene(life, age) {
 }
 
 export function travelScene(life, age) {
-  if (life.creationVersion >= 21 && life.path === "pirate" && !life.independent && life.role !== "선장") return crewVoyageScene(life, age);
+  if (life.creationVersion >= 21 && life.path === "pirate" && !life.independent && (life.canonCrew || life.role !== "선장")) return crewVoyageScene(life, age);
   if (life.creationVersion >= 20) return distanceProportionalTravelScene(life, age);
   if (life.creationVersion >= 4) return branchingTravelScene(life, age);
   const route = routeFor(life);
