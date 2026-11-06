@@ -674,7 +674,7 @@ export function collectMilestones(before, after) {
       eyebrow: "새로운 인연",
       title: `${after.people.mate.name} · 소꿉친구`,
       sub: "먼 바다에서도 잊지 못할 약속을 나눈 친구가 생겼다",
-      targetId: "life-crew"
+      targetId: "life-relationships"
     });
   } else if (!before.people?.mate?.together && after.people?.mate?.together) {
     list.push({
