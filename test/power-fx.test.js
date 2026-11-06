@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createGame } from "../src/game.js";
 import { withPower } from "../src/adventures.js";
-import { powerFxForChoice } from "../src/power-fx.js";
+import { fruitFxKind, powerFxForChoice } from "../src/power-fx.js";
 
 const character = (observation = 0, armament = 0, conqueror = 0) => {
   const life = createGame("free", 42, {}, 3, 20);
@@ -44,4 +44,21 @@ test("power choices match owned Haki types and two-type moves need both", () => 
   assert.equal(hasHakiChoice(character(0, 1), "danger_capture"), false);
   assert.equal(hasHakiChoice(character(1, 1), "mishap_haki_bet"), true);
   assert.equal(hasHakiChoice(character(1, 1), "danger_capture"), true);
+});
+
+test("milestone VFX can resolve every learned fruit independently of combat choices", () => {
+  assert.equal(fruitFxKind("고무고무 열매"), "fruit-gomu");
+  assert.equal(fruitFxKind("이글이글 열매"), "fruit-mera");
+  assert.equal(fruitFxKind("정체불명의 열매"), "fruit");
+});
+
+test("collectMilestones includes both fruit acquisition and learned Haki", async () => {
+  const { collectMilestones } = await import("../src/game.js");
+  const before = character();
+  const after = structuredClone(before);
+  after.devilFruit = "고무고무 열매";
+  after.haki.observation = 1;
+  const gained = collectMilestones(before, after);
+  assert.ok(gained.some((milestone) => milestone.kind === "fruit" && milestone.title === "고무고무 열매"));
+  assert.ok(gained.some((milestone) => milestone.kind === "haki-observation"));
 });
