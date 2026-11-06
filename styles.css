@@ -536,6 +536,10 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
 /* Desktop reading desk: the life dashboard stays beside the current chapter.
    Narrow screens retain the original stacked layout; long chapters scroll inside their pane. */
 @media (min-width: 1280px) and (min-height: 780px) {
+  html:has(.page-shell.game-screen) {
+    overflow-y: auto;
+    scrollbar-gutter: auto;
+  }
   .page-shell.game-screen {
     max-width: 1920px;
     padding: 0 clamp(28px, 2.5vw, 52px);
