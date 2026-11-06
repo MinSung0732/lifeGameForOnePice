@@ -574,13 +574,14 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
     min-width: 0;
     background: #faf8f1;
     border: 1px solid var(--line);
-    padding: 12px 16px;
+    padding: 10px 14px;
+    border-radius: 4px;
   }
   .game .life-pane.char-pane {
     display: grid;
-    gap: 12px;
+    gap: 8px;
   }
-  .game .char-top-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 16px; }
+  .game .char-top-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; }
   .game .char-goal-cell { grid-column: 1 / -1; }
   .game .char-bot-row { grid-template-columns: 1.25fr .75fr; gap: 16px; }
   .game .char-cell strong { font-size: 13px; }
@@ -588,7 +589,7 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
 
   .game .life-pane.world-pane {
     display: grid;
-    gap: 8px;
+    gap: 5px;
   }
   .game .world-pane .route-trail,
   .game .world-pane .life-crew,
@@ -612,7 +613,7 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: 8px;
     min-height: 0;
     margin: 0;
     overflow-y: auto;
@@ -620,44 +621,82 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
   .game > .growth-panels > .stats-panel { min-height: 0; }
   .game > .growth-panels .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px 18px;
+    gap: 6px 16px;
   }
-  .game > .growth-panels .stats-panel h2 { margin-bottom: 10px; }
+  .game > .growth-panels .stats-panel h2 { margin-bottom: 7px; }
   .game > .growth-panels .stat-head { line-height: 1.3; }
   .game > .growth-panels .stat-track { height: 6px; }
 
   .game > .scene-layout {
     grid-column: 2;
     grid-row: 3 / 5;
-    grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
-    align-items: start;
-    gap: 22px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: clamp(190px, 28vh, 310px) minmax(0, 1fr);
+    gap: 14px;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-    padding: 16px;
+    padding: 14px 18px;
     border: 1px solid var(--line);
+    border-radius: 4px;
     background: #faf8f1;
   }
+  .game .scene-art { min-height: 0; }
   .game .scene-art img {
     width: 100%;
-    height: auto;
-    max-height: min(43vh, 420px);
-    aspect-ratio: 1672 / 941;
+    height: 100%;
+    max-height: none;
     object-fit: cover;
+    object-position: center;
   }
   .game .scene-copy {
-    height: 100%;
     min-height: 0;
     overflow-y: auto;
-    padding-right: 8px;
+    padding: 0 6px 0 0;
     scrollbar-gutter: stable;
   }
-  .game .scene-copy h1 { font-size: clamp(26px, 1.8vw, 33px); }
-  .game .scene-body { font-size: 16px; line-height: 1.7; }
-  .game .choice { padding: 9px 8px; }
-  .game.many-choices .choices { display: block; }
-  .game.many-choices .choice:nth-child(odd) { border-right: 0; }
+  .game .scene-copy h1 {
+    margin-top: 4px;
+    padding-bottom: 9px;
+    font-size: clamp(26px, 1.8vw, 34px);
+  }
+  .game .scene-body {
+    max-width: 78ch;
+    margin: 10px 0 16px;
+    font-size: 17px;
+    line-height: 1.65;
+  }
+  .game .choices,
+  .game.many-choices .choices {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    border: 0;
+  }
+  .game .choices > .choice {
+    min-height: 70px;
+    padding: 10px 13px;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--sea);
+    border-radius: 4px;
+    background: #fffdf8;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .game .choices > .choice:hover,
+  .game .choices > .choice:focus-visible {
+    background: #e9eee9;
+    border-color: var(--sea);
+  }
+  .game .choices > .choice:disabled {
+    border-left-color: var(--line);
+    background: #e7e4dd;
+  }
+  .game .choices > .choice:last-child:nth-child(odd),
+  .game .choices > .crew-name-form {
+    grid-column: 1 / -1;
+  }
+  .game.many-choices .choice:nth-child(odd) { border-right: 1px solid var(--line); }
+  .game .scene-hint { margin-top: 12px; }
 }
 
 @media (max-width: 1000px) {
