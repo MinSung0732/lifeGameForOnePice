@@ -7,6 +7,8 @@ export const ERA_YEARS = 24;
 export const ERA_WAR = 10;
 export const ERA_REUNION = 13;
 export const stretched = (life) => life.creationVersion >= 16;
+// Legacy saves can opt in at their next action without changing their recorded past.
+export const followsCaptain = (life) => life.creationVersion >= 21 || life.creationVersion === 20 && Number.isInteger(life.crewFollowFrom);
 // The age at which Luffy sets out: two canon years before the present.
 export const eraStart = (life) => life.birth.yearsBeforeCurrent - 2;
 export const presentAge = (life) => stretched(life) ? eraStart(life) + ERA_YEARS : life.birth.yearsBeforeCurrent;
@@ -367,7 +369,7 @@ export function moveTo(life, place) {
 // Moves a ship to the next adjacent or logical port on its route when leaving an island.
 export function sailToNextPort(life) {
   // The Straw Hats depart at their canon beats, not at random side events.
-  if (life.creationVersion >= 21 && life.canonCrew === "밀짚모자 일당" && !life.independent) return life.location;
+  if (followsCaptain(life) && life.canonCrew === "밀짚모자 일당" && !life.independent) return life.location;
   const cur = life.location;
   const v20Routes = ROUTES_V20[cur];
   let dest;
@@ -528,7 +530,7 @@ function crewVoyageScene(life, age) {
 }
 
 export function travelScene(life, age) {
-  if (life.creationVersion >= 21 && life.path === "pirate" && !life.independent && (life.canonCrew || life.role !== "선장")) return crewVoyageScene(life, age);
+  if (followsCaptain(life) && life.path === "pirate" && !life.independent && (life.canonCrew || life.role !== "선장")) return crewVoyageScene(life, age);
   if (life.creationVersion >= 20) return distanceProportionalTravelScene(life, age);
   if (life.creationVersion >= 4) return branchingTravelScene(life, age);
   const route = routeFor(life);
