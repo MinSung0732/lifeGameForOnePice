@@ -1,3 +1,4 @@
+import { powerFxForChoice } from "./power-fx.js";
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, collectMilestones, createGame, getScene, personalitySummary, replay, saveRecord } from "./game.js";
 import { crewNews, crewVesselKind, eraStart, presentAge, stretched } from "./world.js";
 import { peopleSummary } from "./people.js";
@@ -876,50 +877,6 @@ async function playDice({ roll, target, success, tier }, keepOverlay = false) {
     await pause(120);
     overlay.replaceChildren();
   }
-}
-
-function fruitFxKind(fruitText = "") {
-  if (fruitText.includes("고무고무")) return "fruit-gomu";
-  if (fruitText.includes("이글이글")) return "fruit-mera";
-  if (fruitText.includes("꽃꽃")) return "fruit-hana";
-  if (fruitText.includes("수술수술")) return "fruit-ope";
-  if (fruitText.includes("동강동강")) return "fruit-bara";
-  if (fruitText.includes("어둠어둠")) return "fruit-yami";
-  if (fruitText.includes("고요고요")) return "fruit-nagi";
-  if (fruitText.includes("쿠릉쿠릉")) return "fruit-goro";
-  if (fruitText.includes("얼음얼음")) return "fruit-hie";
-  if (fruitText.includes("모래모래")) return "fruit-suna";
-  if (fruitText.includes("번쩍번쩍")) return "fruit-pika";
-  if (fruitText.includes("뭉게뭉게")) return "fruit-moku";
-  if (fruitText.includes("눈눈")) return "fruit-yuki";
-  if (fruitText.includes("가스가스")) return "fruit-gasu";
-  if (fruitText.includes("흔들흔들")) return "fruit-gura";
-  if (fruitText.includes("실실")) return "fruit-ito";
-  if (fruitText.includes("떡떡")) return "fruit-mochi";
-  if (fruitText.includes("도르도르")) return "fruit-doru";
-  if (fruitText.includes("불사조")) return "fruit-ori";
-  return "fruit";
-}
-
-function powerFxForChoice(state, choiceId, chosenLabel = "", outcome = "", chosenRisk = "") {
-  const id = String(choiceId || "").split(":")[0];
-  if (id === "power_fruit" || id === "fruit" || chosenLabel.startsWith("[열매]") || chosenLabel.includes("열매의 힘")) {
-    const fruitName = (state.devilFruit || "악마의 열매").replace(/\(.*\)$/, "");
-    const synBadge = chosenRisk.includes("상성 유리") ? " · 상성 유리" : chosenRisk.includes("상성 불리") ? " · 상성 불리" : "";
-    return { kind: fruitFxKind(fruitName), badge: `능력 발동 · ${fruitName}${synBadge}` };
-  }
-  if (id === "power_haki" || id === "observe" || id === "armor" || chosenLabel.startsWith("[패기]") || /^(견문색|무장색|패왕색)/.test(chosenLabel)) {
-    const text = `${chosenLabel} ${outcome}`;
-    const hasConq = state.haki?.conqueror > 0 && (/패왕색|압도|터뜨려/.test(text) || (/기세/.test(text) && !/견문색|무장색/.test(text)));
-    const hasArm = /무장색|검게 물든|칼날을 맞받/.test(text) || id === "armor";
-    const hasObs = /견문색|기척|속마음/.test(text) || id === "observe";
-    const kind = hasConq ? "haki-conqueror" : hasArm && hasObs ? (state.haki?.armament >= state.haki?.observation ? "haki-armament" : "haki-observation")
-      : hasArm ? "haki-armament" : hasObs ? "haki-observation"
-        : state.haki?.conqueror ? "haki-conqueror" : state.haki?.armament ? "haki-armament" : "haki-observation";
-    const label = { "haki-conqueror": "패왕색 패기", "haki-armament": "무장색 패기", "haki-observation": "견문색 패기" }[kind];
-    return { kind, badge: `패기 발동 · ${label}` };
-  }
-  return null;
 }
 
 async function playChanges(changes, outcome = "", chosenLabel = "", powerFx = null, keepOverlay = false) {
