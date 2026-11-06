@@ -391,18 +391,23 @@ function canChoose(choice, life) {
 
 export function getScene(life) {
   if (life.finished || (life.rules !== 3 && life.index >= scenes.length)) return null;
-  const card = childhoodScene(life, sceneCard(life));
+  const rawCard = sceneCard(life);
+  if (!rawCard) return null;
+  const card = childhoodScene(life, rawCard);
+  if (!card) return null;
   const artKey = typeof card.art === "function" ? card.art(life) : card.art;
   const age = typeof card.age === "function" ? card.age(life) : card.age;
+  const artObj = (artKey && ART[artKey] && ART[artKey].src) ? ART[artKey] : ART.deck;
   return {
     id: card.id, act: card.act, age, title: card.title,
     manual: Boolean(card.manual || life.creationVersion >= 4 && card.canon && !card.choices), timeLabel: card.timeLabel || null,
     body: personalize(typeof card.body === "function" ? card.body(life) : card.body, life.birth.name, life.creationVersion),
-    art: (artKey && ART[artKey]) || ART.deck, canon: card.canon || null,
+    art: artObj, canon: card.canon || null,
+    canonDaily: Boolean(card.canonDaily), yearly: Boolean(card.yearly),
     choices: (card.choices || []).filter((choice) => !choice.when || choice.when(life))
       .map((choice) => {
         const cost = typeof choice.cost === "function" ? choice.cost(life) : choice.cost || 0;
-        const risk = typeof choice.risk === "function" ? choice.risk(life) : choice.risk;
+        const risk = typeof choice.risk === "function" ? choice.risk(life) : choice.risk || "";
         const target = diceTarget(choice, life);
         const shown = life.supplies < cost && !risk.includes(`물자 ${cost} 필요`) ? `${risk} · 물자 ${cost} 필요` : risk;
         const diceLabel = choice.diceLabel || "조건 부족";

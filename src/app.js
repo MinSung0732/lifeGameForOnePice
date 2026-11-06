@@ -507,6 +507,7 @@ function syncCrewFx() {
 function isCanonStory(scene) {
   if (!scene) return false;
   if (scene.canonDaily || (scene.id && scene.id.startsWith("life_canon_daily_"))) return false;
+  if (/^life_(duty|danger|mishap|person|island|meet|travel|leave_home|free_rank|first_bounty|marine_invitation|crew_invite)/.test(scene.id)) return false;
   if (/^canon_/.test(scene.id) && !scene.id.startsWith("canon_strawhat_invite")) return true;
   if (/^life_old_/.test(scene.id)) return true;
   if (/^life_(roger|marineford|timeskip|new_era|fisher_tiger|tiger_liberation|tom|shanks)_news/.test(scene.id)) return true;
@@ -667,7 +668,7 @@ function renderGame(focusTitle = false, statsUpdated = false, arrivedPlace = "")
     button.addEventListener("click", () => choice.naming ? askCrewName(choice) : advanceLife(choice.id));
     choices.append(button);
   }
-  if (scene.manual) {
+  if (scene.manual && !scene.choices.length) {
     const button = document.createElement("button");
     button.className = "choice canon-continue";
     button.type = "button";
@@ -1513,7 +1514,11 @@ async function advanceLife(choiceId) {
     if (life.finished) renderEnding();
     else renderGame(true, statsUpdated, before.location !== life.location ? life.location : "");
   } catch (error) {
+    playingChanges = false;
     byId("scene-hint").textContent = error.message;
+    try {
+      renderGame(false);
+    } catch {}
     scheduleObservation();
   }
 }

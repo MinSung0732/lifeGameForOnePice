@@ -25,7 +25,7 @@ function wound(life, damage, cause) {
   return true;
 }
 
-const MISHAPS = [
+export const MISHAPS = [
   { id: "feast", art: "mishapFeast", when: atSea, title: "고기 쟁탈 연회",
     body: (life) => `섬에 닿은 첫날 밤, 누가 시작했는지 모를 연회가 터졌다! 갑판 한가운데 놓인 해왕류 고기 한 덩이를 두고 모두가 눈빛을 번뜩였다. ${eun(life.birth.name)} 접시를 든 채 기회를 노렸다.`,
     choices: [
@@ -153,9 +153,9 @@ const MISHAPS = [
     body: (life) => `${ig(life.people.mate.name)} 갑판 끝에 올라서더니 세상에서 제일 큰 고기를 먹고 말겠다고 바다를 향해 외쳤다. 지나가던 배의 선원들까지 박수를 쳤다.`,
     choices: [
       { id: "cheer", label: "같이 외치며 응원한다", risk: "친구와의 유대 +10 · 자유로움이 자람", personality: { freedom: 6, empathy: 4 },
-        apply: (life) => { life.friendBond += 10; life.people.mate.bond = (life.people.mate.bond || 0) + 10; return "둘은 목이 쉴 때까지 꿈을 외쳤다. 그날부터 고기는 둘의 암호가 됐다."; } },
+        apply: (life) => { life.friendBond += 10; if (life.people?.mate) life.people.mate.bond = (life.people.mate.bond || 0) + 10; return "둘은 목이 쉴 때까지 꿈을 외쳤다. 그날부터 고기는 둘의 암호가 됐다."; } },
       { id: "tease", label: "현실을 보라며 놀린다", risk: "친구와의 유대 -10", personality: { caution: 5, empathy: -4 },
-        apply: (life) => { life.friendBond -= 10; life.people.mate.bond = (life.people.mate.bond || 0) - 10; return "친구는 삐쳐서 사흘 동안 말을 하지 않았다. 나흘째에 고기를 내밀자 겨우 풀렸다."; } }
+        apply: (life) => { life.friendBond -= 10; if (life.people?.mate) life.people.mate.bond = (life.people.mate.bond || 0) - 10; return "친구는 삐쳐서 사흘 동안 말을 하지 않았다. 나흘째에 고기를 내밀자 겨우 풀렸다."; } }
     ] },
   { id: "fruit_show", art: (life) => life?.creationVersion >= 20 ? "workbenchFruitPractice" : "deck", when: (life) => Boolean(life.devilFruit) && atSea(life), title: "능력 자랑의 대가",
     body: (life) => `${eun(life.birth.name)} 항구 아이들 앞에서 열매의 힘을 자랑하다 발을 헛디뎠다. 첨벙! 힘이 쭉 빠진 몸이 그대로 가라앉기 시작했다.`,
@@ -177,7 +177,7 @@ const MISHAPS = [
     ] }
 ];
 
-const DANGERS = [
+export const DANGERS = [
   { id: "sea_king", art: "dangerSeaKing", when: atSea, title: "해왕류의 습격",
     body: "잔잔하던 바다가 갑자기 솟아올랐다. 배보다 큰 해왕류가 아가리를 벌리고 뱃머리를 노렸다. 동료들의 비명이 바람에 묻혔다.",
     choices: [

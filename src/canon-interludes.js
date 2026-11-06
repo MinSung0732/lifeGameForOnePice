@@ -3,7 +3,7 @@ import { eraAdventure } from "./adventures.js";
 import { personalBeat } from "./people.js";
 
 const DAYS = ["이틀 뒤", "사흘 뒤", "며칠 뒤", "나흘 뒤", "한 주쯤 뒤"];
-const MOMENTS = [
+export const MOMENTS = [
   { title: "다시 묶은 밧줄", art: "deck", body: (life) => `${life.location}의 부두에서 낡은 밧줄을 새것으로 바꿨다. 먼 바다의 큰 사건이 들려와도 배는 오늘의 매듭으로 떠났다.`,
     choices: [
       { id: "tighten", label: "이중 매듭으로 단단히 묶는다", risk: "기술 +5", personality: { caution: 4 }, apply: (s) => { s.skill += 5; return "거친 파도에도 풀리지 않도록 단단히 결속했다."; } },
@@ -163,7 +163,7 @@ const MOMENTS = [
 
 
 // Rule 11 adds dailies with their own small choices, so long stretches of the canon era are not all reading.
-const MOMENTS_V11 = [
+export const MOMENTS_V11 = [
   { title: "갈매기가 떨어뜨린 신문", art: "deck", body: "뉴스 쿠가 떨어뜨린 신문 사이로 새 수배서 몇 장이 미끄러져 나왔다. 처음 보는 얼굴과 낯익은 얼굴이 섞여 있었다.",
     choices: [{ id: "pin", label: "수배서를 부두 게시판에 붙인다", risk: "지역의 신뢰가 오를 수 있음", personality: { loyalty: 3 }, apply: (s) => { s.trust += 5; return "사람들이 게시판 앞에 모여 이름을 하나씩 읽었다."; } },
       { id: "keep", label: "몰래 한 장 챙겨 둔다", risk: "언젠가 쓸모가 있을지 모름", personality: { freedom: 3 }, apply: (s) => { s.skill += 3; return "접어 넣은 수배서의 얼굴을 밤마다 한 번씩 떠올렸다."; } }] },
@@ -187,7 +187,7 @@ const MOMENTS_V11 = [
       { id: "worry", label: "가족에게 조심하라는 편지를 쓴다", risk: "양육자와의 유대가 오를 수 있음", personality: { caution: 4 }, apply: (s) => { s.bond += 5; return "답장에는 오히려 이쪽 걱정이 가득했다."; } }] }
 ];
 
-const MOMENTS_V20 = [
+export const MOMENTS_V20 = [
   {
     title: "갑작스러운 급변 폭풍", art: "lifeStorm",
     body: (life) => `${life.location} 인근 해역에서 기상이 급변하며 거대한 용오름과 폭풍우가 몰아쳤다. 바닷물이 갑판을 집어삼킬 듯 솟구쳤다.`,

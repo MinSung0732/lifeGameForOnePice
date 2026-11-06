@@ -2011,3 +2011,75 @@ test("열매 먹기, 패기 습득, 현상금 획득 시 마일스톤 생성 및
   assert.match(appCode, /function flyCardTo/, "flyCardTo가 정의되어 있어야 한다");
   assert.match(appCode, /anim\?\.finished/, "flyCardTo에서 finished 프로퍼티 방어 처리가 되어 있어야 한다");
 });
+
+test("선택지 및 직무 이벤트 유효성, 원작 뱃지 오분류 방지, 렌더링 방어 로직 검증", async () => {
+  const { createGame, getScene, advance } = await import("../src/game.js");
+  const { DUTIES, DANGERS, MISHAPS } = await import("../src/adventures.js");
+  const { MOMENTS, MOMENTS_V11, MOMENTS_V20 } = await import("../src/canon-interludes.js");
+  const { readFileSync } = await import("node:fs");
+
+  const dummy = createGame("free", 1, { species: "인간" }, 3, 20);
+  dummy.path = "marine";
+  dummy.rankTier = 1;
+  dummy.trust = 50;
+  dummy.supplies = 50;
+  dummy.health = 50;
+  dummy.skill = 50;
+
+  // 1. 모든 직무(DUTIES), 위험(DANGERS), 사고(MISHAPS), 막간(MOMENTS) 선택지의 apply/fail 실행 안정성 검증
+  const pools = [
+    { name: "DUTIES", list: DUTIES },
+    { name: "DANGERS", list: DANGERS },
+    { name: "MISHAPS", list: MISHAPS },
+    { name: "MOMENTS", list: MOMENTS },
+    { name: "MOMENTS_V11", list: MOMENTS_V11 },
+    { name: "MOMENTS_V20", list: MOMENTS_V20 }
+  ];
+
+  for (const { name, list } of pools) {
+    for (const item of list) {
+      if (!item.choices) continue;
+      for (const ch of item.choices) {
+        assert.ok(ch.id, `${name} ${item.id} 선택지에 id가 있어야 한다`);
+        assert.ok(ch.label, `${name} ${item.id} 선택지에 label이 있어야 한다`);
+        if (typeof ch.apply === "function") {
+          const clone = structuredClone(dummy);
+          const res = ch.apply(clone);
+          assert.ok(typeof res === "string" && res.length > 0, `${name} ${item.id}:${ch.id} apply는 비어있지 않은 문자열을 반환해야 한다`);
+        }
+        if (typeof ch.fail === "function") {
+          const clone = structuredClone(dummy);
+          const res = ch.fail(clone);
+          assert.ok(typeof res === "string" && res.length > 0, `${name} ${item.id}:${ch.id} fail은 비어있지 않은 문자열을 반환해야 한다`);
+        }
+      }
+    }
+  }
+
+  // 2. 해군 연안 초계(marine_patrol_intercept) 장면 렌더링 무결성 검증
+  let patrolLife = createGame("free", 1, { species: "인간" }, 3, 20);
+  patrolLife.path = "marine";
+  patrolLife.rankTier = 0;
+  patrolLife.leftHome = true;
+  patrolLife.location = "위스키 피크";
+  patrolLife.age = 35;
+  patrolLife.canonGapRemaining = 2;
+  patrolLife.canonDailyIndex = 0;
+  const patrolScene = getScene(patrolLife);
+  assert.equal(patrolScene.id, "life_duty_marine_patrol_intercept");
+  assert.equal(patrolScene.manual, false, "선택지가 있는 직무 장면은 manual이 false여야 한다");
+  assert.ok(patrolScene.choices.length >= 2, "선택지가 정상적으로 제공되어야 한다");
+  assert.ok(patrolScene.art && patrolScene.art.src, "아트 오브젝트가 유효해야 한다");
+  const advancedPatrol = advance(patrolLife, patrolScene.choices[0].id);
+  assert.ok(advancedPatrol, "직무 선택지로 advance가 정상 실행되어야 한다");
+
+  // 3. app.js 내 manual 버튼 방어 조건 및 원작 분류 방어 검증
+  const appCode = readFileSync("src/app.js", "utf8");
+  assert.match(appCode, /if\s*\(scene\.manual\s*&&\s*!scene\.choices\.length\)/, "선택지가 존재할 때는 원작 계속 버튼이 중복 생성되지 않아야 한다");
+  assert.match(appCode, /life_\(duty\|danger\|mishap/, "일상/직무/위험 사건은 원작 스토리로 분류되지 않아야 한다");
+  assert.match(appCode, /renderGame\(false\)/, "선택 실패 예외 발생 시 화면을 즉시 재렌더링하여 정상 선택지를 복구해야 한다");
+
+  // 4. index.html 최신 버전 쿼리 검증
+  const htmlCode = readFileSync("index.html", "utf8");
+  assert.match(htmlCode, /app\.js\?v=20261107-2/, "index.html에 최신 캐시버스팅 파라미터가 적용되어 있어야 한다");
+});
