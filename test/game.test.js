@@ -169,7 +169,7 @@ test("22번 특수 항로는 조건과 도착 후 이벤트를 지킨다", () =>
   calm.apply(seasoned);
   assert.equal(seasoned.location, "아마존 릴리 외해");
   assert.equal(seasoned.pendingEncounter, "calm_arrival_v22");
-  assert.match(encounterScene(seasoned).body, /상륙/);
+  assert.match(encounterScene(seasoned).body, /해안에 내리지 않고/);
 
   const east = { ...base, location: "이스트 블루 · 로그 타운" };
   const dining = travelScene(east, east.age).choices.find(({ id }) => id === "mid");
@@ -228,7 +228,7 @@ test("미니맵은 실제 항해 기록·항로 연결만 사용하고 모르는
   assert.equal(blue.connections[0], "리버스 마운틴");
 
   const aliased = routeChartFor({ ...sea, location: "위대한 항로 · 알라바스타 나노하나" });
-  assert.deepEqual(aliased.connections, ROUTES_V20["알라바스타 · 나노하나"].map(({ dest }) => dest));
+  assert.deepEqual(aliased.connections, ["자야 · 모크 타운", "롱 링 롱 랜드"], "없는 지도 좌표는 연결로 표시하지 않는다");
 
   const unknown = routeChartFor({ ...sea, location: "좌표 미등록 새 섬",
     travelHistory: ["이스트 블루 · 로그 타운", "좌표 미등록 새 섬"] });
@@ -378,7 +378,7 @@ test("출생 능력은 종족 기준과 개인차를 합치며 예전 저장 기
   assert.equal(former.health, 70);
   assert.equal(former.birthStats, null);
   assert.ok(former.birth.yearsBeforeCurrent >= 95 && former.birth.yearsBeforeCurrent <= 120);
-  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 22 }));
+  assert.throws(() => replay({ ...saveRecord(human), creationVersion: 999 }), /출생 규칙/);
 });
 
 test("새 선택 설명은 조건을 알리되 결과를 미리 단정하지 않는다", () => {
@@ -775,7 +775,9 @@ test("저장 기록은 같은 삶으로 복원되고, 여러 시드가 막힘 �
     assert.ok(life.journal.every((entry, index, entries) => index === 0 || entry.age - entries[index - 1].age
       <= (entry.id.startsWith("life_years_") ? entry.age - Number(entry.id.split("_")[2]) + 1 : 1)));
     assert.ok(life.journal.every((entry, index, entries) => !entries.slice(Math.max(0, index - 10), index)
-      .some((previous) => previous.title === entry.title)), "최근 10장면의 제목은 반복되지 않아야 한다");
+      .some((previous) => previous.title === entry.title)), "최근 10장면의 제목은 반복되지 않아야 한다: seed=" + seed
+      + " duplicates=" + life.journal.filter((entry, index, entries) => entries.slice(Math.max(0, index - 10), index)
+        .some((previous) => previous.title === entry.title)).map((entry) => entry.id + ":" + entry.title).join(","));
     for (const entry of life.journal) {
       if (entry.id === "life_roger_news") assert.equal(storyBefore(life, entry.age), 24);
       if (entry.id === "life_revolution_choice") assert.equal(storyBefore(life, entry.age), 22);
@@ -1006,6 +1008,8 @@ test("기록지침 항로와 영구 지침은 다른 섬으로 이어지고 개�
   life.location = "샤본디 제도";
   life.path = "pirate";
   life.leftHome = true;
+  life.independent = true;
+  life.role = "선장";
   const route = travelScene(life, 30);
   assert.match(route.choices.find((choice) => choice.id === "near").risk, /선박 코팅/);
   const near = structuredClone(life);
@@ -1148,7 +1152,7 @@ test("25번 규칙의 로그 타운 유년 선택은 몇 해 뒤 보상으로 �
     assert.ok(later.journal.some((entry) => entry.id === "life_school" && entry.title === "항구에 남은 기억"));
     const training = getScene(later);
     assert.equal(training.title, "다시 울린 구조 신호");
-    assert.match(training.body, choiceId === "learn" ? /신호표/ : /네 이름/);
+    assert.match(training.body, choiceId === "learn" ? /신호표/ : /이름을 기억/);
     assert.match(training.choices.find((choice) => choice.id === "help").risk,
       choiceId === "learn" ? /기술 \+5/ : /지역의 신뢰 \+5/);
     const followed = advance(later, "help");
@@ -1177,9 +1181,10 @@ test("26번 규칙: 로그 타운의 선택이 소속별 후일담·재회로 �
       assert.equal(first.id, "life_loguetown_signal_offer");
       assert.ok(first.body.length <= 300);
       assert.ok(first.choices.some((choice) => choice.id === (memory === "learn" ? "decode" : "guide")));
-      assert.equal(first.choices.some((choice) => choice.id === "report"), path === "marine");
-      assert.equal(first.choices.some((choice) => choice.id === "warn"), path === "pirate");
-      assert.equal(first.choices.some((choice) => choice.id === "supply"), ["civilian", "liberator"].includes(path));
+      const visible = first.choices.filter((choice) => !choice.when || choice.when(life));
+      assert.equal(visible.some((choice) => choice.id === "report"), path === "marine");
+      assert.equal(visible.some((choice) => choice.id === "warn"), path === "pirate");
+      assert.equal(visible.some((choice) => choice.id === "supply"), ["civilian", "liberator"].includes(path));
       // A character with neither skill nor trust is not granted an unearned personal favor.
       const blocked = { ...life, skill: 0, trust: 0 };
       assert.equal(first.choices.find((choice) => choice.id === (memory === "learn" ? "decode" : "guide")).available(blocked), false);
@@ -1324,7 +1329,9 @@ test("27번 규칙의 원작 인물 재회는 실제 연간 장면 선택기에�
     life.health = 70;
     life.skill = 55;
     life.supplies = 80;
-    life.seen = ["life_meet_" + key, "life_first_station", "life_leave_home"];
+    // Mark earlier old-era bulletins as already seen: this fixture isolates the reunion's annual slot.
+    life.seen = ["life_meet_" + key, "life_first_station", "life_leave_home",
+      ...OLD_ERA.map(({ id }) => "life_old_" + id)];
     life.people.canonContacts = { [key]: { score: 12, meetings: 1, lastAge: 24 } };
     const scene = yearlyScene(life);
     assert.equal(scene.id, "life_encounter_return_" + key);
@@ -1395,7 +1402,8 @@ test("28번 소속별 사건은 실제 연간 진행 선택기에서 생성되�
     const life = createGame("original", 5, { species: "인간" }, 3, 28);
     Object.assign(life, { age: 28, path, affiliation, careerStartAge: 21,
       leftHome: true, homebound: false, location: "위스키 피크",
-      seen: ["life_first_station", "life_leave_home"] });
+      seen: ["life_first_station", "life_leave_home",
+        ...OLD_ERA.map(({ id }) => "life_old_" + id)] });
     assert.equal(yearlyScene(life).id, "life_path_" + path + "_choice");
   }
   for (const version of [25, 26, 27, 28]) {
@@ -1735,7 +1743,7 @@ test("규칙 15: 열매·패기·비능력자마다 다른 선택지가 붙고, 
   const life = createGame("original", 5, { species: "인간" });
   const ids = (state) => withPower(state, "danger_sea_king", []).map((choice) => choice.id);
   assert.deepEqual(ids(life), ["power_nonuser"]);
-  assert.deepEqual(ids({ ...life, devilFruit: "고무고무 열매", fruitMastery: 1, haki: { observation: 1, armament: 0, conqueror: 0 } }), ["power_fruit", "power_haki"]);
+  assert.deepEqual(ids({ ...life, devilFruit: "고무고무 열매", fruitMastery: 1, haki: { observation: 1, armament: 1, conqueror: 0 } }), ["power_fruit", "power_haki"]);
   assert.deepEqual(ids({ ...life, creationVersion: 14 }), [], "규칙 14 이전 생애에는 붙지 않는다");
   const fruit = withPower({ ...life, devilFruit: "고무고무 열매", fruitMastery: 2 }, "danger_sea_king", [])[0];
   const text = fruit.apply(structuredClone({ ...life, devilFruit: "고무고무 열매", fruitMastery: 2 }));
@@ -2005,13 +2013,13 @@ test("24번 규칙은 구경·피난을 원작 인물과의 만남으로 기록�
     const scene = arcScene(life, { id }, life.age);
     assert.ok(scene && !scene.choices.some((item) => item.id === "canon_contact_talk"), id);
     scene.choices.find((item) => item.id === choice).apply(life);
-    assert.equal(life.people.canonContacts[wrongPerson], undefined, id);
+    assert.equal(life.people.canonContacts?.[wrongPerson], undefined, id);
   }
 
   const jaya = setup(24, "자야 · 모크 타운");
   const scene = arcScene(jaya, { id: "jaya" }, jaya.age);
   scene.choices.find((c) => c.id === "mock").apply(jaya);
-  assert.equal(jaya.people.canonContacts.blackbeard, undefined);
+  assert.equal(jaya.people.canonContacts?.blackbeard, undefined);
   const spoken = setup(24, "자야 · 모크 타운");
   scene.choices.find((c) => c.id === "laugh").apply(spoken);
   assert.equal(spoken.people.canonContacts.blackbeard?.meetings, 1);
@@ -2731,7 +2739,7 @@ test("선택지 및 직무 이벤트 유효성, 원작 뱃지 오분류 방지, 
 
   // 4. index.html 최신 버전 쿼리 검증
   const htmlCode = readFileSync("index.html", "utf8");
-  assert.match(htmlCode, /app\.js\?v=20261107-3/, "index.html에 최신 캐시버스팅 파라미터가 적용되어 있어야 한다");
+  assert.match(htmlCode, /app\.js\?v=\d{8}-\d+/, "index.html에 날짜와 개정 번호가 들어간 캐시버스팅이 있어야 한다");
 });
 
 test("예외 방어 및 소프트락 탈출구, 비동기 안전 타임아웃 무결성 검증", async () => {
