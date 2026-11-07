@@ -5,7 +5,7 @@ import { canonAge, canonCount, canonIfAfter, canonScene, canonCrewDestination } 
 import { preCanonAge, preCanonCount, preCanonScene, preCanonCrewDestination } from "./canon-before.js";
 import { canonGapFor, canonInterludeScene } from "./canon-interludes.js";
 import { childhoodScene } from "./childhood.js";
-import { canonRelationshipSummary, pendingCanonContactScene } from "./canon-relationships.js";
+import { canonRelationshipEntries, pendingCanonContactScene } from "./canon-relationships.js";
 import { twist } from "./twists.js";
 
 export const SAVE_VERSION = 1;
@@ -685,15 +685,15 @@ export function collectMilestones(before, after) {
       targetId: "life-crew"
     });
   }
-  const prevCanon = canonRelationshipSummary(before);
-  const nextCanon = canonRelationshipSummary(after);
-  if (nextCanon && nextCanon !== prevCanon) {
-    const [who, rel, ...rest] = nextCanon.split(" / ")[0].split(" · ");
+  const previousContacts = new Map(canonRelationshipEntries(before).map(({ name, role }) => [name, role]));
+  for (const { name, role } of canonRelationshipEntries(after)) {
+    if (previousContacts.get(name) === role) continue;
+    const [relationship, ...details] = role.split(" · ");
     list.push({
       kind: "canon-bond",
       eyebrow: "원작 인물 인연",
-      title: `${who} · ${rel}`,
-      sub: [...rest, "원작 인물과의 관계가 기록됐다"].filter(Boolean).join(" · "),
+      title: `${name} · ${relationship}`,
+      sub: [...details, "원작 인물과의 관계가 기록됐다"].join(" · "),
       targetId: "life-relationships"
     });
   }
