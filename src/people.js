@@ -100,7 +100,10 @@ const BEATS = [
     }
   },
   {
-    id: "life_people_mate_reunion", when: (life, age) => life.people.mate && life.people.mate.fate !== "잃음" && life.seen.includes("life_people_mate_crisis") && age >= span(life, 58, 300),
+    id: "life_people_mate_reunion", when: (life, age) => life.people.mate && life.people.mate.fate !== "잃음"
+      && life.seen.includes("life_people_mate_crisis") && age >= span(life, 58, 300)
+      && (life.creationVersion < 31 || life.people.mate.together && life.people.mate.path === life.path && !life.retired && !life.homebound
+        || !["스카이피아", "엘바프", "하치노스", "아마존 릴리 외해"].some((place) => life.location.includes(place))),
     scene: (life) => {
       const mate = life.people.mate;
       const name = mate.name;
@@ -280,6 +283,8 @@ const BEATS = [
     when: (life, age) => {
       if (life.creationVersion < 31 || !["후계", "자기 길"].includes(life.people.ward?.fate)
         || !life.seen.includes("life_people_ward_meet") || !life.seen.includes("life_people_ward_return")) return false;
+      // shortcut: indirect news arrives at ordinary ports, not isolated seas; revisit with postal routes.
+      if (["스카이피아", "엘바프", "하치노스", "아마존 릴리 외해"].some((place) => life.location.includes(place))) return false;
       const returned = life.journal.find((entry) => entry.id === "life_people_ward_return");
       return returned && age >= returned.age + span(life, 3, 15);
     },
@@ -366,7 +371,7 @@ export function peopleSummary(life) {
   const stillTogether = mate?.together && mate.fate === "곁"
     && (life.creationVersion < 31 || mate.path === life.path && !life.retired && !life.homebound);
   const friendLine = mate
-    ? `옛 친구 ${mate.name}(${stillTogether ? "같은 배를 탄 동료"
+    ? `옛 친구 ${mate.name}(${stillTogether ? life.creationVersion >= 31 ? "함께 항해한 친구" : "끝까지 같은 배를 탄 동료"
       : life.creationVersion >= 31 && mate.fate === "곁" ? "한때 함께 일한 친구"
         : MATE_FATES[mate.fate]})`
     : life.friendName

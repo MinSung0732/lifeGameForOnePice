@@ -1591,6 +1591,9 @@ test("31번 규칙은 소속이 달라진 옛 친구를 방문객이 아닌 편�
   assert.match(peopleSummary(formerlyTogether), /한때 함께 일한 친구/);
   assert.ok(!peopleSummary({ ...formerlyTogether, creationVersion: 30 }).includes("한때 함께 일한 친구"));
   assert.equal(personalBeat({ ...life, ending: "death" }, 65, { age: 65 }), null);
+  assert.notEqual(personalBeat({ ...life, location: "위대한 항로 상공 · 스카이피아" }, 65, { age: 65 })?.id,
+    "life_people_mate_reunion", "고립된 장소에 갑작스러운 답장을 만들지 않는다");
+  assert.match(peopleSummary({ ...formerlyTogether, creationVersion: 30 }), /끝까지 같은 배를 탄 동료/);
 });
 
 test("31번 규칙은 실제로 돌본 후배의 후일담만 열고 화해를 강요하지 않는다", () => {
@@ -1614,6 +1617,8 @@ test("31번 규칙은 실제로 돌본 후배의 후일담만 열고 화해를 �
   after.seen.push(legacy.id);
   assert.equal(personalBeat(after, 50, { age: 50 }), null, "후일담이 반복되지 않는다");
   assert.equal(personalBeat({ ...base, creationVersion: 30 }, 47, { age: 47 }), null);
+  assert.notEqual(personalBeat({ ...base, location: "위대한 항로 상공 · 스카이피아" }, 47, { age: 47 })?.id,
+    "life_people_ward_legacy", "고립된 항로에서는 편지가 갑자기 오지 않는다");
   assert.notEqual(personalBeat({ ...base, seen: [] }, 47, { age: 47 })?.id, "life_people_ward_legacy");
   assert.equal(personalBeat({ ...base, people: { ...base.people, ward: { ...base.people.ward, fate: "원망" } } }, 47, { age: 47 }), null);
   const independent = structuredClone(base);
