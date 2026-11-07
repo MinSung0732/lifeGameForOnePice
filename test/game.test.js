@@ -2176,7 +2176,7 @@ test("rule 20 gives low-ranked marines canon supervisor and earned-friend scenes
 
 test("소꿉친구 획득 이펙트의 도착지에 친구가 표시되고 합류 상태가 구분된다", async () => {
   const { crewFor, crewLine } = await import("../src/crew.js");
-  const before = createGame("free", 27, { species: "인간" });
+  const before = createGame("free", 27, { species: "인간" }, 3, 30);
   const after = structuredClone(before);
   after.people.mate = { name: "로웰", bond: 60, fate: "곁" };
 
@@ -2191,7 +2191,7 @@ test("소꿉친구 획득 이펙트의 도착지에 친구가 표시되고 합�
 
 test("인연·동료·세력은 조직 단위 산하 선단을 분리하고 해군 상관을 동료로 보여 준다", async () => {
   const { relationshipGroups } = await import("../src/crew.js");
-  const initial = createGame("free", 23, { species: "인간" });
+  const initial = createGame("free", 23, { species: "인간" }, 3, 30);
   const mateLife = { ...initial, people: { ...initial.people, mate: { name: "로웰", fate: "곁", bond: 60 } } };
   const first = relationshipGroups(mateLife);
   assert.ok(first.bonds.some(({ name }) => name === "로웰"));
