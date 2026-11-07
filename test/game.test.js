@@ -21,6 +21,7 @@ import { peopleSummary } from "../src/people.js";
 import { DUTIES } from "../src/adventures.js";
 import { routeChartFor, routeMapLabel } from "../src/route-map.js";
 import { LOCAL_ARCS_V23, localCanonRipple } from "../src/canon-local-events.js";
+import { arcScene } from "../src/canon-arcs.js";
 
 test("23번 연결 지역은 원작 시간대에 고유 상호작용을 보여 주고 과거 기록은 유지한다", () => {
   const v23 = createGame("original", 135, { species: "인간" }, 3, 23);
@@ -61,6 +62,40 @@ test("23번 자유 모드에서 개입한 뒤 원작 사건의 후속 선택과 
   assert.equal(localCanonRipple({ ...free, mode: "original" }, "upper_yard"), null);
   assert.equal(localCanonRipple({ ...free, creationVersion: 22 }, "upper_yard"), null);
   assert.equal(localCanonRipple(free, "maxim"), null);
+});
+
+test("23번 원작 모드의 현장 조우는 관계만 쌓고 체포·IF 개입을 제한한다", () => {
+  const original = createGame("original", 138, { species: "인간" }, 3, 23);
+  original.path = "marine";
+  original.location = "위대한 항로 상공 · 스카이피아";
+  original.age = original.birth.yearsBeforeCurrent - 2;
+  const scene = arcScene(original, { id: "skypiea_trial" }, original.age);
+  assert.equal(scene.id, "canon_arc_skypiea_trial_0");
+  assert.ok(scene.choices.some(({ id }) => id === "canon_contact_talk"));
+  assert.ok(!scene.choices.some(({ id }) => id === "canon_contact_capture"),
+    "원작 모드의 주요 원작 인물은 체포로 원작에서 제거하지 않는다");
+  assert.ok(scene.choices.filter(({ when }) => !when || when(original))
+    .every(({ id }) => !id.startsWith("change_")), "원작 모드는 개입 선택지가 숨겨져야 한다");
+  const after = structuredClone(original);
+  scene.choices.find(({ id }) => id === "canon_contact_talk").apply(after);
+  assert.equal(after.people.canonContacts.wyper.meetings, 1);
+  assert.ok(after.people.canonContacts.wyper.score > 0, "원작 모드에서도 인연은 쌓인다");
+  assert.equal(after.people.canonRipples, undefined, "원작 모드는 원작 연표에 개입한 후속 흔적을 만들지 않는다");
+
+  const free = createGame("free", 138, { species: "인간" }, 3, 23);
+  free.path = "pirate";
+  free.location = original.location;
+  free.age = original.age;
+  free.supplies = 80;
+  const freeScene = arcScene(free, { id: "skypiea_trial" }, free.age);
+  const act = freeScene.choices.find(({ id }) => id === "change_skypiea_trial");
+  assert.ok(act.when(free));
+  act.apply(free);
+  assert.equal(free.people.canonContacts.wyper.meetings, 1);
+  assert.ok(free.people.canonContacts.wyper.score > 0, "직접 도운 인물과 관계가 실제로 변화한다");
+  assert.match(localCanonRipple(free, "upper_yard").body, /샨디아/);
+  const record = saveRecord(free);
+  assert.equal(record.creationVersion, 23);
 });
 
 test("22번 항로는 임의 지명 접근을 줄이고 주요 원작 장소를 연결한다", () => {
