@@ -17,18 +17,6 @@ jobs:
         with:
           node-version: '22'
       - run: npm test
-      - name: Simulate 1,000 lives and report event reach
-        if: always()
-        run: node scripts/life-audit.mjs
-      - name: Compare 24 same-birth choice-policy pairs
-        if: always()
-        run: node scripts/choice-compare.mjs
-      - name: Audit 1,000 new rule-30 lives
-        if: always()
-        run: CREATION_VERSION=30 node scripts/life-audit.mjs
-      - name: Compare 24 rule-30 same-birth choice pairs
-        if: always()
-        run: CREATION_VERSION=30 node scripts/choice-compare.mjs
       - name: Audit 1,000 new rule-31 lives and relationship follow-ups
         if: always()
         run: CREATION_VERSION=31 node scripts/life-audit.mjs
