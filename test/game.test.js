@@ -1309,6 +1309,30 @@ test("27번 규칙의 재회는 시기·장소·3년 간격·소속·인연 점�
   }
 });
 
+
+test("27번 규칙의 원작 인물 재회는 실제 연간 장면 선택기에서 열린다", () => {
+  for (const [key, place] of [["kureha", "드럼섬"], ["crocus", "쌍둥이 언덕"]]) {
+    const life = createGame("original", 0, { species: "인간" }, 3, 27);
+    life.age = 27;
+    life.birth.yearsBeforeCurrent = 45;
+    life.path = "civilian";
+    life.leftHome = true;
+    life.homebound = false;
+    life.careerStartAge = 18;
+    life.location = place;
+    life.health = 70;
+    life.skill = 55;
+    life.supplies = 80;
+    life.seen = ["life_meet_" + key, "life_first_station", "life_leave_home"];
+    life.people.canonContacts = { [key]: { score: 12, meetings: 1, lastAge: 24 } };
+    const scene = yearlyScene(life);
+    assert.equal(scene.id, "life_encounter_return_" + key);
+    assert.equal(scene.urgent, true);
+    assert.ok(scene.choices.some((choice) => choice.id === "cooperate"));
+  }
+  assert.ok(play("original", 4, {}, { species: "인간" }, 3, 27).finished);
+});
+
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {
   const schoolTitles = new Set();
   const trainingTitles = new Set();
