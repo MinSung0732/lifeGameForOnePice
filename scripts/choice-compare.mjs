@@ -38,8 +38,15 @@ function play(mode, seed, kind, policy) {
   }
   assert.ok(life.finished, "Unfinished " + seed + " " + policy);
   assert.deepStrictEqual(replay(saveRecord(life)), life, "Replay mismatch " + seed);
+  const mate = life.people?.mate, ward = life.people?.ward;
+  const civil = life.people?.affiliationChapters?.civilian;
+  const relationOutcome = {
+    mate: mate ? [mate.name, mate.fate, mate.path || "", Boolean(mate.together)] : null,
+    ward: ward ? [ward.name, ward.fate, ward.legacy || null] : null,
+    civilian: civil ? [civil.choice, civil.after || null, civil.legacy || null] : null
+  };
   return {
-    birth, initial, early, middle, decisions, roles: [...roles], contacts: [...contactNames],
+    birth, initial, early, middle, decisions, roles: [...roles], contacts: [...contactNames], relationOutcome,
     path: life.path, role: life.role, ending: endingMemories(life).map((entry) => entry.id + ":" + (entry.choice || "-")),
     journalLength: life.journal.length
   };
@@ -68,9 +75,12 @@ for (let index = 0; index < 24; index++) {
       sharedChoiceScenes: common, differentSharedChoices: differentChoices,
       finalPathDifferent: a.path !== b.path, finalRoleDifferent: a.role !== b.role,
       contactsDifferent: JSON.stringify(a.contacts.sort()) !== JSON.stringify(b.contacts.sort()),
+      personalRelationshipDifferent: JSON.stringify(a.relationOutcome) !== JSON.stringify(b.relationOutcome),
+      relationEndingDifferent: JSON.stringify(a.ending.filter((entry) => /^life_(people_(mate|ward)|path_civilian_(after|legacy))/.test(entry)))
+        !== JSON.stringify(b.ending.filter((entry) => /^life_(people_(mate|ward)|path_civilian_(after|legacy))/.test(entry))),
       endingDifferent: JSON.stringify(a.ending) !== JSON.stringify(b.ending),
-      endA: { path: a.path, role: a.role, memories: a.ending },
-      endB: { path: b.path, role: b.role, memories: b.ending }
+      endA: { path: a.path, role: a.role, memories: a.ending, relationships: a.relationOutcome },
+      endB: { path: b.path, role: b.role, memories: b.ending, relationships: b.relationOutcome }
     });
   } catch (e) {
     failures.push({ seed, mode, species: kind, error: String(e) });
@@ -87,6 +97,8 @@ const report = {
   finalPathDifferences: pairs.filter((p) => p.finalPathDifferent).length,
   finalRoleDifferences: pairs.filter((p) => p.finalRoleDifferent).length,
   contactsDifferences: pairs.filter((p) => p.contactsDifferent).length,
+  personalRelationshipDifferences: pairs.filter((p) => p.personalRelationshipDifferent).length,
+  relationEndingDifferences: pairs.filter((p) => p.relationEndingDifferent).length,
   endingDifferences: pairs.filter((p) => p.endingDifferent).length,
   mostRepeatedBodies: repeated,
   examples: pairs.slice(0, 3), failures
