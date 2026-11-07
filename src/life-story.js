@@ -13,6 +13,7 @@ import { crewContactScene } from "./canon-crews.js";
 import { canonBondScene } from "./canon-bonds.js";
 import { directEncounterFollowUp } from "./canon-encounter-followups.js";
 import { affiliationChapter } from "./affiliation-chapters.js";
+import { personalAimLabel, personalAimRetirement, personalAimScene } from "./life-aim.js";
 import { RECRUIT_VARIANTS } from "./recruit-variants.js";
 import { childhoodArt, childhoodQuiet } from "./childhood.js";
 import { loguetownFollowUp } from "./loguetown-followups.js";
@@ -500,7 +501,10 @@ const scenes = [
     { id: "continue", label: "일의 규모를 줄여 이어 간다", risk: "일 지속 · 물자 +10 · 건강 -10", apply: (life) => { life.supplies += 10; life.health -= 10; return "큰 명령에서는 물러났지만 현장의 작은 일은 맡았다."; } }
   ] },
   { id: "life_last_student", age: at(78, 284), art: "workbench", title: "다음 사람의 손", body: (life) => life.successor ? "후배가 이제 혼자 결정을 내렸다. 같은 일을 해도 다른 방법을 고르는 모습을 보며 세월이 흘렀음을 알았다." : "일을 잇겠다는 사람이 늦게 찾아왔다. 다 전해 주기에는 시간이 부족했지만 기록을 함께 읽을 수는 있었다." },
-  { id: "life_memory", age: at(80, 286), art: "deck", title: "기억에 남은 항구", body: (life) => `${life.birth.name}은 여러 기항지의 이름보다 그곳에서 함께 버틴 사람을 먼저 떠올렸다. 잃은 일과 얻은 일이 한쪽으로만 정리되지는 않았다.` },
+  { id: "life_memory", age: at(80, 286), art: "deck", title: "기억에 남은 항구", body: (life) =>
+    life.creationVersion >= 32 && life.personalAim && life.seen.includes("life_personal_aim")
+      ? life.birth.name + "은 처음 마음에 두었던 '" + personalAimLabel(life.personalAim) + "'을 다시 떠올렸다. 그동안 실제로 선택한 일들이 처음의 바람과 늘 같았던 것은 아니다. 이루었다고 단정할 수 없는 일도 남아 있다."
+      : life.birth.name + "은 여러 기항지의 이름보다 그곳에서 함께 버틴 사람을 먼저 떠올렸다. 잃은 일과 얻은 일이 한쪽으로만 정리되지는 않았다." },
   { id: "life_den_den_mushi", age: at(31, 178), when: (life) => life.creationVersion >= 5,
     art: "workbench", title: "전보벌레의 긴급 회의", body: (life) => `전보벌레가 ${life.birth.name}의 얼굴을 빤히 보더니 느닷없이 옆 배 선장의 목소리로 저녁을 사겠다고 외쳤다. 옆 배의 선원들은 벌써 그 말을 들었다. 소문이 굳기 전에 무슨 통화였는지 알아낼 수 있을까?`, choices: [
       { id: "feast", label: "그냥 함께 먹으며 사정을 묻는다", cost: 10, risk: "물자 10 필요 · 친구와의 유대 +10", personality: { empathy: 5, freedom: 4 },
@@ -1164,7 +1168,8 @@ function lateLife(life, age, base) {
   if (life.creationVersion < 11 || !life.path) return null;
   const [old, settled] = giant(life) ? [240, 290] : [52, 66];
   if (age < old) return null;
-  if (!life.retired && !life.seen.includes("life_retire_choice") && (life.health < 55 || age >= settled)) return asYearly(cardById("life_retire_choice"), age);
+  if (!life.retired && !life.seen.includes("life_retire_choice") && (life.health < 55 || age >= settled))
+    return asYearly(personalAimRetirement(life, cardById("life_retire_choice")), age);
   if (yearRoll(life.seed ^ 0x3311a7c5, age) % 3) return null;
   const next = LATE_LIFE.find((id) => { const card = cardById(id); return !life.seen.includes(id) && (!card.when || card.when(life)); });
   return next ? asYearly(cardById(next), age) : null;
@@ -1446,6 +1451,8 @@ function sceneForAge(life) {
   if (fate) return fate;
   const start = careerStart(life, age, base);
   if (start) return start;
+  const personalGoal = personalAimScene(life, age, base);
+  if (personalGoal) return personalGoal;
   const oldSignal = loguetownFollowUp(life, age, base);
   if (oldSignal) return oldSignal;
   const follow = life.creationVersion >= 9 ? followUp(life) : null;

@@ -241,11 +241,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 31) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 32) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -303,7 +303,8 @@ export function createGame(mode, seed, profile = {}, rules = 3, creationVersion 
     canonStep: 0, bounty: 0, eternalPose: null, lastHuntAge: -100, lastPublicActAge: -100,
     reputation: 0, arrestCount: 0, arrestBounty: 0,
     preCanonStep: 0, canonGapRemaining: 0, canonDailyIndex: 0, fates: {},
-    ending: null, deathCause: "", finished: false, lastOutcome: "", lastChanges: [], actions: [], journal: [], seen: []
+    ending: null, deathCause: "", finished: false, lastOutcome: "", lastChanges: [], actions: [], journal: [], seen: [],
+    ...(rules === 3 && creationVersion >= 32 ? { personalAim: null } : {})
   };
   life.index = nextEligibleIndex(life, 0);
   return life;
