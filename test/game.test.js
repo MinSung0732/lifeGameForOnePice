@@ -47,6 +47,10 @@ test("23번 연결 지역은 원작 시간대에 고유 상호작용을 보여 �
       choice.id.startsWith("change_") && choice.when({ ...original, mode: "free" }))));
   }
   assert.ok(!("canonRipples" in v22.people), "이전 세이브에 새로운 필드를 강제로 추가하지 않는다");
+  assert.equal(arcScene({ ...v22, location: "위대한 항로 상공 · 스카이피아" },
+    { id: "skypiea_trial" }, v22.age), null, "22번 세이브는 신규 원작 상호작용 이벤트를 볼 수 없다");
+  assert.equal(arcScene({ ...v23, location: "자야 · 모크 타운", leftHome: true },
+    { id: "skypiea_trial" }, v23.age), null, "특수 항로를 건너뛰는 무료 순간이동 이벤트를 만들지 않는다");
 });
 
 test("23번 자유 모드에서 개입한 뒤 원작 사건의 후속 선택과 인연 기록이 남는다", () => {
