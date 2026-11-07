@@ -19,6 +19,7 @@ import { affiliationChapter } from "../src/affiliation-chapters.js";
 import { endingMemories } from "../src/ending-memories.js";
 import { canonRelationshipEntries } from "../src/canon-relationships.js";
 import { loguetownFollowUp } from "../src/loguetown-followups.js";
+import { childhoodScene } from "../src/childhood.js";
 import { rosterFor } from "../src/canon-crews.js";
 import { attachCanonContact, canonEraFor, canonPowerAt, canonRelationshipLine, computeCaptureDiceTarget, computeContestDiceTarget, custodyContactStatus, custodyDivergenceText, pendingCanonContactScene, playerCombatRating } from "../src/canon-relationships.js";
 import { FATES } from "../src/fates.js";
@@ -1094,7 +1095,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 29);
+  assert.equal(createGame("original", 0).creationVersion, 30);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1489,6 +1490,83 @@ test("29번 규칙은 서로 다른 생성기의 동일 제목을 기록에서 �
   assert.match(getScene(duplicate).title, /2번째 기록/);
   const legacy = { ...duplicate, creationVersion: 28 };
   assert.equal(getScene(legacy).title, first.title);
+});
+
+
+test("30번 규칙의 선원 항해는 불화와 물자 부족에 따라 실제 행동을 바꾼다", () => {
+  const life = createGame("original", 19, { species: "인간" }, 3, 30);
+  Object.assign(life, { path: "pirate", role: "선원", independent: false,
+    location: "위스키 피크", age: 27, leftHome: true, homebound: false, friendBond: 25, supplies: 70 });
+  const voyage = travelScene(life, 28);
+  assert.equal(voyage.choices.length, 3);
+  assert.match(voyage.body, /말다툼/);
+  const repaired = structuredClone(life);
+  voyage.choices.find((c) => c.id === "coordinate").apply(repaired);
+  assert.equal(repaired.friendBond, 33);
+  assert.equal(repaired.supplies, 65);
+  assert.ok(!travelScene({ ...life, friendBond: 65 }, 28).choices.some((c) => c.id === "coordinate"));
+  assert.match(travelScene({ ...life, friendBond: 65, supplies: 10 }, 28).body, /식량과 수리 자재/);
+  const old = travelScene({ ...life, creationVersion: 29 }, 28);
+  assert.equal(old.choices.length, 2);
+  assert.doesNotMatch(old.body, /말다툼/);
+});
+
+test("30번 항로는 실제로 갈 수 있고 시기가 맞는 옛 인연만 표시한다", () => {
+  const life = createGame("original", 19, { species: "인간" }, 3, 30);
+  Object.assign(life, { location: "위스키 피크", path: "civilian", age: 25,
+    supplies: 80, people: { ...life.people, canonContacts: { kureha: { score: 12, meetings: 1, lastAge: 21 } } },
+    seen: ["life_meet_kureha"] });
+  life.birth.yearsBeforeCurrent = 45;
+  const current = travelScene(life, 26);
+  assert.ok(current.choices.some((choice) => choice.label.includes("드럼섬") && choice.label.includes("지난 인연")));
+  assert.match(current.body, /운송 일/);
+  const older = travelScene({ ...life, creationVersion: 29 }, 26);
+  assert.ok(older.choices.every((c) => !c.label.includes("지난 인연")));
+  const unknown = travelScene({ ...life, seen: [] }, 26);
+  assert.ok(unknown.choices.every((c) => !c.label.includes("지난 인연")));
+  const wrongPort = travelScene({ ...life, location: "워터 세븐" }, 26);
+  assert.ok(wrongPort.choices.every((c) => !c.label.includes("지난 인연")));
+  const tooEarly = travelScene({ ...life, people: { ...life.people, canonContacts: { kureha: { score: 12, meetings: 1, lastAge: 25 } } } }, 26);
+  assert.ok(tooEarly.choices.every((c) => !c.label.includes("지난 인연")));
+});
+
+test("30번 어인·밍크족은 첫 기술 기록에 따라 청소년 수련이 달라진다", () => {
+  for (const species of ["어인", "밍크족"]) for (const originalChoice of ["learn", "help"]) {
+    let life = createGame("original", 18, { species }, 3, 30);
+    let training = null;
+    for (let step = 0; step < 100 && !life.finished; step++) {
+      const scene = getScene(life);
+      if (scene.id === "life_training") { training = scene; break; }
+      life = advance(life, scene.id === "life_first_skill" ? originalChoice
+        : scene.choices.find((choice) => !choice.disabled)?.id ?? null);
+    }
+    assert.ok(training, species + " has a reachable training scene");
+    assert.match(training.body, species === "어인" ? /어인섬의 물길/ : /조의 숲길/);
+    const linked = training.choices.find((c) => c.id === (originalChoice === "learn" ? "practice" : "help"));
+    assert.match(linked.risk, /옛 기록|옛 협력/);
+    assert.ok(training.body.length <= 300);
+    const legacy = getScene({ ...life, creationVersion: 29 });
+    assert.doesNotMatch(legacy.body, /어릴 때 기록해 두었던 표식|함께 일을 나눴던 이웃들의 방법/);
+  }
+});
+
+test("30번 엔딩은 마지막 장면과 실제 선택을 보존하고 이전 버전 기록은 그대로 둔다", () => {
+  const journal = [
+    { id: "life_first_skill", age: 9, choice: "살핀다" },
+    { id: "life_career", age: 20, choice: "해군" },
+    { id: "life_path_marine_choice", age: 28, choice: "조사" },
+    { id: "life_path_marine_after", age: 38, choice: "공유" },
+    { id: "life_danger_sea_king", age: 48, choice: "돕는다" },
+    { id: "life_present_end", age: 70, choice: null }
+  ];
+  for (const version of [29, 30]) {
+    const selected = endingMemories({ creationVersion: version, journal });
+    assert.equal(selected.at(-1), journal.at(-1));
+    assert.ok(selected.length >= 3 && selected.length <= 5);
+    assert.ok(selected.every((x) => journal.includes(x)));
+  }
+  const latest = createGame("original", 4, { species: "인간" }, 3, 30);
+  assert.deepStrictEqual(replay(saveRecord(latest)), latest);
 });
 
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {
