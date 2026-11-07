@@ -284,6 +284,8 @@ export function arcScene(life, beat, age) {
       ? { ...attached, choices: attached.choices.filter((choice) => choice.id !== "canon_contact_capture") }
       : attached;
   }
+  // Rule-23 local arcs must be reached through their real routes, not the old rumor teleport.
+  if (life.creationVersion >= 23 && LOCAL_ARCS_V23[beat.id]) return null;
   const lure = `canon_arc_${beat.id}_lure`;
   const route = routeFor(life);
   const reachable = route.some((place) => place.includes(arc.place)) || arc.place === "에그헤드 외해" && route.includes("엘바프");
