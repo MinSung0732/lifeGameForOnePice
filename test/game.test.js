@@ -1499,7 +1499,7 @@ test("30번 규칙의 선원 항해는 불화와 물자 부족에 따라 실제 
     location: "위스키 피크", age: 27, leftHome: true, homebound: false, friendBond: 25, supplies: 70 });
   const voyage = travelScene(life, 28);
   assert.equal(voyage.choices.length, 3);
-  assert.match(voyage.body, /말다툼/);
+  assert.match(voyage.body, /믿음이 충분히 쌓이지 않아/);
   const repaired = structuredClone(life);
   voyage.choices.find((c) => c.id === "coordinate").apply(repaired);
   assert.equal(repaired.friendBond, 33);

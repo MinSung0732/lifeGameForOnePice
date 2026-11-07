@@ -674,7 +674,7 @@ function crewVoyageScene(life, age) {
     art: "deck", title: repeats ? `${voyageTitle} · ${repeats + 1}번째 항해` : voyageTitle,
     body: scattered
       ? "샤본디에서 흩어진 일당은 각자의 자리에서 수련하고 있다. 재집결의 약속 전까지는 선장의 항해에 합류할 수 없다."
-      : strained ? `${captain}가 항로를 정했지만 최근의 말다툼으로 조타 지시가 잘 전해지지 않았다. 선원인 ${life.birth.name}은 혼자 일을 떠맡을지, 동료와 신호를 맞출지 골라야 했다.`
+      : strained ? `${captain}가 항로를 정했지만 동료 사이에 믿음이 충분히 쌓이지 않아 조타 신호가 어긋났다. 선원인 ${life.birth.name}은 혼자 일을 떠맡을지, 동료와 신호를 맞출지 골라야 했다.`
       : shortSupplies ? `${captain}가 항로를 정했지만 식량과 수리 자재가 모자랐다. 선원들은 서로의 몸과 배를 돌보며 다음 기항지까지 맡을 일을 나눠야 했다.`
       : life.creationVersion >= 30 ? `${captain}가 다음 항로를 정했다. ${life.role === "견습 선원" ? "견습인 너는 선배의 판단을 확인하며" : "선원인 너는 동료와 의견을 나누며"} 조타를 돕거나 선체를 점검한다. 맡은 일이 달라도 함께 바다를 건넌다.`
       : `${captain}가 다음 목적지를 정했다. 선원인 ${life.birth.name}은 어디로 갈지 고르는 대신 항해 중 맡을 일을 결정했다.`,
