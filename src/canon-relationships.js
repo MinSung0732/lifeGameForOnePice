@@ -381,6 +381,45 @@ const ARC_CONTACTS = {
   elbaf: ["luffy"]
 };
 
+// Rule 24: watching a distant canon event is not a personal encounter. Earlier
+// versions keep their original tracking so saved action logs replay unchanged.
+const DISTANT_ARC_SCENES_V24 = {
+  little_garden: [0],
+  drum: [1],
+  alabasta_war: [1, 3],
+  jaya: [1],
+  water_seven: [1, 2],
+  sabaody_auction: [1],
+  dressrosa: [0, 1, 2],
+  zou: [0],
+  whole_cake: [0],
+  wano: [0],
+  egghead: [0],
+  skypiea_trial: [1],
+  thriller_shadows: [1],
+  amazon_lily: [1]
+};
+
+// A general action (watching, fleeing, helping bystanders) does not mean the
+// protagonist met the named character. Explicit contact actions still do.
+const DIRECT_CONTACT_CHOICES_V24 = {
+  departure: { 0: ["wish", "change_departure"] },
+  zoro: { 1: ["speak"] },
+  buggy: { 1: ["offer"] },
+  usopp: { 0: ["listen", "change_usopp"], 1: ["repair"] },
+  baratie: { 0: ["serve", "change_baratie"], 1: ["bandage"] },
+  arlong: { 0: ["comfort"], 1: ["cheer"] },
+  skypiea_trial: { 0: ["talk", "change_skypiea_trial"] },
+  skypiea_bell: { 0: ["reply"] },
+  enies_lobby: { 0: ["clear", "change_enies_lobby"], 1: ["evacuate"] },
+  thriller_shadows: { 0: ["comfort", "change_thriller_shadows"] },
+  thriller_aftermath: { 0: ["bandage", "change_thriller_aftermath"] },
+  amazon_lily: { 0: ["respect", "change_amazon_lily"] },
+  whiskey: { 0: ["join"] },
+  jaya: { 0: ["laugh"] },
+  reunion: { 0: ["laugh"] }
+};
+
 const ARC_CUSTODY_TARGETS = {
   loguetown: [["luffy"], ["luffy"]],
   whiskey: [["zoro"]],
@@ -413,6 +452,7 @@ const object = (name) => `${name}${hasBatchim(name) ? "을" : "를"}`;
 const withName = (name) => `${name}${hasBatchim(name) ? "과" : "와"}`;
 
 export function canonContactForArc(life, beatId, index) {
+  if (life.creationVersion >= 24 && DISTANT_ARC_SCENES_V24[beatId]?.includes(index)) return null;
   const entry = ARC_CONTACTS[beatId]?.[index];
   const key = typeof entry === "function" ? entry(life) : entry;
   return key && CHARACTERS[key] ? { key, ...CHARACTERS[key] } : null;
@@ -606,7 +646,9 @@ export function attachCanonContact(life, beatId, index, age, scene) {
   if (!enabled(life)) return scene;
   const contact = canonContactForArc(life, beatId, index);
   if (!contact) return scene;
-  const baseChoices = (scene.choices || []).map((choice) => withContactTracking(choice, contact, beatId, age));
+  const baseChoices = (scene.choices || []).map((choice) =>
+    life.creationVersion >= 24 && !DIRECT_CONTACT_CHOICES_V24[beatId]?.[index]?.includes(choice.id)
+      ? choice : withContactTracking(choice, contact, beatId, age));
   return { ...scene, manual: false, choices: [...baseChoices, ...interactionChoices(life, contact, beatId, index, age)] };
 }
 
