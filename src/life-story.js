@@ -13,6 +13,7 @@ import { crewContactScene } from "./canon-crews.js";
 import { canonBondScene } from "./canon-bonds.js";
 import { RECRUIT_VARIANTS } from "./recruit-variants.js";
 import { childhoodArt, childhoodQuiet } from "./childhood.js";
+import { loguetownFollowUp } from "./loguetown-followups.js";
 import { giantAdultDecisions, giantGrowingDecisions, giantGrowingYears, giantHomeYears, giantLaterYears, giantWorkingYears } from "./giant-years.js";
 
 // A species describes where a life begins. Work and allegiance are chosen later.
@@ -1443,6 +1444,8 @@ function sceneForAge(life) {
   if (fate) return fate;
   const start = careerStart(life, age, base);
   if (start) return start;
+  const oldSignal = loguetownFollowUp(life, age, base);
+  if (oldSignal) return oldSignal;
   const follow = life.creationVersion >= 9 ? followUp(life) : null;
   if (follow) return follow;
   const late = lateLife(life, age, base);

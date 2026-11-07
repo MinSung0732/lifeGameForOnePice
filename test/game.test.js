@@ -14,6 +14,7 @@ import { PRE_CANON_BEAT_COUNT, preCanonCount, preCanonScene } from "../src/canon
 import { canonGapFor } from "../src/canon-interludes.js";
 import { FLEX_IDS, FLEX_IDS_V5, lifeScenes, rankOpportunity, yearlyScene } from "../src/life-story.js";
 import { canonBondScene } from "../src/canon-bonds.js";
+import { loguetownFollowUp } from "../src/loguetown-followups.js";
 import { rosterFor } from "../src/canon-crews.js";
 import { attachCanonContact, canonEraFor, canonPowerAt, canonRelationshipLine, computeCaptureDiceTarget, computeContestDiceTarget, custodyContactStatus, custodyDivergenceText, pendingCanonContactScene, playerCombatRating } from "../src/canon-relationships.js";
 import { FATES } from "../src/fates.js";
@@ -1085,7 +1086,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 25);
+  assert.equal(createGame("original", 0).creationVersion, 26);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1157,6 +1158,88 @@ test("25번 규칙의 로그 타운 유년 선택은 몇 해 뒤 보상으로 �
   assert.deepEqual(replay(saveRecord(advance(old, "learn"))), advance(old, "learn"));
   const otherHome = reach(0, "life_first_skill", {}, { species: "인간", home: "사우스 블루 · 바테리라" }, 25);
   assert.notEqual(getScene(otherHome).title, "전보벌레가 뒤섞은 신호");
+});
+
+
+test("26번 규칙: 로그 타운의 선택이 소속별 후일담·재회로 이어지고 이전 기록은 격리된다", () => {
+  const profile = { species: "인간", home: "이스트 블루 · 로그 타운" };
+  const base = (age) => ({ id: `life_year_${age}`, age, act: 2, species: "all", yearly: true });
+  for (const memory of ["learn", "help"]) {
+    for (const path of ["marine", "pirate", "civilian", "liberator"]) {
+      const life = createGame("original", 9, profile, 3, 26);
+      life.age = 19;
+      life.path = path;
+      life.loguetownSignal = memory;
+      const first = loguetownFollowUp(life, 20, base(20));
+      assert.equal(first.id, "life_loguetown_signal_offer");
+      assert.ok(first.body.length <= 300);
+      assert.ok(first.choices.some((choice) => choice.id === (memory === "learn" ? "decode" : "guide")));
+      assert.equal(first.choices.some((choice) => choice.id === "report"), path === "marine");
+      assert.equal(first.choices.some((choice) => choice.id === "warn"), path === "pirate");
+      assert.equal(first.choices.some((choice) => choice.id === "supply"), ["civilian", "liberator"].includes(path));
+      // A character with neither skill nor trust is not granted an unearned personal favor.
+      const blocked = { ...life, skill: 0, trust: 0 };
+      assert.equal(first.choices.find((choice) => choice.id === (memory === "learn" ? "decode" : "guide")).available(blocked), false);
+
+      const youth = first.choices.find((choice) => choice.id === (memory === "learn" ? "decode" : "guide"));
+      youth.apply(life);
+      life.seen.push(first.id);
+      assert.equal(loguetownFollowUp(life, 21, base(21)), null, "the first event does not repeat");
+      const crisis = loguetownFollowUp(life, 29, base(29));
+      assert.equal(crisis.id, "life_loguetown_false_order");
+      assert.ok(crisis.body.includes(memory === "learn" ? "부호" : "선장"));
+      const action = crisis.choices.find((choice) => choice.id === (memory === "learn" ? "unmask" : "escort"));
+      assert.ok(action);
+      action.apply(life);
+      life.seen.push(crisis.id);
+      const closing = loguetownFollowUp(life, 39, base(39));
+      assert.equal(closing.id, "life_loguetown_last_signal");
+      assert.ok(closing.body.includes(memory === "learn" ? "신호표" : "항해 일지"));
+      closing.choices.find((choice) => choice.id === "teach").apply(life);
+      life.seen.push(closing.id);
+      assert.equal(life.loguetownLegacy, "taught");
+      assert.equal(loguetownFollowUp(life, 40, base(40)), null);
+      assert.equal(loguetownFollowUp({ ...life, retired: true, seen: [] }, 45, base(45)), null);
+      assert.equal(loguetownFollowUp({ ...life, ending: "death", seen: [] }, 45, base(45)), null);
+      assert.equal(loguetownFollowUp({ ...life, creationVersion: 25, seen: [] }, 45, base(45)), null);
+      assert.equal(loguetownFollowUp({ ...life, birth: { ...life.birth, home: "사우스 블루 · 바테리라" }, seen: [] }, 45, base(45)), null);
+      assert.equal(loguetownFollowUp({ ...life, location: "위대한 항로 상공 · 스카이피아", seen: [] }, 45, base(45)), null);
+    }
+  }
+
+  const seed = 0;
+  const before = reach(seed, "life_first_skill", {}, profile, 26);
+  const chosen = advance(before, "learn");
+  assert.equal(chosen.loguetownSignal, "learn");
+  assert.deepEqual(replay(saveRecord(chosen)), chosen);
+  const older = reach(seed, "life_first_skill", {}, profile, 25);
+  assert.deepEqual(replay(saveRecord(advance(older, "learn"))), advance(older, "learn"));
+});
+
+test("26번 규칙: 실제 진행에서 세 개의 후속 사건에 도달하고 저장·중복 조건이 유지된다", () => {
+  const profile = { species: "인간", home: "이스트 블루 · 로그 타운" };
+  const targets = new Set(["life_loguetown_signal_offer", "life_loguetown_false_order", "life_loguetown_last_signal"]);
+  let fullChain = false;
+  for (let seed = 0; seed < 18 && !fullChain; seed += 1) {
+    let life = createGame("original", seed, profile, 3, 26);
+    const encountered = new Set();
+    for (let steps = 0; !life.finished && steps < 400; steps += 1) {
+      const scene = getScene(life);
+      assert.ok(scene);
+      if (targets.has(scene.id)) {
+        assert.ok(!encountered.has(scene.id), "a personal event must not repeat in one life");
+        encountered.add(scene.id);
+        assert.deepEqual(replay(saveRecord(life)), life);
+      }
+      const action = scene.id === "life_first_skill" ? "learn"
+        : scene.choices.find((choice) => !choice.disabled)?.id ?? null;
+      life = advance(life, action);
+    }
+    assert.equal(life.finished, true, "a complete life must still end");
+    fullChain ||= encountered.size === 3;
+    assert.equal(encountered.size, life.journal.filter((entry) => targets.has(entry.id)).length);
+  }
+  assert.ok(fullChain, "at least one ordinary run should reach all three follow-ups");
 });
 
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {
