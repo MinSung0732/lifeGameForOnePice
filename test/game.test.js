@@ -1404,6 +1404,22 @@ test("28번 소속별 사건은 실제 연간 진행 선택기에서 생성되�
   }
 });
 
+
+test("28번 생애는 서로 다른 출생과 모드에서 끝까지 진행하고 저장 재생된다", () => {
+  for (const [mode, seed, species] of [
+    ["original", 3, "인간"], ["free", 11, "어인"], ["original", 7, "밍크족"],
+    ["free", 4, "거인족"]
+  ]) {
+    const life = play(mode, seed, {}, { species }, 3, 28);
+    assert.equal(life.finished, true, species + " 생애는 종료되어야 한다");
+    assert.deepEqual(replay(saveRecord(life)), life, species + " 선택 기록은 재생되어야 한다");
+  }
+  for (const version of [25, 26, 27]) {
+    const legacy = play("original", 2, {}, { species: "인간" }, 3, version);
+    assert.deepEqual(replay(saveRecord(legacy)), legacy, version + "번 규칙은 재생되어야 한다");
+  }
+});
+
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {
   const schoolTitles = new Set();
   const trainingTitles = new Set();
