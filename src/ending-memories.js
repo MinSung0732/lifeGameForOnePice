@@ -8,6 +8,7 @@ export function endingMemories(life) {
     (entry) => /^life_(career$|recruit_|.*_invitation_|first_station$)/.test(entry.id),
     (entry) => /^life_(path_.*_choice$|orders$|loguetown_false_order$)/.test(entry.id),
     (entry) => /^life_(path_.*_after$|encounter_return_|loguetown_last_signal$|people_.*reunion$|meet_)/.test(entry.id)
+      || life.creationVersion >= 31 && /^life_(people_ward_(return|legacy)$|path_civilian_legacy$)/.test(entry.id)
   ];
   const selected = [];
   const pick = (entry) => {

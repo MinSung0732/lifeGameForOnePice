@@ -104,6 +104,32 @@ const BEATS = [
     scene: (life) => {
       const mate = life.people.mate;
       const name = mate.name;
+      // Rule 31: an old friend in another organization sends news, not an unearned in-person visit.
+      if (life.creationVersion >= 31
+        && (mate.fate === "적" || !mate.together || mate.path !== life.path || life.retired || life.homebound)) {
+        const estranged = mate.fate === "적";
+        return { art: "workbenchReportLetters", title: "늦게 도착한 친구의 소식",
+          body: estranged
+            ? `항구에 닿은 편지에는 ${name}의 이름과, 오래전 서로 등을 돌린 바다의 날짜가 남아 있었다. 화해할 생각이 있는지는 적혀 있지 않았다.`
+            : `기항한 상선이 ${name}의 소식을 전했다. 같은 배에서 일하던 때가 있었지만 지금은 서로 다른 일을 이어 간다. 지난 일을 어떻게 기억할지는 각자의 몫이다.`,
+          choices: [
+            { id: "reach", label: "지난 선택을 적어 답장을 보낸다",
+              risk: "답을 받을지는 알 수 없음 · 오래된 관계를 다시 생각함", personality: { empathy: 6, loyalty: 4 },
+              apply: (state) => {
+                const current = state.people.mate;
+                if (lucky(state, 0x41, estranged ? 35 : current.bond + 20)) {
+                  if (current.fate === "적") current.fate = "화해";
+                  current.bond += 20; state.friendBond += 10;
+                  return `${name}의 답장이 도착했다. 모든 일이 풀리지는 않았지만 서로 그날을 다르게 기억했다는 사실은 알게 됐다.`;
+                }
+                return `편지를 보냈지만 ${name}에게서는 답이 오지 않았다. 보내기로 한 선택만 일지에 남았다.`;
+              } },
+            { id: "bury", label: "답을 강요하지 않고 기억만 남긴다",
+              risk: "관계 유지 · 기술 +3", personality: { caution: 5, freedom: 3 },
+              apply: (state) => { state.skill += 3;
+                return `${name}의 소식을 기록했다. 다른 길을 살고 있는 사람에게 결말을 강요할 수는 없었다.`; } }
+          ] };
+      }
       const body = mate.fate === "적" ? `${ig(name)} 보낸 짧은 편지가 닿았다. 그날 바다에서 서로 등을 돌린 일을 아직 기억한다고 적혀 있었다.`
         : mate.together ? `${gwa(name)} 같은 배에서 보낸 세월이 길어졌다. 둘의 손등에는 같은 밧줄이 남긴 흉터가 있었다.`
           : `오랜만에 ${ig(name)} 항구에 들렀다. 서로 다른 깃발 아래서 늙어 간 얼굴이 한눈에 들어왔다.`;
@@ -250,6 +276,33 @@ const BEATS = [
     }
   },
   {
+    id: "life_people_ward_legacy",
+    when: (life, age) => {
+      if (life.creationVersion < 31 || !["후계", "자기 길"].includes(life.people.ward?.fate)
+        || !life.seen.includes("life_people_ward_return")) return false;
+      const returned = life.journal.find((entry) => entry.id === "life_people_ward_return");
+      return returned && age >= returned.age + span(life, 3, 15);
+    },
+    scene: (life) => {
+      const ward = life.people.ward, name = ward.name;
+      const inherited = ward.fate === "후계";
+      return { art: "workbench", title: "이어지는 장부의 여백",
+        body: inherited
+          ? `${name}에게 맡긴 장부의 새 페이지가 기항선 편으로 도착했다. 네가 가르친 매듭 옆에는 ${name}이 다시 그린 표시가 있었다. 앞으로 어떤 일을 맡을지는 그 사람의 선택이었다.`
+          : `${name}에게서 다른 항구에서 일하며 겪은 일을 적은 편지가 왔다. 네가 곁에 두지 않기로 했던 결정이 두 사람의 삶을 다른 방향으로 이끌었다.`,
+        choices: [
+          { id: "write", cost: 5, label: "내가 배운 실수도 적어 보내 준다",
+            risk: "물자 -5 · 오래된 인연에 답함", personality: { empathy: 5, loyalty: 3 },
+            apply: (state) => { state.supplies -= 5; state.people.ward.legacy = "답장";
+              return `${name}에게 실패했던 매듭과 다시 확인한 방법을 적었다. 어떤 길로 쓸지는 ${name}이 결정할 일이었다.`; } },
+          { id: "respect", label: "상대의 선택을 존중하고 자신의 일을 이어 간다",
+            risk: "현재 길 유지 · 기술 +3", personality: { freedom: 5, caution: 3 },
+            apply: (state) => { state.skill += 3; state.people.ward.legacy = "존중";
+              return `${name}의 소식을 접어 일지에 넣었다. 가까이 있지 않아도 함께했던 시간을 지울 필요는 없었다.`; } }
+        ] };
+    }
+  },
+  {
     id: "life_people_branch_trial", when: (life, age) => life.worldBranch && age >= life.people.branchAge + 1,
     scene: (life) => {
       const kind = life.worldBranch;
@@ -309,11 +362,20 @@ function canonPeersSummary(life) {
 }
 
 export function peopleSummary(life) {
-  const { mate } = life.people || {};
+  const { mate, ward } = life.people || {};
+  const stillTogether = mate?.together && mate.fate === "곁"
+    && (life.creationVersion < 31 || mate.path === life.path && !life.retired && !life.homebound);
   const friendLine = mate
-    ? `옛 친구 ${mate.name}(${mate.together && mate.fate === "곁" ? "끝까지 같은 배를 탄 동료" : MATE_FATES[mate.fate]})`
+    ? `옛 친구 ${mate.name}(${stillTogether ? "같은 배를 탄 동료"
+      : life.creationVersion >= 31 && mate.fate === "곁" ? "한때 함께 일한 친구"
+        : MATE_FATES[mate.fate]})`
     : life.friendName
       ? `옛 친구 ${life.friendName}(${life.friendBond >= 50 ? "이어진 우정" : life.friendBond > 1 ? "남은 기억" : "서로 다른 길"})`
       : "";
-  return [friendLine, canonPeersSummary(life)].filter(Boolean).join(" · ");
+  const wardLine = life.creationVersion >= 31 && ward && life.seen.includes("life_people_ward_meet")
+    ? `부두의 인연 ${ward.name}(${({
+      "후계": "장부를 맡겼던 후배", "자기 길": "다른 길을 택한 후배",
+      "맡김": "다른 집에 맡긴 아이", "지나침": "스쳐 간 인연"
+    })[ward.fate] || ward.fate})` : "";
+  return [friendLine, wardLine, canonPeersSummary(life)].filter(Boolean).join(" · ");
 }

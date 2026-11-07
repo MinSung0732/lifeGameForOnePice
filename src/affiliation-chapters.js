@@ -13,7 +13,7 @@ function coherentDuty(life) {
   return true;
 }
 export function affiliationChapter(life, age, base, before) {
-  if (life.creationVersion < 28 || !life.path || life.ending || life.retired) return null;
+  if (life.creationVersion < 28 || !life.path || life.ending || life.retired && life.creationVersion < 31) return null;
   const previous = life.people?.affiliationChapters || {};
   // shortcut: letters do not reach isolated locations until navigation includes a postal-route model.
   const hasMail = !["스카이피아", "엘바프", "하치노스", "아마존 릴리 외해"].some((place) => life.location?.includes(place));
@@ -85,6 +85,35 @@ export function affiliationChapter(life, age, base, before) {
       body: prefix + " " + memory + " 후배들은 자기 방식으로 그날의 선택을 이어 가고 있었다.",
       choices: choices.filter((c) => !c.when || c.when(life)) };
   }
+  // Rule 31: the apprentice's later choices exist only if the player actually handed over the ledger.
+  if (life.creationVersion >= 31 && hasMail && previous.civilian?.after === "teach"
+    && life.seen.includes("life_path_civilian_after")
+    && !life.seen.includes("life_path_civilian_legacy")) {
+    const teaching = life.journal.find((entry) => entry.id === "life_path_civilian_after");
+    if (teaching && age >= teaching.age + 3) {
+      const closeToPort = life.path === "civilian" && !life.retired
+        && life.location === previous.civilian.place;
+      return { ...base, id: "life_path_civilian_legacy", urgent: true, art: "workbenchNegotiation",
+        title: "스스로 고른 다음 수리",
+        body: (closeToPort
+          ? "예전에 수리 장부를 넘겼던 후배가 고장 난 배의 계산을 가져왔다. "
+          : "기항한 상선 편으로 예전에 장부를 넘겼던 작업장 후배의 편지가 도착했다. ")
+          + "후배는 네 방법을 그대로 따르기보다 배에 맞게 고쳐 쓰고 있었다. 어느 항구에서 일할지는 아직 정하지 않았다고 했다.",
+        choices: [
+          { id: "share", cost: 8, label: "실패한 수리 기록까지 함께 보내 준다",
+            risk: "물자 -8 · 지역 신뢰 +5", personality: { empathy: 5, loyalty: 3 },
+            apply: (state) => { state.supplies -= 8; state.trust += 5;
+              state.people.affiliationChapters.civilian.legacy = "기록 공유";
+              return "고쳤다가 다시 부서진 날의 장부까지 보냈다. 후배가 무엇을 채택할지는 직접 결정해야 한다."; } },
+          { id: "entrust", label: "후배가 자신의 방식으로 이어 가도록 둔다",
+            risk: "현재 일 유지 · 기술 +3", personality: { freedom: 5, caution: 3 },
+            apply: (state) => { state.skill += 3;
+              state.people.affiliationChapters.civilian.legacy = "독립 존중";
+              return "후배에게 답을 강요하지 않았다. 오래된 작업장에 다른 방법이 생기고 있다는 소식만 남았다."; } }
+        ] };
+    }
+  }
+  if (life.retired) return null;
   if (!coherentDuty(life) || !Number.isFinite(life.careerStartAge)
     || age < Math.max(life.birth.species === "거인족" ? 120 : 24, life.careerStartAge + 3)) return null;
   const path = life.path, id = "life_path_" + path + "_choice";
