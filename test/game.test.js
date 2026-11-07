@@ -1481,6 +1481,16 @@ test("29번 엔딩 회고는 실제 선택·후속 결과와 마지막 장면만
   assert.deepEqual(endingMemories({ journal: journal.slice(-1) }), journal.slice(-1), "짧은 삶에 없는 기억을 만들어 내지 않는다");
 });
 
+
+test("29번 규칙은 서로 다른 생성기의 동일 제목을 기록에서 구분하고 과거 생애의 제목은 유지한다", () => {
+  const current = createGame("original", 14, { species: "인간" }, 3, 29);
+  const first = getScene(current);
+  const duplicate = { ...current, journal: [{ id: "previous", title: first.title, age: 0 }] };
+  assert.match(getScene(duplicate).title, /2번째 기록/);
+  const legacy = { ...duplicate, creationVersion: 28 };
+  assert.equal(getScene(legacy).title, first.title);
+});
+
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {
   const schoolTitles = new Set();
   const trainingTitles = new Set();

@@ -389,6 +389,13 @@ function canChoose(choice, life) {
   return !choice.available || choice.available(life);
 }
 
+// Rule 29: events from different generators can share a title even when their IDs are unique.
+function recentSceneTitle(life, title) {
+  if (life.creationVersion < 29 || !life.journal.slice(-10).some((entry) => entry.title === title)) return title;
+  const count = life.journal.filter((entry) => entry.title === title || entry.title.startsWith(title + " · ")).length;
+  return title + " · " + (count + 1) + "번째 기록";
+}
+
 export function getScene(life) {
   if (life.finished || (life.rules !== 3 && life.index >= scenes.length)) return null;
   const rawCard = sceneCard(life);
@@ -399,7 +406,7 @@ export function getScene(life) {
   const age = typeof card.age === "function" ? card.age(life) : card.age;
   const artObj = (artKey && ART[artKey] && ART[artKey].src) ? ART[artKey] : ART.deck;
   return {
-    id: card.id, act: card.act, age, title: card.title,
+    id: card.id, act: card.act, age, title: recentSceneTitle(life, card.title),
     manual: Boolean(card.manual || life.creationVersion >= 4 && card.canon && !card.choices), timeLabel: card.timeLabel || null,
     body: personalize(typeof card.body === "function" ? card.body(life) : card.body, life.birth.name, life.creationVersion),
     art: artObj, canon: card.canon || null,
@@ -579,7 +586,7 @@ export function advance(life, action = null) {
   next.actions.push(action);
   next.seen.push(card.id);
   if (card.skipSceneId && !next.seen.includes(card.skipSceneId)) next.seen.push(card.skipSceneId);
-  next.journal.push({ id: card.id, act: card.act, age: view.age, title: card.title, choice: view.choices.find((choice) => choice.id === choiceId)?.label || null,
+  next.journal.push({ id: card.id, act: card.act, age: view.age, title: next.creationVersion >= 29 ? view.title : card.title, choice: view.choices.find((choice) => choice.id === choiceId)?.label || null,
     result, changes, canon: card.canon || null, ...(view.timeLabel ? { timeLabel: view.timeLabel } : {}) });
   next.index = nextEligibleIndex(next, life.index + (card.yearly ? 0 : 1));
   next.finished = next.rules === 3 ? Boolean(next.ending) : next.index === scenes.length;
