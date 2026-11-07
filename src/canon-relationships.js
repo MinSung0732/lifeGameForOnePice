@@ -427,7 +427,7 @@ function noteMeeting(state, key, beatId, age, delta, choice) {
 }
 
 function baseChoiceDelta(id) {
-  if (/^(aid|help|rescue|protect|evacuate|feast|children|share)/.test(id)) return 7;
+  if (/^(aid|help|rescue|protect|evacuate|feast|children|share|change_)/.test(id)) return 7;
   if (/^(fight|join|stand|capture|report|checkpoint|enter|attack)/.test(id)) return -7;
   return 0;
 }
