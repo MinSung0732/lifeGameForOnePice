@@ -56,10 +56,10 @@ export function personalAimSummary(life) {
   // Quote only a consequential choice recorded after the original personal direction.
   const defining = [...journal].reverse().find((entry) => entry.age >= beginning.age
     && entry.choice && /^life_(path_(pirate|marine|liberator|civilian)_choice|people_ward_return|path_(marine|civilian)_after|free_rank)$/.test(entry.id));
-  const later = defining ? " " + defining.title + "에서 '" + defining.choice + "'을 골랐다." : "";
+  const later = defining ? " " + defining.title + "에서 한 선택: '" + defining.choice + "'." : "";
   const finalDecision = journal.find((entry) => entry.id === "life_retire_choice" && entry.choice);
   const late = finalDecision?.choice?.includes("처음의 꿈을 다른 뜻으로")
     ? " 노년에 처음의 꿈을 다른 뜻으로 받아들이기로 선택했다."
-    : finalDecision ? " 노년에는 '" + finalDecision.choice + "'을 선택했다." : "";
+    : finalDecision ? " 노년에 선택한 일: '" + finalDecision.choice + "'." : "";
   return opening + later + late;
 }

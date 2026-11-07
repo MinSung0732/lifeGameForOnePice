@@ -1797,7 +1797,7 @@ test("32번 목표 회고는 실제 일지의 방향과 선택만 인용하고 3
   assert.doesNotMatch(recap, /성공|실패|완수/);
   const otherDecision = { ...current, journal: journal.map((entry) =>
     entry.id === "life_retire_choice" ? { ...entry, choice: "직책을 넘기고 물러난다" } : entry) };
-  assert.match(personalAimSummary(otherDecision), /노년에는 '직책을 넘기고 물러난다'을 선택했다/);
+  assert.match(personalAimSummary(otherDecision), /노년에 선택한 일: '직책을 넘기고 물러난다'/);
   const selected = endingMemories(current);
   assert.ok(selected.some((entry) => entry.id === "life_personal_aim"));
   assert.ok(selected.some((entry) => entry.id === "life_path_marine_choice"));
