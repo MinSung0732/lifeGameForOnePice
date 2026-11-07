@@ -1,4 +1,5 @@
 import { arcScene } from "./canon-arcs.js";
+import { localCanonRipple } from "./canon-local-events.js";
 import { canonRelationshipChanged, custodyDivergenceText } from "./canon-relationships.js";
 import { EXTRA_BEFORE, takenText } from "./canon-timeline.js";
 import { ERA_WAR, eraStart, followsCaptain, stretched } from "./world.js";
@@ -143,6 +144,7 @@ export const preCanonAge = (life, step = life.preCanonStep) => stretched(life)
 const presentAt = (life) => preCanonAge(life);
 const STRETCH_NOTE = " 이 기록에서는 원작의 몇 해를 스무 해 남짓에 걸쳐 풀어 놓았다. 원작 인물의 나이는 원작을 따른다.";
 const nearby = (life, beat) => beat.places.some((place) => life.location.includes(place))
+  || life.creationVersion >= 23 && preCanonCrewDestination(life) === life.location
   || followsCaptain(life) && life.canonCrew === "밀짚모자 일당"
     && preCanonCrewDestination(life) === life.location;
 
@@ -157,15 +159,28 @@ export function preCanonScene(life) {
   const custodyDiverge = custodyDivergenceText(life, beat.id, nearby(life, beat) ? beat.near : beat.far, nearby(life, beat));
   // Rule 12 keeps nearby choices when only a fruit changed hands; older rules dropped them and still replay that way.
   const diverged = Boolean(life.worldBranch || fruitTaken && life.creationVersion < 12 || custodyDiverge);
-  const choices = !diverged && nearby(life, beat) ? beat.choices : undefined;
+  const ordinaryChoices = !diverged && nearby(life, beat) ? beat.choices : undefined;
+  const ripple = localCanonRipple(life, beat.id);
+  const followup = ripple ? {
+    id: "canon_ripple_followup", label: "전에 개입한 사건의 뒷일을 직접 정리한다",
+    risk: "더 자유로운 모드 · 지역의 신뢰 +6 · 친구와의 유대 +4",
+    personality: { loyalty: 5, empathy: 5 },
+    apply: (state) => {
+      state.trust += 6;
+      state.friendBond += 4;
+      return "과거에 도움을 준 사람과 다시 연락해 사건의 뒤처리를 도왔다. 이전 선택이 끝난 이야기가 아님을 알게 됐다.";
+    }
+  } : null;
+  const choices = followup ? [...(ordinaryChoices || []), followup] : ordinaryChoices;
   // A taken fruit rewrites only the scenes that show its power; the rest of the canon still happens.
   const body = custodyDiverge || takenText(life, beat.id) || (life.worldBranch
     ? `원작 기준 기록에는 ${beat.far} ${life.birth.name}의 세계도 같은 길을 갔다고 단정할 수 없다.`
     : nearby(life, beat) ? beat.near : beat.far);
+  const witnessed = ripple ? `${body} IF 세계선의 여파: ${ripple.body}` : body;
   return { id: `canon_before_${beat.id}`, age: presentAt(life), act: 3, species: "all", yearly: true,
-    urgent: true, preCanonBeat: true, manual: !choices, art: beat.art || "deck", title: beat.title, body,
-    ...(stretched(life) && life.preCanonStep === 0 ? { body: body + STRETCH_NOTE } : {}),
-    timeLabel: fruitTaken || life.worldBranch || canonRelationshipChanged(life) || custodyDiverge ? `IF 세계선 · ${beat.time}` : beat.time, canon: beat.canon, choices };
+    urgent: true, preCanonBeat: true, manual: !choices, art: beat.art || "deck", title: beat.title, body: witnessed,
+    ...(stretched(life) && life.preCanonStep === 0 ? { body: witnessed + STRETCH_NOTE } : {}),
+    timeLabel: fruitTaken || ripple || life.worldBranch || canonRelationshipChanged(life) || custodyDiverge ? `IF 세계선 · ${beat.time}` : beat.time, canon: beat.canon, choices };
 }
 
 export function preCanonStatus(life) {
