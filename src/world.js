@@ -656,6 +656,10 @@ function crewVoyageScene(life, age) {
   const strawHat = life.canonCrew === "밀짚모자 일당";
   const scattered = strawHat && life.seen?.includes("canon_before_sabaody_scatter") && !life.seen?.includes("canon_reunion");
   const captain = strawHat ? "루피와 나미" : "선장과 항해사";
+  const voyageTitle = scattered ? "다시 만날 날을 위한 수련" : `${captain}의 항로`;
+  // Rule 29: only new lives distinguish returning crew voyages; older journals retain their titles.
+  const repeats = life.creationVersion >= 29
+    ? life.journal.filter((entry) => entry.title === voyageTitle || entry.title.startsWith(voyageTitle + " ·")).length : 0;
   const depart = (state) => {
     if (!strawHat) sailToNextPort(state);
     return scattered ? "흩어진 동료들과 샤본디에서 다시 만나기로 한 날까지 각자의 수련을 이어 갔다."
@@ -665,7 +669,7 @@ function crewVoyageScene(life, age) {
   };
   return {
     id: `life_voyage_${age}`, age, act: 2, species: "all", yearly: true, urgent: true,
-    art: "deck", title: scattered ? "다시 만날 날을 위한 수련" : `${captain}의 항로`,
+    art: "deck", title: repeats ? `${voyageTitle} · ${repeats + 1}번째 항해` : voyageTitle,
     body: scattered
       ? "샤본디에서 흩어진 일당은 각자의 자리에서 수련하고 있다. 재집결의 약속 전까지는 선장의 항해에 합류할 수 없다."
       : `${captain}가 다음 목적지를 정했다. 선원인 ${life.birth.name}은 어디로 갈지 고르는 대신 항해 중 맡을 일을 결정했다.`,

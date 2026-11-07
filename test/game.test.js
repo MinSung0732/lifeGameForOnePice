@@ -1325,7 +1325,7 @@ test("27번 규칙의 원작 인물 재회는 실제 연간 장면 선택기에�
     life.path = "civilian";
     life.leftHome = true;
     life.homebound = false;
-    life.careerStartAge = 18;
+    life.careerStartAge = life.age;
     life.location = place;
     life.health = 70;
     life.skill = 55;
@@ -1336,6 +1336,9 @@ test("27번 규칙의 원작 인물 재회는 실제 연간 장면 선택기에�
     life.people.canonContacts = { [key]: { score: 12, meetings: 1, lastAge: 24 } };
     // Complete unrelated fate chapters so this fixture tests the reunion's yearly slot.
     life.fates = Object.fromEntries(Object.values(FATES).flat().map(({ key }) => [key, { step: 999, marks: [] }]));
+    // Isolate reunion scheduling from independent promotion and recruitment opportunities.
+    for (const key of ["lastRankOfferAge", "lastMarineOfferAge", "lastPirateOfferAge", "lastCivilianOfferAge",
+      "lastCrewOfferAge", "lastRevolutionOfferAge"]) life[key] = 1000;
     const scene = yearlyScene(life);
     assert.equal(scene.id, "life_encounter_return_" + key);
     assert.equal(scene.urgent, true);
@@ -1408,6 +1411,8 @@ test("28번 소속별 사건은 실제 연간 진행 선택기에서 생성되�
       seen: ["life_first_station", "life_leave_home",
         ...OLD_ERA.map(({ id }) => "life_old_" + id)] });
     life.fates = Object.fromEntries(Object.values(FATES).flat().map(({ key }) => [key, { step: 999, marks: [] }]));
+    for (const key of ["lastRankOfferAge", "lastMarineOfferAge", "lastPirateOfferAge", "lastCivilianOfferAge",
+      "lastCrewOfferAge", "lastRevolutionOfferAge"]) life[key] = 1000;
     assert.equal(yearlyScene(life).id, "life_path_" + path + "_choice");
   }
   for (const version of [25, 26, 27, 28]) {
@@ -1435,8 +1440,8 @@ test("28번 생애는 서로 다른 출생과 모드에서 끝까지 진행하�
 
 test("29번 규칙은 가까운 선장 항해 장면의 같은 제목을 구별하고 28번 기록을 유지한다", () => {
   const life = createGame("original", 6, { species: "인간" }, 3, 29);
-  Object.assign(life, { path: "pirate", affiliation: "독립 해적단", role: "선장",
-    independent: true, leftHome: true, homebound: false, canonGapRemaining: 2,
+  Object.assign(life, { path: "pirate", affiliation: "흰 수염 해적단", role: "선원",
+    canonCrew: "흰 수염 해적단", independent: false, leftHome: true, homebound: false, canonGapRemaining: 2,
     location: "자야 · 모크 타운", supplies: 80 });
   let first;
   for (let slot = 0; slot < 50; slot += 1) {
