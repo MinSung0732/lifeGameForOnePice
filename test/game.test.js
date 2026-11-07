@@ -23,7 +23,7 @@ import { childhoodScene } from "../src/childhood.js";
 import { rosterFor } from "../src/canon-crews.js";
 import { attachCanonContact, canonEraFor, canonPowerAt, canonRelationshipLine, computeCaptureDiceTarget, computeContestDiceTarget, custodyContactStatus, custodyDivergenceText, pendingCanonContactScene, playerCombatRating } from "../src/canon-relationships.js";
 import { FATES } from "../src/fates.js";
-import { peopleSummary } from "../src/people.js";
+import { peopleSummary, personalBeat } from "../src/people.js";
 import { DUTIES } from "../src/adventures.js";
 import { routeChartFor, routeMapLabel } from "../src/route-map.js";
 import { LOCAL_ARCS_V23, localCanonRipple } from "../src/canon-local-events.js";
@@ -1095,7 +1095,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 30);
+  assert.equal(createGame("original", 0).creationVersion, 31);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1567,6 +1567,111 @@ test("30번 엔딩은 마지막 장면과 실제 선택을 보존하고 이전 �
   }
   const latest = createGame("original", 4, { species: "인간" }, 3, 30);
   assert.deepStrictEqual(replay(saveRecord(latest)), latest);
+});
+
+
+test("31번 규칙은 소속이 달라진 옛 친구를 방문객이 아닌 편지로 기억한다", () => {
+  const life = createGame("original", 21, { species: "인간" }, 3, 31);
+  Object.assign(life, { age: 65, path: "pirate", careerStartAge: 20, affiliation: "독립 해적단",
+    seen: ["life_people_mate_meet", "life_people_mate_path", "life_people_mate_crisis"],
+    people: { mate: { name: "세라", fate: "적", bond: 12, path: "marine", together: false } } });
+  const news = personalBeat(life, 65, { age: 65, act: 3 });
+  assert.equal(news.id, "life_people_mate_reunion");
+  assert.match(news.body, /편지/);
+  assert.ok(!news.body.includes("같은 식탁"));
+  const after = structuredClone(life);
+  news.choices.find((choice) => choice.id === "bury").apply(after);
+  assert.equal(after.people.mate.fate, "적");
+  assert.equal(after.skill, life.skill + 3);
+  const older = personalBeat({ ...life, creationVersion: 30 }, 65, { age: 65, act: 3 });
+  assert.equal(older.id, news.id);
+  assert.equal(older.choices.find((choice) => choice.id === "bury").risk.includes("건강 +10"), true);
+  const formerlyTogether = { ...life, people: { mate: { name: "세라", fate: "곁", bond: 60, path: "marine", together: true } } };
+  assert.match(personalBeat(formerlyTogether, 65, { age: 65 }).body, /상선/);
+  assert.match(peopleSummary(formerlyTogether), /한때 함께 일한 친구/);
+  assert.ok(!peopleSummary({ ...formerlyTogether, creationVersion: 30 }).includes("한때 함께 일한 친구"));
+  assert.equal(personalBeat({ ...life, ending: "death" }, 65, { age: 65 }), null);
+});
+
+test("31번 규칙은 실제로 돌본 후배의 후일담만 열고 화해를 강요하지 않는다", () => {
+  const base = createGame("original", 25, { species: "인간" }, 3, 31);
+  Object.assign(base, { age: 47, path: "civilian", affiliation: "민간 조합",
+    careerStartAge: 22, people: {
+      mate: { name: "세라", fate: "잃음" },
+      ward: { name: "누리", bond: 60, fate: "후계", since: 29 }
+    }, journal: [
+      { id: "life_people_ward_meet", age: 29, choice: "데려가 일을 가르친다" },
+      { id: "life_people_ward_return", age: 43, choice: "곁에 두고 모든 것을 가르친다" }
+    ],
+    seen: ["life_people_mate_meet", "life_people_mate_path", "life_people_ward_meet", "life_people_ward_return"] });
+  assert.equal(personalBeat(base, 45, { age: 45 }), null, "후배의 선택 후 3년이 지나야 한다");
+  const legacy = personalBeat(base, 47, { age: 47 });
+  assert.equal(legacy.id, "life_people_ward_legacy");
+  assert.match(legacy.body, /장부/);
+  const after = structuredClone(base);
+  legacy.choices.find((c) => c.id === "respect").apply(after);
+  assert.equal(after.people.ward.legacy, "존중");
+  after.seen.push(legacy.id);
+  assert.equal(personalBeat(after, 50, { age: 50 }), null, "후일담이 반복되지 않는다");
+  assert.equal(personalBeat({ ...base, creationVersion: 30 }, 47, { age: 47 }), null);
+  assert.equal(personalBeat({ ...base, seen: [] }, 47, { age: 47 }), null);
+  assert.equal(personalBeat({ ...base, people: { ...base.people, ward: { ...base.people.ward, fate: "원망" } } }, 47, { age: 47 }), null);
+  const independent = structuredClone(base);
+  independent.people.ward.fate = "자기 길";
+  assert.match(personalBeat(independent, 47, { age: 47 }).body, /다른 항구/);
+  assert.match(peopleSummary(base), /장부를 맡겼던 후배/);
+  assert.ok(!peopleSummary({ ...base, creationVersion: 30 }).includes("장부를 맡겼던 후배"));
+});
+
+test("31번 규칙은 장부를 실제로 가르친 민간인에게만 독립적인 후배 소식이 온다", () => {
+  const life = createGame("free", 30, { species: "어인" }, 3, 31);
+  Object.assign(life, { age: 45, path: "civilian", careerStartAge: 21,
+    affiliation: "민간 조합", location: "위스키 피크",
+    people: { affiliationChapters: { civilian: {
+      age: 30, place: "위스키 피크", choice: "rebuild", affiliation: "민간 조합", after: "teach"
+    } } },
+    seen: ["life_path_civilian_choice", "life_path_civilian_after"],
+    journal: [{ id: "life_path_civilian_after", age: 41, choice: "후배에게 수리 장부를 맡긴다" }] });
+  assert.equal(affiliationChapter(life, 43, { age: 43 }, 15), null);
+  const card = affiliationChapter(life, 45, { age: 45 }, 15);
+  assert.equal(card.id, "life_path_civilian_legacy");
+  assert.match(card.body, /후배/);
+  assert.equal(card.choices.length, 2);
+  const left = structuredClone(life);
+  Object.assign(left, { path: "pirate", affiliation: "독립 해적단", retired: true });
+  const letter = affiliationChapter(left, 45, { age: 45 }, 15);
+  assert.equal(letter.id, card.id);
+  assert.match(letter.body, /편지/);
+  letter.choices.find((c) => c.id === "entrust").apply(left);
+  assert.equal(left.people.affiliationChapters.civilian.legacy, "독립 존중");
+  assert.equal(left.path, "pirate", "전향한 소속을 변경하지 않는다");
+  left.seen.push(letter.id);
+  assert.notEqual(affiliationChapter(left, 50, { age: 50 }, 15)?.id, letter.id);
+  const noTeaching = { ...left, seen: [...life.seen], people: { affiliationChapters: { civilian: { ...life.people.affiliationChapters.civilian, after: "send" } } } };
+  assert.equal(affiliationChapter(noTeaching, 45, { age: 45 }, 15), null);
+  assert.equal(affiliationChapter({ ...life, creationVersion: 30, retired: true }, 45, { age: 45 }, 15), null);
+  assert.equal(affiliationChapter({ ...life, location: "위대한 항로 상공 · 스카이피아" }, 45, { age: 45 }, 15)?.id, undefined);
+  assert.ok(card.body.length <= 300);
+});
+
+test("31번 인연의 엔딩은 실제로 진행된 후계 사건만 우선하고 이전 회고를 보존한다", () => {
+  const journal = [
+    { id: "life_first_skill", age: 8, choice: "일을 돕는다" },
+    { id: "life_career", age: 20, choice: "민간인" },
+    { id: "life_people_ward_meet", age: 29, choice: "데려가 일을 가르친다" },
+    { id: "life_people_ward_return", age: 43, choice: "곁에 두고 가르친다" },
+    { id: "life_people_ward_legacy", age: 47, choice: "상대의 선택을 존중한다" },
+    { id: "life_last_day", age: 71, choice: null }
+  ];
+  const version30 = endingMemories({ creationVersion: 30, journal });
+  const version31 = endingMemories({ creationVersion: 31, journal });
+  assert.ok(version31.some((entry) => entry.id === "life_people_ward_legacy"));
+  assert.ok(version31.every((entry) => journal.includes(entry)));
+  assert.equal(version31.at(-1), journal.at(-1));
+  assert.ok(version31.length <= 5);
+  assert.deepEqual(endingMemories({ creationVersion: 30, journal }), version30);
+  assert.deepEqual(replay(saveRecord(createGame("original", 6, { species: "인간" }, 3, 31))),
+    createGame("original", 6, { species: "인간" }, 3, 31));
 });
 
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {
