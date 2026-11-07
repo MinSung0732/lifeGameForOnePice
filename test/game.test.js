@@ -16,6 +16,7 @@ import { FLEX_IDS, FLEX_IDS_V5, lifeScenes, rankOpportunity, yearlyScene } from 
 import { canonBondScene } from "../src/canon-bonds.js";
 import { directEncounterFollowUp } from "../src/canon-encounter-followups.js";
 import { affiliationChapter } from "../src/affiliation-chapters.js";
+import { endingMemories } from "../src/ending-memories.js";
 import { canonRelationshipEntries } from "../src/canon-relationships.js";
 import { loguetownFollowUp } from "../src/loguetown-followups.js";
 import { rosterFor } from "../src/canon-crews.js";
@@ -1453,6 +1454,26 @@ test("29번 규칙은 가까운 선장 항해 장면의 같은 제목을 구별�
   assert.match(distinct.title, /번째 항해/);
   const previous = canonInterludeScene({ ...life, creationVersion: 28 });
   assert.equal(previous.title, first.title, "규칙 28에서는 이전 제목을 그대로 재생한다");
+});
+
+
+test("29번 엔딩 회고는 실제 선택·후속 결과와 마지막 장면만 3~5개 기억으로 남긴다", () => {
+  const journal = [
+    { id: "life_home", age: 4, title: "어린 날", choice: "살핀다", result: "가족을 도왔다." },
+    { id: "life_first_skill", age: 9, title: "전보벌레", choice: "기록한다", result: "신호를 적었다." },
+    { id: "life_career", age: 19, title: "처음 고른 소속", choice: "해군", result: "입대했다." },
+    { id: "life_path_marine_choice", age: 30, title: "번호가 다른 수배서", choice: "승객 구조", result: "경고를 받았다." },
+    { id: "life_path_marine_after", age: 38, title: "늦게 도착한 지부의 장부", choice: "증언을 낸다", result: "기록을 남겼다." },
+    { id: "life_last_year", age: 70, title: "마지막 날", choice: null, result: "한 생애가 끝났다." }
+  ];
+  const memories = endingMemories({ journal });
+  assert.ok(memories.length >= 3 && memories.length <= 5);
+  assert.ok(memories.every((entry) => journal.includes(entry)));
+  assert.ok(memories.some((entry) => entry.id === "life_path_marine_choice"));
+  assert.ok(memories.some((entry) => entry.id === "life_path_marine_after"));
+  assert.equal(memories.at(-1).id, "life_last_year");
+  assert.deepEqual(endingMemories({ journal: [] }), []);
+  assert.deepEqual(endingMemories({ journal: journal.slice(-1) }), journal.slice(-1), "짧은 삶에 없는 기억을 만들어 내지 않는다");
 });
 
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {

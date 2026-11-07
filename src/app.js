@@ -1,5 +1,6 @@
 import { fruitFxKind, powerFxForChoice } from "./power-fx.js";
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, collectMilestones, createGame, getScene, personalitySummary, replay, saveRecord } from "./game.js";
+import { endingMemories } from "./ending-memories.js";
 import { crewNews, crewVesselKind, eraStart, presentAge, stretched } from "./world.js";
 import { routeChartFor, routeMapLabel } from "./route-map.js";
 import { peopleSummary } from "./people.js";
@@ -350,13 +351,18 @@ function renderTimeline() {
   list.replaceChildren();
   const moments = life.journal.filter((entry) => KEY_MOMENT.test(entry.id));
   const last = life.journal.at(-1);
-  [...moments.slice(-11), ...(last && !moments.includes(last) ? [last] : [])].forEach((entry, index) => {
+  const display = life.creationVersion >= 29
+    ? endingMemories(life)
+    : [...moments.slice(-11), ...(last && !moments.includes(last) ? [last] : [])];
+  display.forEach((entry, index) => {
     const item = document.createElement("li");
     item.style.setProperty("--i", String(index));
     const when = document.createElement("b");
     when.textContent = `${entry.age}세`;
     const what = document.createElement("span");
-    what.textContent = entry.choice ? `${entry.title} — ${entry.choice}` : entry.title;
+    const outcome = life.creationVersion >= 29 ? entry.result?.replace(/\s+/g, " ") : null;
+    const excerpt = outcome ? ` · ${outcome.length > 90 ? outcome.slice(0, 89) + "…" : outcome}` : "";
+    what.textContent = entry.choice ? `${entry.title} — ${entry.choice}${excerpt}` : entry.title;
     item.append(when, what);
     list.append(item);
   });

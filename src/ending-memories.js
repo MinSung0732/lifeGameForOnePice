@@ -1,0 +1,33 @@
+// A short ending recap uses only entries actually written in the current life's journal.
+export function endingMemories(life) {
+  const journal = life.journal || [];
+  if (!journal.length) return [];
+  const choices = journal.filter((entry) => entry.choice);
+  const categories = [
+    (entry) => /^(life_home|life_first_skill|life_child_crisis)$/.test(entry.id),
+    (entry) => /^life_(career$|recruit_|.*_invitation_|first_station$)/.test(entry.id),
+    (entry) => /^life_(path_.*_choice$|orders$|loguetown_false_order$)/.test(entry.id),
+    (entry) => /^life_(path_.*_after$|encounter_return_|loguetown_last_signal$|people_.*reunion$|meet_)/.test(entry.id)
+  ];
+  const selected = [];
+  const pick = (entry) => {
+    if (entry && !selected.includes(entry)) selected.push(entry);
+  };
+  for (const [index, matches] of categories.entries()) {
+    const pool = choices.filter(matches);
+    pick(index < 2 ? pool[0] : pool.at(-1));
+  }
+  // Other lives have different defining choices: fill gaps without fabricating memories.
+  if (selected.length < 4) {
+    const remaining = choices.filter((entry) => !selected.includes(entry));
+    const missing = 4 - selected.length;
+    for (let index = 0; index < missing && remaining.length; index += 1) {
+      const at = Math.min(remaining.length - 1, Math.floor((index + 0.5) * remaining.length / missing));
+      pick(remaining[at]);
+    }
+  }
+  const final = journal.at(-1);
+  pick(final);
+  return selected.slice(0, final && selected.includes(final) ? 5 : 4)
+    .sort((a, b) => journal.indexOf(a) - journal.indexOf(b));
+}

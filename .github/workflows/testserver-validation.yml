@@ -17,3 +17,6 @@ jobs:
         with:
           node-version: '22'
       - run: npm test
+      - name: Simulate 1,000 lives and report event reach
+        if: always()
+        run: node scripts/life-audit.mjs
