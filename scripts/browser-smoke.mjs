@@ -82,7 +82,8 @@ try {
     await evaluate('document.getElementById("dev-patch-select").value="0_1";document.getElementById("dev-patch-select").dispatchEvent(new Event("change",{bubbles:true}))');
     await until('document.querySelectorAll("#choices button.choice").length>0');
     const size = await evaluate('(()=>{document.querySelector(".dev-patch-bar").style.display="none";const b=[...document.querySelectorAll("#choices button.choice")];const d=document.documentElement;return {viewport:d.clientWidth,scrollWidth:d.scrollWidth,bodyFont:parseFloat(getComputedStyle(document.querySelector("#scene-body")).fontSize),buttons:b.length,enabled:b.filter(x=>!x.disabled).length,minButtonHeight:Math.min(...b.map(x=>x.getBoundingClientRect().height))}})()');
-    console.log("BROWSER_GEOMETRY", JSON.stringify({device,...size}));
+    const overflows = await evaluate('(()=>{const max=document.documentElement.clientWidth;return [...document.querySelectorAll("*")].map(el=>({el,r:el.getBoundingClientRect()})).filter(x=>x.r.right>max+2 && x.r.width>0).slice(0,22).map(x=>({tag:x.el.tagName,id:x.el.id,cls:typeof x.el.className==="string"?x.el.className.slice(0,90):"",left:Math.round(x.r.left),right:Math.round(x.r.right),width:Math.round(x.r.width),scrollWidth:x.el.scrollWidth,cssOverflow:getComputedStyle(x.el).overflowX}))})()');
+    console.log("BROWSER_GEOMETRY", JSON.stringify({device,...size,overflows}));
     const debugShot = await send("Page.captureScreenshot", { format: "png" });
     await writeFile(join(root, "test-results", device + "-choices.png"), Buffer.from(debugShot.data, "base64"));
     assert.ok(size.enabled>0, device + " game has no enabled choice");
