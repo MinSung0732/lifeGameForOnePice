@@ -12,7 +12,9 @@ const EVENTS = [
   "life_meet_kureha", "life_meet_crocus",
   "life_encounter_return_kureha", "life_encounter_return_crocus",
   ...["pirate", "marine", "liberator", "civilian"].map((path) => "life_path_" + path + "_choice"),
-  "life_path_marine_after", "life_path_civilian_after"
+  "life_path_marine_after", "life_path_civilian_after", "life_path_civilian_legacy",
+  "life_people_mate_meet", "life_people_mate_path", "life_people_mate_crisis", "life_people_mate_reunion",
+  "life_people_ward_meet", "life_people_ward_return", "life_people_ward_legacy"
 ];
 
 const counts = Object.fromEntries(EVENTS.map((id) => [id, 0]));
@@ -23,6 +25,9 @@ const finishedReasons = {};
 const uniqueEndings = new Set();
 const lastTenBySpecies = new Map();
 const problems = [];
+const relationChoices = {};
+const relationGaps = { mate: [], ward: [], civilian: [] };
+let relationshipEndingMemories = 0;
 let finished = 0, replayed = 0, chosenCount = 0, repeatedTitles = 0, repeatedIds = 0;
 let switchedCareers = 0, earlyOverlap = 0, earlyCompared = 0, relevantLoguetown = 0;
 
@@ -86,7 +91,21 @@ for (let index = 0; index < 1000; index += 1) {
     if (pathHistory.size > 1) switchedCareers += 1;
     careers[life.path || "none"] = (careers[life.path || "none"] || 0) + 1;
     finishedReasons[life.ending || "unknown"] = (finishedReasons[life.ending || "unknown"] || 0) + 1;
-    uniqueEndings.add(endingMemories(life).map((entry) => entry.id + ":" + (entry.choice || "-")).join("|"));
+    const recap = endingMemories(life);
+    uniqueEndings.add(recap.map((entry) => entry.id + ":" + (entry.choice || "-")).join("|"));
+    if (recap.some((entry) => /^life_people_(mate|ward)_|^life_path_civilian_(after|legacy)/.test(entry.id))) relationshipEndingMemories++;
+    for (const entry of life.journal.filter((e) => /^(life_people_(mate|ward)|life_path_civilian)/.test(e.id) && e.choice)) {
+      const key = entry.id + ":" + entry.choice;
+      relationChoices[key] = (relationChoices[key] || 0) + 1;
+    }
+    for (const [name, first, last] of [
+      ["mate", "life_people_mate_meet", "life_people_mate_reunion"],
+      ["ward", "life_people_ward_meet", "life_people_ward_return"],
+      ["civilian", "life_path_civilian_choice", "life_path_civilian_after"]]) {
+      const firstEntry = life.journal.find((entry) => entry.id === first);
+      const lastEntry = life.journal.find((entry) => entry.id === last);
+      if (firstEntry && lastEntry) relationGaps[name].push(lastEntry.age - firstEntry.age);
+    }
     const oldTen = lastTenBySpecies.get(species);
     if (oldTen) {
       earlyOverlap += firstTen.filter((entry) => oldTen.includes(entry)).length;
@@ -106,7 +125,11 @@ const report = {
   recentTitleDuplicates: repeatedTitles, duplicateEventIds: repeatedIds,
   openingTenOverlap: earlyCompared ? Number((earlyOverlap / earlyCompared).toFixed(3)) : null,
   distinctEndingMemories: uniqueEndings.size, loguetownHumanBirths: relevantLoguetown,
-  eventReach: counts, failures: problems
+  eventReach: counts, relationshipEndingMemories,
+  relationChoiceCounts: relationChoices,
+  meanYearsBetweenRelationshipEvents: Object.fromEntries(Object.entries(relationGaps).map(([name, gaps]) =>
+    [name, gaps.length ? Number((gaps.reduce((total, gap) => total + gap, 0) / gaps.length).toFixed(1)) : null])),
+  failures: problems
 };
 console.log("AUDIT_REPORT_START");
 console.log(JSON.stringify(report, null, 2));
