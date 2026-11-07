@@ -12,6 +12,7 @@ import { canonIfAfter } from "./canon-events.js";
 import { crewContactScene } from "./canon-crews.js";
 import { canonBondScene } from "./canon-bonds.js";
 import { directEncounterFollowUp } from "./canon-encounter-followups.js";
+import { affiliationChapter } from "./affiliation-chapters.js";
 import { RECRUIT_VARIANTS } from "./recruit-variants.js";
 import { childhoodArt, childhoodQuiet } from "./childhood.js";
 import { loguetownFollowUp } from "./loguetown-followups.js";
@@ -1449,6 +1450,9 @@ function sceneForAge(life) {
   if (oldSignal) return oldSignal;
   const follow = life.creationVersion >= 9 ? followUp(life) : null;
   if (follow) return follow;
+  // Rule 28: distinct personal responsibilities follow existing authored call-backs.
+  const duty = affiliationChapter(life, age, base, storyBefore(life, age));
+  if (duty) return duty;
   const late = lateLife(life, age, base);
   if (late) return late;
   // Rule 11 checks promotions before the busy event generators, which otherwise took every year's slot.

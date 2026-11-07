@@ -15,6 +15,7 @@ import { canonGapFor } from "../src/canon-interludes.js";
 import { FLEX_IDS, FLEX_IDS_V5, lifeScenes, rankOpportunity, yearlyScene } from "../src/life-story.js";
 import { canonBondScene } from "../src/canon-bonds.js";
 import { directEncounterFollowUp } from "../src/canon-encounter-followups.js";
+import { affiliationChapter } from "../src/affiliation-chapters.js";
 import { canonRelationshipEntries } from "../src/canon-relationships.js";
 import { loguetownFollowUp } from "../src/loguetown-followups.js";
 import { rosterFor } from "../src/canon-crews.js";
@@ -1088,7 +1089,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 27);
+  assert.equal(createGame("original", 0).creationVersion, 28);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1331,6 +1332,76 @@ test("27번 규칙의 원작 인물 재회는 실제 연간 장면 선택기에�
     assert.ok(scene.choices.some((choice) => choice.id === "cooperate"));
   }
   assert.ok(play("original", 4, {}, { species: "인간" }, 3, 27).finished);
+});
+
+
+test("28번 규칙의 네 소속은 고유한 선택과 대가를 제공하고 이전 규칙은 변경하지 않는다", () => {
+  const groups = { pirate: "독립 해적단", marine: "해군", liberator: "독립 해방망", civilian: "민간 조합" };
+  const expected = {
+    pirate: ["profit", "negotiate", "rescue"], marine: ["obey", "inspect", "evacuate"],
+    liberator: ["secret", "consult", "evacuate"], civilian: ["contract", "rebuild", "explore"]
+  };
+  for (const [path, affiliation] of Object.entries(groups)) {
+    const life = createGame("original", 9, { species: "인간" }, 3, 28);
+    Object.assign(life, { path, affiliation, age: 27, careerStartAge: 20, location: "위스키 피크",
+      leftHome: true, homebound: false, supplies: 80 });
+    const card = affiliationChapter(life, 28, { age: 28, act: 2 }, 26);
+    assert.equal(card.id, "life_path_" + path + "_choice");
+    assert.deepEqual(card.choices.map((c) => c.id), expected[path]);
+    assert.ok(card.body.length <= 300);
+    assert.ok(card.choices.some((c) => !c.cost), "물자가 없어도 진행 가능한 선택 필수");
+    const completed = structuredClone(life);
+    card.choices[0].apply(completed);
+    assert.equal(completed.people.affiliationChapters[path].choice, expected[path][0]);
+    completed.seen.push(card.id);
+    assert.notEqual(affiliationChapter(completed, 29, { age: 29 }, 20)?.id, card.id);
+    if (path !== "marine") assert.equal(affiliationChapter({ ...life, affiliation: "해군" }, 28, { age: 28 }, 26), null);
+    assert.equal(affiliationChapter({ ...life, creationVersion: 27 }, 28, { age: 28 }, 26), null);
+  }
+  const resistance = createGame("original", 11, { species: "인간" }, 3, 28);
+  Object.assign(resistance, { path: "liberator", affiliation: "혁명군", careerStartAge: 20, age: 27 });
+  assert.doesNotMatch(affiliationChapter(resistance, 28, { age: 28 }, 30).body, /혁명군의 현장 연락소/);
+});
+
+test("28번 규칙의 해군·민간 후일담은 과거 선택을 기억하고 전향해도 예전 명령을 강제하지 않는다", () => {
+  for (const [path, affiliation, choices] of [
+    ["marine", "해군", ["obey", "inspect", "evacuate"]],
+    ["civilian", "민간 조합", ["contract", "rebuild", "explore"]]
+  ]) for (const choice of choices) {
+    const life = createGame("free", 3, { species: "어인" }, 3, 28);
+    Object.assign(life, { path, affiliation, location: "위스키 피크", careerStartAge: 20,
+      leftHome: true, homebound: false, supplies: 90 });
+    const first = affiliationChapter(life, 28, { age: 28 }, 19);
+    first.choices.find((c) => c.id === choice).apply(life);
+    life.seen.push(first.id);
+    assert.equal(affiliationChapter(life, 30, { age: 30 }, 19), null);
+    assert.equal(affiliationChapter(life, 32, { age: 32 }, 19).id, "life_path_" + path + "_after");
+    const changed = structuredClone(life);
+    Object.assign(changed, { path: "pirate", affiliation: "독립 해적단" });
+    const later = affiliationChapter(changed, 32, { age: 32 }, 19);
+    assert.ok(later.choices.some((c) => c.id === (path === "marine" ? "reply" : "send")));
+    if (path === "marine") assert.ok(!later.choices.some((c) => ["correct", "share", "testify"].includes(c.id)));
+    later.choices.find((c) => c.id === (path === "marine" ? "reply" : "stay")).apply(changed);
+    changed.seen.push(later.id);
+    assert.ok(changed.people.affiliationChapters[path].after);
+    assert.equal(affiliationChapter({ ...life, location: "위대한 항로 상공 · 스카이피아" }, 32, { age: 32 }, 19), null);
+  }
+});
+
+test("28번 소속별 사건은 실제 연간 진행 선택기에서 생성되고 기존 저장 규칙은 재현된다", () => {
+  for (const [path, affiliation] of Object.entries({
+    pirate: "독립 해적단", marine: "해군", liberator: "독립 해방망", civilian: "민간 조합"
+  })) {
+    const life = createGame("original", 5, { species: "인간" }, 3, 28);
+    Object.assign(life, { age: 28, path, affiliation, careerStartAge: 21,
+      leftHome: true, homebound: false, location: "위스키 피크",
+      seen: ["life_first_station", "life_leave_home"] });
+    assert.equal(yearlyScene(life).id, "life_path_" + path + "_choice");
+  }
+  for (const version of [25, 26, 27, 28]) {
+    const life = createGame("original", 0, { species: "인간" }, 3, version);
+    assert.deepEqual(replay(saveRecord(life)), life);
+  }
 });
 
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {
