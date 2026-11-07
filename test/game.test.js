@@ -17,6 +17,7 @@ import { canonBondScene } from "../src/canon-bonds.js";
 import { directEncounterFollowUp } from "../src/canon-encounter-followups.js";
 import { affiliationChapter } from "../src/affiliation-chapters.js";
 import { endingMemories } from "../src/ending-memories.js";
+import { PERSONAL_AIMS, personalAimRetirement, personalAimScene, personalAimSummary } from "../src/life-aim.js";
 import { canonRelationshipEntries } from "../src/canon-relationships.js";
 import { loguetownFollowUp } from "../src/loguetown-followups.js";
 import { childhoodScene } from "../src/childhood.js";
@@ -1096,7 +1097,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 31);
+  assert.equal(createGame("original", 0).creationVersion, 32);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1708,6 +1709,120 @@ test("31번 관계 UI는 실제 동료와 지나간 인연을 구별한다", () 
   assert.ok(!crewFor({ ...together, homebound: true }).some((person) => person.name === "세라"));
   const neverMet = { ...life, seen: ["life_people_mate_meet"] };
   assert.ok(!relationshipGroups(neverMet).bonds.some((person) => person.name === "누리"));
+});
+
+
+test("32번 규칙은 소속과 무관하게 개인 목표를 선택하거나 미정으로 남길 수 있다", () => {
+  const life = createGame("original", 63, { species: "인간" }, 3, 32);
+  assert.equal(life.personalAim, null);
+  assert.ok(!Object.hasOwn(createGame("original", 63, { species: "인간" }, 3, 31), "personalAim"));
+  Object.assign(life, { path: "pirate", careerStartAge: 20, age: 23, seen: ["life_first_station"] });
+  const scene = personalAimScene(life, 24, { age: 24, act: 2 });
+  assert.equal(scene.id, "life_personal_aim");
+  assert.equal(scene.choices.length, 5);
+  for (const [key, label] of Object.entries(PERSONAL_AIMS)) {
+    const state = structuredClone(life);
+    scene.choices.find((choice) => choice.id === key).apply(state);
+    assert.equal(state.personalAim, key);
+    assert.equal(state.path, "pirate", "진로는 개인 목표에 따라 바뀌지 않는다");
+    assert.equal(state.goal, life.goal, "기존 진로 목표는 덮어쓰지 않는다");
+    assert.equal(typeof label, "string");
+  }
+  const undecided = structuredClone(life);
+  scene.choices.find((choice) => choice.id === "undecided").apply(undecided);
+  assert.equal(undecided.personalAim, null);
+  assert.equal(personalAimScene({ ...life, creationVersion: 31 }, 24, {}), null);
+  assert.equal(personalAimScene({ ...life, seen: [] }, 24, {}), null);
+  assert.equal(personalAimScene(life, 21, {}), null);
+  assert.equal(personalAimScene({ ...life, seen: [...life.seen, "life_personal_aim"] }, 24, {}), null);
+});
+
+test("32번 개인 목표는 실제 생애 진행에서 도달하고 저장 재생에도 남는다", () => {
+  let observed = 0;
+  for (let seed = 0; seed < 16; seed += 1) {
+    let life = createGame("original", seed, { species: "인간" }, 3, 32);
+    for (let step = 0; step < 230 && !life.finished; step += 1) {
+      const scene = getScene(life);
+      assert.ok(scene);
+      if (scene.id === "life_personal_aim") {
+        const before = life.path;
+        life = advance(life, "justice");
+        assert.equal(life.personalAim, "justice");
+        assert.equal(life.path, before);
+        assert.ok(life.seen.includes("life_personal_aim"));
+        assert.deepEqual(replay(saveRecord(life)), life);
+        observed += 1;
+        break;
+      }
+      life = advance(life, scene.choices.find((choice) => !choice.disabled)?.id ?? null);
+    }
+  }
+  assert.ok(observed >= 5, "시드 16개 중 개인 목표를 선택할 수 있는 생애가 충분히 있어야 한다");
+});
+
+test("32번 노년기 선택은 실제로 고른 목표를 재해석할 수 있지만 강제 완성하지 않는다", () => {
+  const life = createGame("original", 20, { species: "인간" }, 3, 32);
+  Object.assign(life, { path: "marine", role: "해군 중령", personalAim: "justice",
+    seen: ["life_personal_aim"] });
+  const original = lifeScenes.find((scene) => scene.id === "life_retire_choice");
+  const later = personalAimRetirement(life, original);
+  assert.equal(later.choices.length, original.choices.length + 1);
+  assert.match(later.body, /부당함 앞에서 사람을 지키는 일/);
+  const chosen = later.choices.find((choice) => choice.id === "reframe");
+  const after = structuredClone(life);
+  chosen.apply(after);
+  assert.equal(after.skill, life.skill + 3);
+  assert.equal(after.role, life.role);
+  assert.equal(after.retired, false);
+  assert.equal(personalAimRetirement({ ...life, creationVersion: 31 }, original), original);
+  assert.equal(personalAimRetirement({ ...life, personalAim: null }, original).choices.length,
+    original.choices.length, "정하지 않은 꿈은 다시 해석하도록 강제하지 않는다");
+});
+
+test("32번 목표 회고는 실제 일지의 방향과 선택만 인용하고 31번 엔딩을 보존한다", () => {
+  const journal = [
+    { id: "life_first_skill", age: 9, choice: "도구를 배운다", title: "첫 기술" },
+    { id: "life_career", age: 20, choice: "해군에 지원", title: "소속" },
+    { id: "life_personal_aim", age: 22, choice: "사람을 지키고 싶다", title: "바라던 삶" },
+    { id: "life_path_marine_choice", age: 35, choice: "수배서 번호를 대조한다", title: "번호가 다른 수배서" },
+    { id: "life_retire_choice", age: 68,
+      choice: "처음의 꿈을 다른 뜻으로 받아들이고 지금의 일을 이어 간다", title: "자리에서 물러날 때" },
+    { id: "life_last_year", age: 72, choice: null, title: "마지막 날" }
+  ];
+  const current = { creationVersion: 32, personalAim: "justice", goal: "바다의 사람을 지키기", journal };
+  const recap = personalAimSummary(current);
+  assert.match(recap, /처음 고른 방향: 부당함 앞에서 사람을 지키는 일/);
+  assert.match(recap, /번호가 다른 수배서/);
+  assert.match(recap, /다른 뜻으로 받아들이기로 선택/);
+  assert.doesNotMatch(recap, /성공|실패|완수/);
+  const selected = endingMemories(current);
+  assert.ok(selected.some((entry) => entry.id === "life_personal_aim"));
+  assert.ok(selected.some((entry) => entry.id === "life_path_marine_choice"));
+  assert.equal(selected.at(-1), journal.at(-1));
+  assert.ok(selected.length <= 5 && selected.every((entry) => journal.includes(entry)));
+  const legacy = endingMemories({ ...current, creationVersion: 31 });
+  assert.ok(legacy.every((entry) => journal.includes(entry)));
+  assert.deepEqual(endingMemories({ ...current, creationVersion: 31 }), legacy);
+  assert.equal(personalAimSummary({ creationVersion: 32, personalAim: null, journal: [] }),
+    "스스로 정한 개인 목표의 기록은 남지 않았다.");
+  const undecided = { creationVersion: 32, personalAim: null, journal: [
+    { id: "life_personal_aim", age: 23, choice: "아직 정하지 않는다" },
+    { id: "life_last_year", age: 24, choice: null }
+  ] };
+  assert.match(personalAimSummary(undecided), /꿈을 정하지 않기로 했다/);
+  assert.doesNotMatch(personalAimSummary(undecided), /부당함|자유/);
+});
+
+test("32번 소속별 책임 장면은 실제 선택한 개인 목표만 언급한다", () => {
+  const life = createGame("original", 38, { species: "인간" }, 3, 32);
+  Object.assign(life, { age: 35, path: "marine", affiliation: "해군", careerStartAge: 20,
+    seen: ["life_personal_aim"], personalAim: "freedom", people: {} });
+  const event = affiliationChapter(life, 36, { age: 36 }, 12);
+  assert.equal(event.id, "life_path_marine_choice");
+  assert.match(event.body, /스스로 길을 선택하는 자유/);
+  assert.ok(event.body.length <= 300);
+  assert.doesNotMatch(affiliationChapter({ ...life, creationVersion: 31 }, 36, {}, 12).body, /스스로 길을 선택하는 자유/);
+  assert.doesNotMatch(affiliationChapter({ ...life, personalAim: null }, 36, {}, 12).body, /처음 골랐던/);
 });
 
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {
