@@ -24,7 +24,10 @@ export function crewFor(life) {
     names.push(name);
     members.push({ name, role });
   };
-  if (mate?.fate === "곁") members.push({ name: mate.name, role: mate.together ? "어릴 적 친구 · 동료" : "소꿉친구 · 동행 전" });
+  // Rule 31: an old companion is not necessarily aboard after changing careers.
+  if (mate?.fate === "곁" && (life.creationVersion < 31
+    || mate.together && mate.path === life.path && !life.retired && !life.homebound))
+    members.push({ name: mate.name, role: mate.together ? "어릴 적 친구 · 동료" : "소꿉친구 · 동행 전" });
   if (!life.path) return members;
   if (life.homebound) { add("이웃", 0x11); add("작업 동료", 0x12); return members; }
   // Rule 15: a named crew or organization shows its canon people of the era instead of stand-ins.
@@ -73,15 +76,30 @@ export function relationshipGroups(life) {
     if (name && !bonds.some((person) => person.name === name)) bonds.push({ name, role });
   };
   if (mate) {
+    const stillAlong = mate.together && mate.fate === "곁"
+      && (life.creationVersion < 31 || mate.path === life.path && !life.retired && !life.homebound);
     const status = mate.fate === "잃음" ? "소식이 끊김" : mate.fate === "다른 길" ? "서로 다른 길"
       : mate.fate === "적" ? "적대" : mate.fate === "화해" ? "화해"
-        : mate.together ? "동행 중" : "동행 전";
+        : stillAlong ? "동행 중"
+          : life.creationVersion >= 31 && mate.together ? "한때 함께 일함"
+            : life.creationVersion >= 31 && mate.path && life.path && mate.path !== life.path ? "서로 다른 길"
+              : "동행 전";
     addBond(mate.name, `소꿉친구 · ${status}`);
   } else if (life.friendName && life.friendName !== "옛 친구") {
     addBond(life.friendName, "옛 친구");
   }
   if (life.people?.rival) addBond(life.people.rival.name, "라이벌");
-  if (life.people?.ward) addBond(life.people.ward.name, "제자 · 후계");
+  const ward = life.people?.ward;
+  if (ward && (life.creationVersion < 31 || life.seen?.includes("life_people_ward_meet"))) {
+    const role = life.creationVersion < 31 ? "제자 · 후계" : {
+      "후계": "장부를 맡긴 후배", "자기 길": "다른 길을 택한 후배",
+      "맡김": "다른 집에 맡긴 아이", "지나침": "한때 지나친 아이",
+      "추적자": "다른 소속의 추적자", "원망": "갈등이 남은 인연",
+      "용서": "사과를 받아 준 인연", "놓아줌": "길을 터 준 인연",
+      "곁": "함께 일하던 후배"
+    }[ward.fate] || "부두에서 맺은 인연";
+    addBond(ward.name, role);
+  }
   for (const contact of canonRelationshipEntries(life)) addBond(contact.name, contact.role);
 
   const crew = [];

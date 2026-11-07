@@ -84,6 +84,12 @@ try {
     await evaluate('document.getElementById("journal-open").click()');
     assert.equal(await evaluate('document.getElementById("journal").open'), true);
     await evaluate('document.getElementById("journal-close").click()');
+    await evaluate('document.getElementById("relations-open").click()');
+    assert.equal(await evaluate('document.getElementById("relations-dialog").open'), true,
+      device + " relationship dialog should open");
+    await evaluate('document.getElementById("relations-close").click()');
+    assert.equal(await evaluate('document.getElementById("relations-dialog").open'), false,
+      device + " relationship dialog should close");
     await evaluate('document.getElementById("dev-patch-select").value="0_1";document.getElementById("dev-patch-select").dispatchEvent(new Event("change",{bubbles:true}))');
     await until('document.querySelectorAll("#choices button.choice").length>0');
     const size = await evaluate('(()=>{document.querySelector(".dev-patch-bar").style.display="none";const b=[...document.querySelectorAll("#choices button.choice")];const d=document.documentElement;return {viewport:d.clientWidth,scrollWidth:d.scrollWidth,bodyFont:parseFloat(getComputedStyle(document.querySelector("#scene-body")).fontSize),buttons:b.length,enabled:b.filter(x=>!x.disabled).length,minButtonHeight:Math.min(...b.map(x=>x.getBoundingClientRect().height))}})()');

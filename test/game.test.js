@@ -24,6 +24,7 @@ import { rosterFor } from "../src/canon-crews.js";
 import { attachCanonContact, canonEraFor, canonPowerAt, canonRelationshipLine, computeCaptureDiceTarget, computeContestDiceTarget, custodyContactStatus, custodyDivergenceText, pendingCanonContactScene, playerCombatRating } from "../src/canon-relationships.js";
 import { FATES } from "../src/fates.js";
 import { peopleSummary, personalBeat } from "../src/people.js";
+import { crewFor, relationshipGroups } from "../src/crew.js";
 import { DUTIES } from "../src/adventures.js";
 import { routeChartFor, routeMapLabel } from "../src/route-map.js";
 import { LOCAL_ARCS_V23, localCanonRipple } from "../src/canon-local-events.js";
@@ -1682,6 +1683,31 @@ test("31번 인연의 엔딩은 실제로 진행된 후계 사건만 우선하�
   assert.deepEqual(endingMemories({ creationVersion: 30, journal }), version30);
   assert.deepEqual(replay(saveRecord(createGame("original", 6, { species: "인간" }, 3, 31))),
     createGame("original", 6, { species: "인간" }, 3, 31));
+});
+
+test("31번 관계 UI는 실제 동료와 지나간 인연을 구별한다", () => {
+  const life = createGame("original", 15, { species: "인간" }, 3, 31);
+  Object.assign(life, { age: 50, path: "pirate", careerStartAge: 20,
+    affiliation: "독립 해적단", leftHome: true, homebound: false, retired: false,
+    seen: ["life_people_mate_meet", "life_people_ward_meet"],
+    people: { mate: { name: "세라", fate: "곁", path: "marine", together: true },
+      ward: { name: "누리", fate: "지나침", bond: 0 } } });
+  assert.ok(!crewFor(life).some((person) => person.name === "세라"), "옛 소속 친구는 현재 선원이 아니다");
+  const groups = relationshipGroups(life);
+  assert.match(groups.bonds.find((person) => person.name === "세라").role, /한때 함께 일함/);
+  assert.match(groups.bonds.find((person) => person.name === "누리").role, /지나친 아이/);
+  assert.ok(!groups.crew.some((person) => person.name === "세라"));
+  const older = { ...life, creationVersion: 30 };
+  assert.ok(crewFor(older).some((person) => person.name === "세라"), "규칙 30의 화면 출력은 유지한다");
+  assert.equal(relationshipGroups(older).bonds.find((person) => person.name === "누리").role, "제자 · 후계");
+  const together = { ...life, people: { ...life.people, mate: { ...life.people.mate, path: "pirate" },
+    ward: { ...life.people.ward, fate: "후계" } } };
+  assert.ok(crewFor(together).some((person) => person.name === "세라"));
+  assert.match(relationshipGroups(together).bonds.find((person) => person.name === "누리").role, /장부를 맡긴 후배/);
+  assert.ok(!crewFor({ ...together, retired: true }).some((person) => person.name === "세라"));
+  assert.ok(!crewFor({ ...together, homebound: true }).some((person) => person.name === "세라"));
+  const neverMet = { ...life, seen: ["life_people_mate_meet"] };
+  assert.ok(!relationshipGroups(neverMet).bonds.some((person) => person.name === "누리"));
 });
 
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {
