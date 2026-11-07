@@ -58,7 +58,8 @@ export function personalAimSummary(life) {
     && entry.choice && /^life_(path_(pirate|marine|liberator|civilian)_choice|people_ward_return|path_(marine|civilian)_after|free_rank)$/.test(entry.id));
   const later = defining ? " " + defining.title + "에서 '" + defining.choice + "'을 골랐다." : "";
   const finalDecision = journal.find((entry) => entry.id === "life_retire_choice" && entry.choice);
-  const reframed = finalDecision?.choice?.includes("처음의 꿈을 다른 뜻으로")
-    ? " 노년에 처음의 꿈을 다른 뜻으로 받아들이기로 선택했다." : "";
-  return opening + later + reframed;
+  const late = finalDecision?.choice?.includes("처음의 꿈을 다른 뜻으로")
+    ? " 노년에 처음의 꿈을 다른 뜻으로 받아들이기로 선택했다."
+    : finalDecision ? " 노년에는 '" + finalDecision.choice + "'을 선택했다." : "";
+  return opening + later + late;
 }

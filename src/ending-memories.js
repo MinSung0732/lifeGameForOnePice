@@ -35,7 +35,9 @@ export function endingMemories(life) {
     add(selected[0]);
     add(choices.find((entry) => entry.id === "life_personal_aim"));
     add(selected[2]);
-    add(choices.find((entry) => entry.id === "life_retire_choice") || selected[3]);
+    const lateChoice = choices.find((entry) => entry.id === "life_retire_choice");
+    // Keep personal relationships visible unless the player explicitly reinterpreted their original dream.
+    add(lateChoice?.choice?.includes("처음의 꿈을 다른 뜻으로") ? lateChoice : selected[3] || lateChoice);
     for (const entry of [...selected, ...choices]) {
       if (remembered.length >= 4) break;
       add(entry);
