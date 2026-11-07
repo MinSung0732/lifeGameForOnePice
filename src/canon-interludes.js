@@ -313,7 +313,13 @@ export function canonInterludeScene(life) {
   const time = DAYS[yearRoll(life.seed ^ 0x298ca7d3, life.canonDailyIndex) % DAYS.length];
   if (life.leftHome && !life.homebound && yearRoll(life.seed ^ 0x52ac417e, life.canonDailyIndex) % 8 === 0) {
     const voyage = travelScene(life, life.age);
-    return { ...voyage, id: `life_canon_daily_${life.canonDailyIndex}`, act: 3, canonDaily: true,
+    // Rule 29: avoid near-identical voyage titles; do not alter older save replays.
+    const alreadyTitled = life.creationVersion >= 29
+      && life.journal.slice(-10).some((entry) => entry.title === voyage.title);
+    const voyageCount = life.journal.filter((entry) => entry.title === voyage.title
+      || entry.title.startsWith(voyage.title + " ·")).length;
+    return { ...voyage, title: alreadyTitled ? voyage.title + " · " + (voyageCount + 1) + "번째 항해" : voyage.title,
+      id: `life_canon_daily_${life.canonDailyIndex}`, act: 3, canonDaily: true,
       timeLabel: `${time} · ${life.location}`, choices: [...voyage.choices,
         { id: "stay", label: "이번 물때는 여기서 지낸다", risk: "지역의 신뢰 +5 · 현재 섬에 머묾",
           personality: { caution: 3 }, apply: (state) => { state.trust += 5; return "다음 바늘이 움직일 때까지 이곳 사람들의 일을 도왔다."; } }] };

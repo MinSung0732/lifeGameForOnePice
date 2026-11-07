@@ -11,7 +11,7 @@ import { fruitFor } from "../src/fruits.js";
 import { bountyScene, formatBounty, marinePatrolScene, pursuerFor } from "../src/bounty.js";
 import { CANON_BEAT_COUNT, canonAge, canonScene } from "../src/canon-events.js";
 import { PRE_CANON_BEAT_COUNT, preCanonCount, preCanonScene } from "../src/canon-before.js";
-import { canonGapFor } from "../src/canon-interludes.js";
+import { canonGapFor, canonInterludeScene } from "../src/canon-interludes.js";
 import { FLEX_IDS, FLEX_IDS_V5, lifeScenes, rankOpportunity, yearlyScene } from "../src/life-story.js";
 import { canonBondScene } from "../src/canon-bonds.js";
 import { directEncounterFollowUp } from "../src/canon-encounter-followups.js";
@@ -1093,7 +1093,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 28);
+  assert.equal(createGame("original", 0).creationVersion, 29);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1333,6 +1333,8 @@ test("27번 규칙의 원작 인물 재회는 실제 연간 장면 선택기에�
     life.seen = ["life_meet_" + key, "life_first_station", "life_leave_home",
       ...OLD_ERA.map(({ id }) => "life_old_" + id)];
     life.people.canonContacts = { [key]: { score: 12, meetings: 1, lastAge: 24 } };
+    // Complete unrelated fate chapters so this fixture tests the reunion's yearly slot.
+    life.fates = Object.fromEntries(Object.values(FATES).flat().map(({ key }) => [key, { step: 999, marks: [] }]));
     const scene = yearlyScene(life);
     assert.equal(scene.id, "life_encounter_return_" + key);
     assert.equal(scene.urgent, true);
@@ -1404,6 +1406,7 @@ test("28번 소속별 사건은 실제 연간 진행 선택기에서 생성되�
       leftHome: true, homebound: false, location: "위스키 피크",
       seen: ["life_first_station", "life_leave_home",
         ...OLD_ERA.map(({ id }) => "life_old_" + id)] });
+    life.fates = Object.fromEntries(Object.values(FATES).flat().map(({ key }) => [key, { step: 999, marks: [] }]));
     assert.equal(yearlyScene(life).id, "life_path_" + path + "_choice");
   }
   for (const version of [25, 26, 27, 28]) {
@@ -1426,6 +1429,30 @@ test("28번 생애는 서로 다른 출생과 모드에서 끝까지 진행하�
     const legacy = play("original", 2, {}, { species: "인간" }, 3, version);
     assert.deepEqual(replay(saveRecord(legacy)), legacy, version + "번 규칙은 재생되어야 한다");
   }
+});
+
+
+test("29번 규칙은 가까운 선장 항해 장면의 같은 제목을 구별하고 28번 기록을 유지한다", () => {
+  const life = createGame("original", 6, { species: "인간" }, 3, 29);
+  Object.assign(life, { path: "pirate", affiliation: "독립 해적단", role: "선장",
+    independent: true, leftHome: true, homebound: false, canonGapRemaining: 2,
+    location: "자야 · 모크 타운", supplies: 80 });
+  let first;
+  for (let slot = 0; slot < 50; slot += 1) {
+    life.canonDailyIndex = slot;
+    const candidate = canonInterludeScene(life);
+    if (candidate?.id.startsWith("life_canon_daily_") && candidate?.choices?.some((c) => c.id === "stay")) {
+      first = candidate;
+      break;
+    }
+  }
+  assert.ok(first, "항해 막간이 생성되어야 한다");
+  life.journal = [{ id: "prior_voyage", title: first.title, age: life.age }];
+  const distinct = canonInterludeScene(life);
+  assert.notEqual(distinct.title, first.title);
+  assert.match(distinct.title, /번째 항해/);
+  const previous = canonInterludeScene({ ...life, creationVersion: 28 });
+  assert.equal(previous.title, first.title, "규칙 28에서는 이전 제목을 그대로 재생한다");
 });
 
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {
