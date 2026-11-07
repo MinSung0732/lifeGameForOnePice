@@ -149,7 +149,17 @@ const CHARACTER_POWERS = {
   },
   hachi: {
     default: 46
-  }
+  },
+  nami: { east_blue: 30, skypiea: 44, enies_lobby: 54, default: 62 },
+  buggy: { east_blue: 48, default: 62 },
+  kaya: { default: 12 },
+  zeff: { default: 70 },
+  arlong: { east_blue: 68, default: 68 },
+  wyper: { skypiea: 90, default: 90 },
+  enel: { skypiea: 132, default: 132 },
+  lucci: { enies_lobby: 115, default: 140 },
+  moria: { enies_lobby: 116, default: 116 },
+  hancock: { marineford: 150, default: 150 }
 };
 
 export function canonEraFor(life, beatId) {
