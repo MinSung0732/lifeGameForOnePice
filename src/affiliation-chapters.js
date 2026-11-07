@@ -17,7 +17,7 @@ export function affiliationChapter(life, age, base, before) {
   const previous = life.people?.affiliationChapters || {};
   // shortcut: letters do not reach isolated locations until navigation includes a postal-route model.
   const hasMail = !["스카이피아", "엘바프", "하치노스", "아마존 릴리 외해"].some((place) => life.location?.includes(place));
-  if (hasMail && previous.marine && life.seen.includes("life_path_marine_choice")
+  if (!life.retired && hasMail && previous.marine && life.seen.includes("life_path_marine_choice")
     && !life.seen.includes("life_path_marine_after") && age >= previous.marine.age + 3) {
     const old = previous.marine.choice;
     const stillMarine = life.path === "marine" && coherentDuty(life);
@@ -51,7 +51,7 @@ export function affiliationChapter(life, age, base, before) {
       body: start + " " + trace + " 지금 소속이 달라도 그날의 선택은 네 인생에서 사라지지 않았다.",
       choices: choices.filter((c) => !c.when || c.when(life)) };
   }
-  if (hasMail && previous.civilian && life.seen.includes("life_path_civilian_choice")
+  if (!life.retired && hasMail && previous.civilian && life.seen.includes("life_path_civilian_choice")
     && !life.seen.includes("life_path_civilian_after") && age >= previous.civilian.age + 3) {
     const old = previous.civilian.choice;
     const stillCivilian = life.path === "civilian" && coherentDuty(life);

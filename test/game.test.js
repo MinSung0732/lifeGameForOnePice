@@ -1650,6 +1650,11 @@ test("31번 규칙은 장부를 실제로 가르친 민간인에게만 독립적
   const noTeaching = { ...left, seen: [...life.seen], people: { affiliationChapters: { civilian: { ...life.people.affiliationChapters.civilian, after: "send" } } } };
   assert.equal(affiliationChapter(noTeaching, 45, { age: 45 }, 15), null);
   assert.equal(affiliationChapter({ ...life, creationVersion: 30, retired: true }, 45, { age: 45 }, 15), null);
+  const retiredMarine = { ...life, path: "marine", affiliation: "해군", retired: true,
+    people: { affiliationChapters: { marine: { age: 30, choice: "obey" } } },
+    seen: ["life_path_marine_choice"] };
+  assert.equal(affiliationChapter(retiredMarine, 45, { age: 45 }, 15), null,
+    "은퇴한 인물에게 이전 해군의 지시를 강제하지 않는다");
   assert.equal(affiliationChapter({ ...life, location: "위대한 항로 상공 · 스카이피아" }, 45, { age: 45 }, 15)?.id, undefined);
   assert.ok(card.body.length <= 300);
 });
