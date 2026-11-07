@@ -14,6 +14,8 @@ import { PRE_CANON_BEAT_COUNT, preCanonCount, preCanonScene } from "../src/canon
 import { canonGapFor } from "../src/canon-interludes.js";
 import { FLEX_IDS, FLEX_IDS_V5, lifeScenes, rankOpportunity, yearlyScene } from "../src/life-story.js";
 import { canonBondScene } from "../src/canon-bonds.js";
+import { directEncounterFollowUp } from "../src/canon-encounter-followups.js";
+import { canonRelationshipEntries } from "../src/canon-relationships.js";
 import { loguetownFollowUp } from "../src/loguetown-followups.js";
 import { rosterFor } from "../src/canon-crews.js";
 import { attachCanonContact, canonEraFor, canonPowerAt, canonRelationshipLine, computeCaptureDiceTarget, computeContestDiceTarget, custodyContactStatus, custodyDivergenceText, pendingCanonContactScene, playerCombatRating } from "../src/canon-relationships.js";
@@ -1086,7 +1088,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 26);
+  assert.equal(createGame("original", 0).creationVersion, 27);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1240,6 +1242,71 @@ test("26번 규칙: 실제 진행에서 세 개의 후속 사건에 도달하고
     assert.equal(encountered.size, life.journal.filter((entry) => targets.has(entry.id)).length);
   }
   assert.ok(fullChain, "at least one ordinary run should reach all three follow-ups");
+});
+
+
+test("27번 규칙은 쿠레하와 크로커스의 선택을 기존 인연 기록에 연결한다", () => {
+  for (const mode of ["original", "free"]) {
+    for (const [key, place, good] of [["kureha", "드럼섬", "treat"], ["crocus", "쌍둥이 언덕", "ask"]]) {
+      const life = createGame(mode, 4, { species: "인간" }, 3, 27);
+      Object.assign(life, { path: "civilian", location: place, age: 25, supplies: 80, pendingEncounter: key });
+      assert.ok(getScene(life).choices.some((c) => c.id === "disagree"));
+      const helped = advance(life, good);
+      assert.equal(helped.people.canonContacts[key].score, 12);
+      assert.equal(helped.people.canonContacts[key].meetings, 1);
+      assert.ok(canonRelationshipEntries(helped).some((entry) => entry.name === (key === "kureha" ? "닥터 쿠레하" : "크로커스")));
+      assert.equal(advance(life, "disagree").people.canonContacts[key].score, -18);
+      for (const version of [25, 26]) {
+        const former = { ...life, creationVersion: version };
+        assert.equal(getScene(former).choices.some((c) => c.id === "disagree"), false);
+        assert.equal(advance(former, good).people.canonContacts?.[key], undefined);
+      }
+    }
+  }
+});
+
+test("27번 규칙의 재회는 시기·장소·3년 간격·소속·인연 점수를 지킨다", () => {
+  for (const [key, place, earliest] of [["kureha", "드럼섬", 30], ["crocus", "쌍둥이 언덕", 24]]) {
+    for (const path of ["marine", "pirate", "civilian", "liberator"]) {
+      const life = createGame("original", 31, { species: "인간" }, 3, 27);
+      Object.assign(life, { path, age: 27, location: place, seen: ["life_meet_" + key] });
+      life.people.canonContacts = { [key]: { score: 15, meetings: 1, lastAge: 27 } };
+      const base = { age: 30, act: 2, yearly: true };
+      const good = directEncounterFollowUp(life, 30, base, 10);
+      assert.equal(good.id, "life_encounter_return_" + key);
+      assert.ok(good.body.length <= 300);
+      assert.ok(good.choices.some((c) => c.id === "cooperate"));
+      assert.equal(good.choices.some((c) => c.id === "duty"), path === "marine");
+      assert.equal(good.choices.some((c) => c.id === "crew"), path === "pirate");
+      assert.equal(good.choices.some((c) => c.id === "neighbors"), ["civilian", "liberator"].includes(path));
+      assert.equal(good.choices.find((c) => c.id === "cooperate").available({ ...life, skill: 10 }), false);
+      const completed = structuredClone(life);
+      good.choices.find((c) => c.id === "cooperate").apply(completed);
+      completed.seen.push(good.id);
+      assert.equal(completed.people.canonContacts[key].legacy, "협력");
+      assert.equal(completed.people.canonContacts[key].meetings, 2);
+      assert.equal(directEncounterFollowUp(completed, 35, base, 10), null);
+      const hostile = structuredClone(life);
+      hostile.people.canonContacts[key].score = -18;
+      const tense = directEncounterFollowUp(hostile, 30, base, 10);
+      assert.ok(tense.choices.some((c) => c.id === "apologize"));
+      assert.ok(!tense.choices.some((c) => c.id === "cooperate"));
+      tense.choices.find((c) => c.id === "apologize").apply(hostile);
+      assert.equal(hostile.people.canonContacts[key].score, -3);
+      assert.equal(hostile.people.canonContacts[key].legacy, "화해");
+      assert.equal(directEncounterFollowUp({ ...life, location: "샤본디 제도" }, 30, base, 10), null);
+      assert.equal(directEncounterFollowUp(life, 30, base, earliest + 1), null);
+      assert.equal(directEncounterFollowUp(life, 30, base, -1), null);
+      assert.equal(directEncounterFollowUp(life, 29, base, 10), null);
+      assert.equal(directEncounterFollowUp({ ...life, retired: true }, 30, base, 10), null);
+      assert.equal(directEncounterFollowUp({ ...life, creationVersion: 26 }, 30, base, 10), null);
+      assert.equal(directEncounterFollowUp({ ...life, seen: [] }, 30, base, 10), null);
+    }
+  }
+  for (const version of [25, 26, 27]) {
+    const life = createGame("free", 0, { species: "인간" }, 3, version);
+    assert.deepEqual(replay(saveRecord(life)), life);
+  }
 });
 
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {

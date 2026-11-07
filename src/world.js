@@ -1,5 +1,6 @@
 // Named stops follow places shown in the original story; the exact voyage is this game's fiction.
 import { crewTie } from "./canon-crews.js";
+import { enrichDirectEncounter } from "./canon-encounter-followups.js";
 
 // Rule 16 stretches the canon era (Luffy's few years at sea) over ERA_YEARS of the protagonist's life,
 // like its long serialization. The protagonist ages normally; canon people keep their canon ages.
@@ -635,8 +636,8 @@ export function encounterAt(life) {
 export function encounterScene(life) {
   const encounter = ENCOUNTERS.find((entry) => entry.id === life.pendingEncounter);
   if (!encounter) throw new Error("만남 기록을 찾을 수 없습니다.");
-  return { id: `life_meet_${encounter.id}`, age: life.age, act: 2, species: "all", yearly: true, encounter: true,
-    art: encounter.art || "deck", title: encounter.title || `${encounter.name}와의 마주침`, body: encounter.body, canon: encounter.canon, choices: encounter.choices };
+  return enrichDirectEncounter(life, { id: `life_meet_${encounter.id}`, age: life.age, act: 2, species: "all", yearly: true, encounter: true,
+    art: encounter.art || "deck", title: encounter.title || `${encounter.name}와의 마주침`, body: encounter.body, canon: encounter.canon, choices: encounter.choices }, encounter.id);
 }
 
 export function isNewWorld(place) {

@@ -339,6 +339,8 @@ const CHARACTERS = {
   buggy: { name: "버기", display: "버기", group: "버기 해적단", captureable: true },
   kaya: { name: "카야", display: "카야", group: "시럽 마을" },
   zeff: { name: "제프", display: "제프", group: "바라티에" },
+  kureha: { name: "닥터 쿠레하", display: "닥터 쿠레하", group: "드럼섬" },
+  crocus: { name: "크로커스", display: "크로커스", group: "쌍둥이 언덕" },
   arlong: { name: "아론", display: "아론", group: "아론 일당", captureable: true },
   wyper: { name: "와이퍼", display: "와이퍼", group: "샨디아 전사" },
   enel: { name: "에넬", display: "에넬", group: "스카이피아", captureable: true },

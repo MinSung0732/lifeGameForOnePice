@@ -11,6 +11,7 @@ import { fateScene } from "./fates.js";
 import { canonIfAfter } from "./canon-events.js";
 import { crewContactScene } from "./canon-crews.js";
 import { canonBondScene } from "./canon-bonds.js";
+import { directEncounterFollowUp } from "./canon-encounter-followups.js";
 import { RECRUIT_VARIANTS } from "./recruit-variants.js";
 import { childhoodArt, childhoodQuiet } from "./childhood.js";
 import { loguetownFollowUp } from "./loguetown-followups.js";
@@ -1456,6 +1457,9 @@ function sceneForAge(life) {
   // Rule 19 does the same for career offers (own crew, switching sides), each still limited by its own gap in years.
   const offered = life.creationVersion >= 19 ? careerOpportunity(life, age, base) : null;
   if (offered) return offered;
+  // Rule 27: return to a known person only on the same island and in a confirmed era.
+  const returning = directEncounterFollowUp(life, age, base, storyBefore(life, age));
+  if (returning) return returning;
   // Rule 20: a canon boss or a canon friend who has grown close gets a scene of their own.
   const bond = canonBondScene(life, age, base);
   if (bond) return bond;
