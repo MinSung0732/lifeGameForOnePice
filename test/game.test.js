@@ -1085,7 +1085,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 23);
+  assert.equal(createGame("original", 0).creationVersion, 24);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1652,6 +1652,69 @@ test("인연 검색은 이름과 관계를 구별 없이 찾으며 빈 결과도
   const many = Array.from({ length: 50 }, (_, index) => ({ name: `동료 ${index + 1}`, role: "선원" }));
   assert.equal(filterRelationshipEntries(many, "").length, 50, "인원이 많아도 목록을 누락하지 않는다");
   assert.deepEqual(filterRelationshipEntries(many, "동료 50"), [many[49]]);
+});
+
+test("관계 알림은 화면 맨 앞 인물 대신 실제 변경 인물로 표시한다", () => {
+  const before = createGame("free", 120, { species: "인간" }, 3, 24);
+  before.people.canonContacts = {
+    usopp: { score: 10, meetings: 2, lastOrder: 9 },
+    robin: { score: 30, meetings: 1, lastOrder: 4 }
+  };
+  const after = structuredClone(before);
+  after.people.canonContacts.robin.score = 42;
+  const notices = collectMilestones(before, after).filter((item) => item.kind === "canon-bond");
+  assert.equal(notices.length, 1);
+  assert.equal(notices[0].title, "로빈 · 우호 +42");
+
+  const both = structuredClone(after);
+  both.people.canonContacts.usopp.score = 15;
+  both.people.canonContacts.robin.score = 45;
+  assert.deepEqual(collectMilestones(before, both).filter((item) => item.kind === "canon-bond").map((item) => item.title),
+    ["우솝 · 우호 +15", "로빈 · 신뢰 +45"]);
+  const reordering = structuredClone(before);
+  reordering.people.canonContacts.robin.lastOrder = 15;
+  assert.deepEqual(collectMilestones(before, reordering), [], "순서 변경은 관계 변경이 아니다");
+});
+
+test("24번 규칙은 구경·피난을 원작 인물과의 만남으로 기록하지 않는다", () => {
+  const setup = (version, location) => {
+    const life = createGame("free", 121, { species: "인간" }, 3, version);
+    Object.assign(life, { path: "pirate", location, skill: 90, health: 90, supplies: 100 });
+    return life;
+  };
+  const examples = [
+    ["wano", "와노국 외해", "watch", "zoro", []],
+    ["whole_cake", "홀케이크 아일랜드 외해", "cake", "sanji", []],
+    ["egghead", "에그헤드 외해", "listen", "bonney", []],
+    ["water_seven", "워터 세븐", "away", "robin", ["canon_arc_water_seven_0"]],
+    ["dressrosa", "드레스로자", "help", "rebecca", ["canon_arc_dressrosa_0"]]
+  ];
+  for (const [id, place, choice, wrongPerson, seen] of examples) {
+    const life = setup(24, place);
+    life.seen = seen;
+    const scene = arcScene(life, { id }, life.age);
+    assert.ok(scene && !scene.choices.some((item) => item.id === "canon_contact_talk"), id);
+    scene.choices.find((item) => item.id === choice).apply(life);
+    assert.equal(life.people.canonContacts[wrongPerson], undefined, id);
+  }
+
+  const jaya = setup(24, "자야 · 모크 타운");
+  const scene = arcScene(jaya, { id: "jaya" }, jaya.age);
+  scene.choices.find((c) => c.id === "mock").apply(jaya);
+  assert.equal(jaya.people.canonContacts.blackbeard, undefined);
+  const spoken = setup(24, "자야 · 모크 타운");
+  scene.choices.find((c) => c.id === "laugh").apply(spoken);
+  assert.equal(spoken.people.canonContacts.blackbeard?.meetings, 1);
+
+  const robin = setup(24, "에니에스 로비");
+  const meeting = arcScene(robin, { id: "enies_lobby" }, robin.age);
+  meeting.choices.find((c) => c.id === "clear").apply(robin);
+  assert.equal(robin.people.canonContacts.robin?.meetings, 1);
+  assert.ok(meeting.choices.some((c) => c.id === "canon_contact_talk"));
+
+  const old = setup(23, "와노국 외해");
+  arcScene(old, { id: "wano" }, old.age).choices.find((c) => c.id === "watch").apply(old);
+  assert.equal(old.people.canonContacts.zoro?.meetings, 1, "기존 세이브의 재생 결과는 보존");
 });
 
 test("collectMilestones detects affiliation, devil fruit, haki, bounty, and relationship changes", () => {
