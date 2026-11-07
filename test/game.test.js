@@ -1654,6 +1654,25 @@ test("인연 검색은 이름과 관계를 구별 없이 찾으며 빈 결과도
   assert.deepEqual(filterRelationshipEntries(many, "동료 50"), [many[49]]);
 });
 
+test("로빈과 책을 읽는 인연 이벤트는 우솝이 아니라 로빈의 인연을 올린다", () => {
+  const life = createGame("free", 122, { species: "인간" }, 3, 24);
+  life.path = "pirate";
+  life.age = life.birth.yearsBeforeCurrent - 2;
+  life.friendBond = 70;
+  life.trust = 65;
+  life.people.canonContacts = {
+    usopp: { score: 10, meetings: 2, lastOrder: 20 },
+    robin: { score: 30, meetings: 1, lastOrder: 10 }
+  };
+  const book = canonBondScene(life, life.age, { age: life.age });
+  assert.equal(book?.id, "life_bond_robin_30");
+  const after = structuredClone(life);
+  book.choices.find(({ id }) => id === "quiet").apply(after);
+  assert.equal(after.people.canonContacts.usopp.score, 10);
+  assert.notEqual(after.people.canonContacts.robin.score, 30);
+  assert.match(collectMilestones(life, after).find((item) => item.kind === "canon-bond").title, /^로빈 ·/);
+});
+
 test("관계 알림은 화면 맨 앞 인물 대신 실제 변경 인물로 표시한다", () => {
   const before = createGame("free", 120, { species: "인간" }, 3, 24);
   before.people.canonContacts = {
