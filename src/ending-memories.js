@@ -29,6 +29,20 @@ export function endingMemories(life) {
   }
   const final = journal.at(-1);
   pick(final);
+  if (life.creationVersion >= 32) {
+    const remembered = [];
+    const add = (entry) => { if (entry && entry !== final && !remembered.includes(entry)) remembered.push(entry); };
+    add(selected[0]);
+    add(choices.find((entry) => entry.id === "life_personal_aim"));
+    add(selected[2]);
+    add(choices.find((entry) => entry.id === "life_retire_choice") || selected[3]);
+    for (const entry of [...selected, ...choices]) {
+      if (remembered.length >= 4) break;
+      add(entry);
+    }
+    if (final) remembered.push(final);
+    return remembered.slice(0, 5).sort((a, b) => journal.indexOf(a) - journal.indexOf(b));
+  }
   if (life.creationVersion >= 30) {
     const chosen = selected.filter((entry) => entry !== final).slice(0, 4);
     if (final) chosen.push(final);

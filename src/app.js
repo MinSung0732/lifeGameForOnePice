@@ -1,6 +1,7 @@
 import { fruitFxKind, powerFxForChoice } from "./power-fx.js";
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, collectMilestones, createGame, getScene, personalitySummary, replay, saveRecord } from "./game.js";
 import { endingMemories } from "./ending-memories.js";
+import { personalAimLabel, personalAimSummary } from "./life-aim.js";
 import { crewNews, crewVesselKind, eraStart, presentAge, stretched } from "./world.js";
 import { routeChartFor, routeMapLabel } from "./route-map.js";
 import { peopleSummary } from "./people.js";
@@ -175,7 +176,8 @@ function renderLifeStrip() {
   byId("life-work").textContent = `${life.job} · ${life.affiliation}${life.coalition ? " · 연합" : life.alliance ? " · 동맹" : ""}`;
   byId("life-role").textContent = life.role;
   byId("life-power").textContent = `${powerSummary()}${life.creationVersion >= 4 && life.bounty ? ` · 현상금 ${formatBounty(life.bounty)}` : ""}`;
-  byId("life-goal").textContent = life.goal;
+  byId("life-goal").textContent = life.creationVersion >= 32
+    ? personalAimLabel(life.personalAim) || "아직 개인적인 꿈을 정하지 않음" : life.goal;
   renderReputation();
   renderRelationshipsOverview();
 }
@@ -1661,7 +1663,8 @@ function renderEnding() {
   byId("ending-fates-row").hidden = !fates.length;
   byId("ending-fates").textContent = fates.join(" · ");
   renderTimeline();
-  byId("ending-goal").textContent = completeLife ? life.goal : `${life.goal} · ${life.ending === "death" ? "미완" : life.ending === "retire" ? "책임 승계" : "진행 중"}`;
+  byId("ending-goal").textContent = life.creationVersion >= 32 ? personalAimSummary(life)
+    : completeLife ? life.goal : `${life.goal} · ${life.ending === "death" ? "미완" : life.ending === "retire" ? "책임 승계" : "진행 중"}`;
   byId("ending-personality").textContent = personalitySummary(life.personality);
   const route = (life.travelHistory || [life.birth.home]).filter((place, index, all) => place !== all[index - 1]);
   byId("ending-route").textContent = `${route.join(" → ")} (${new Set(route).size}곳)`;

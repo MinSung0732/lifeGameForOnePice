@@ -1,3 +1,5 @@
+import { personalAimLabel } from "./life-aim.js";
+
 // Rule 28: four career-specific choices and two remembered consequences; no new event engine.
 function noteDuty(state, path, choice, age) {
   state.people.affiliationChapters ||= {};
@@ -123,10 +125,13 @@ export function affiliationChapter(life, age, base, before) {
       ? "어인섬의 물길을 배우고 사람들과 일하던 어린 날이 지금의 선택에 남았다."
       : "조의 숲길을 배우고 사람들과 일하던 어린 날이 지금의 선택에 남았다."
     : "";
+  const aim = life.creationVersion >= 32 && life.seen.includes("life_personal_aim")
+    ? personalAimLabel(life.personalAim) : null;
+  const aimContext = aim ? " 처음 골랐던 '" + aim + "'이라는 방향도 이 상황에서 어떻게 지킬지는 아직 정해지지 않았다." : "";
   if (life.seen.includes(id)) return null;
   if (path === "pirate" && life.leftHome && !life.homebound) return {
     ...base, id, urgent: true, art: "deckTenseStandoff", title: "노획물보다 늦은 구조 신호",
-    body: "노획한 물자를 싣고 떠나려는 순간 작은 상선이 구조 신호를 보냈다. 선장은 수익 없는 구출은 피하자고 했지만 동료는 부상자를 보며 망설였다. 네가 선장이든 선원이든 판단의 대가는 배 전체가 나누게 된다." + (childhood ? " " + childhood : ""),
+    body: "노획한 물자를 싣고 떠나려는 순간 작은 상선이 구조 신호를 보냈다. 선장은 수익 없는 구출은 피하자고 했지만 동료는 부상자를 보며 망설였다. 네가 선장이든 선원이든 판단의 대가는 배 전체가 나누게 된다." + (childhood ? " " + childhood : "") + aimContext,
     choices: [
       { id: "profit", label: "노획물을 지키고 정한 항로로 간다", risk: "물자 +12 · 동료 유대 -6 · 지역 신뢰 -5",
         personality: { ambition: 5 }, apply: (s) => { s.supplies += 12; s.friendBond -= 6; s.trust -= 5;
@@ -142,7 +147,7 @@ export function affiliationChapter(life, age, base, before) {
     ] };
   if (path === "marine" && !life.homebound) return {
     ...base, id, urgent: true, art: "workbenchReportLetters", title: "번호가 다른 수배서",
-    body: "해군 지부는 수배서와 이름이 비슷한 상선을 억류하라고 명령했다. 선장은 화물 장부를 내밀며 승객을 먼저 내려 달라고 부탁했다. 빨리 끝내면 포상을 받을 수 있지만 수배서가 잘못되었을 가능성도 있었다." + (childhood ? " " + childhood : ""),
+    body: "해군 지부는 수배서와 이름이 비슷한 상선을 억류하라고 명령했다. 선장은 화물 장부를 내밀며 승객을 먼저 내려 달라고 부탁했다. 빨리 끝내면 포상을 받을 수 있지만 수배서가 잘못되었을 가능성도 있었다." + (childhood ? " " + childhood : "") + aimContext,
     choices: [
       { id: "obey", label: "상관의 지시대로 선원들을 우선 억류한다",
         risk: "물자 +8 · 지역 신뢰 -8 · 조직 평판 +3", personality: { loyalty: 6 },
@@ -161,7 +166,7 @@ export function affiliationChapter(life, age, base, before) {
     const group = life.affiliation === "혁명군" && before <= 22
       ? "혁명군의 현장 연락소" : "지역의 독립 구호 연락망";
     return { ...base, id, urgent: true, art: "workbenchNegotiation", title: "불빛을 끌 수 없는 은신처",
-      body: group + "에 피난을 기다리는 가족이 도착했다. 임무 편지는 아직 전달되지 않았고 이동 경로가 드러나면 다른 은신처도 위험해진다. 동료들은 작전을 지키자고 했지만 주민들은 문을 열어 달라고 부탁했다." + (childhood ? " " + childhood : ""),
+      body: group + "에 피난을 기다리는 가족이 도착했다. 임무 편지는 아직 전달되지 않았고 이동 경로가 드러나면 다른 은신처도 위험해진다. 동료들은 작전을 지키자고 했지만 주민들은 문을 열어 달라고 부탁했다." + (childhood ? " " + childhood : "") + aimContext,
       choices: [
         { id: "secret", label: "연락책을 숨기고 계획부터 완수한다",
           risk: "물자 +8 · 지역 신뢰 -8 · 연락망 유지", personality: { caution: 6 },
@@ -179,7 +184,7 @@ export function affiliationChapter(life, age, base, before) {
   }
   if (path === "civilian") return {
     ...base, id, urgent: true, art: "workbench", title: "수리할 배와 돌아갈 일터",
-    body: (life.homebound ? "고향" : "기항지") + "의 부두가 폭풍에 무너졌다. 돈을 낸 상선부터 고치면 일터를 지킬 수 있지만 작은 어선은 출항하지 못한다. 새 항로를 찾으면 수입이 늘 수도 있으나 위험한 물때를 확인할 사람이 필요했다." + (childhood ? " " + childhood : ""),
+    body: (life.homebound ? "고향" : "기항지") + "의 부두가 폭풍에 무너졌다. 돈을 낸 상선부터 고치면 일터를 지킬 수 있지만 작은 어선은 출항하지 못한다. 새 항로를 찾으면 수입이 늘 수도 있으나 위험한 물때를 확인할 사람이 필요했다." + (childhood ? " " + childhood : "") + aimContext,
     choices: [
       { id: "contract", label: "계약한 큰 상선부터 수리한다",
         risk: "물자 +12 · 지역 신뢰 -7", personality: { caution: 5 },
