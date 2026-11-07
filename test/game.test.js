@@ -1085,7 +1085,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 24);
+  assert.equal(createGame("original", 0).creationVersion, 25);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1127,6 +1127,36 @@ test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선�
   assert.equal(getScene(previous).title, "범람한 길목");
   assert.equal(getScene(advance(previous, "wait")).title, "그날의 새벽");
   assert.deepEqual(replay(saveRecord(previous)), previous);
+});
+
+
+test("25번 규칙의 로그 타운 유년 선택은 몇 해 뒤 보상으로 돌아오고 옛 기록은 유지한다", () => {
+  const profile = { species: "인간", home: "이스트 블루 · 로그 타운" };
+  for (const choiceId of ["learn", "help"]) {
+    const before = reach(0, "life_first_skill", {}, profile, 25);
+    assert.equal(getScene(before).title, "전보벌레가 뒤섞은 신호");
+    const chosen = advance(before, choiceId);
+    assert.equal(chosen.loguetownSignal, choiceId);
+    assert.deepEqual(replay(saveRecord(chosen)), chosen);
+
+    const later = reach(0, "life_training", { life_first_skill: choiceId }, profile, 25);
+    assert.equal(later.loguetownSignal, choiceId);
+    assert.ok(later.journal.some((entry) => entry.id === "life_school" && entry.title === "항구에 남은 기억"));
+    const training = getScene(later);
+    assert.equal(training.title, "다시 울린 구조 신호");
+    assert.match(training.body, choiceId === "learn" ? /신호표/ : /네 이름/);
+    assert.match(training.choices.find((choice) => choice.id === "help").risk,
+      choiceId === "learn" ? /기술 \+5/ : /지역의 신뢰 \+5/);
+    const followed = advance(later, "help");
+    assert.match(followed.lastOutcome, choiceId === "learn" ? /신호를 읽는 기술/ : /항구 사람들의 신뢰/);
+    assert.deepEqual(replay(saveRecord(followed)), followed);
+  }
+
+  const old = reach(0, "life_first_skill", {}, profile, 24);
+  assert.notEqual(getScene(old).title, "전보벌레가 뒤섞은 신호");
+  assert.deepEqual(replay(saveRecord(advance(old, "learn"))), advance(old, "learn"));
+  const otherHome = reach(0, "life_first_skill", {}, { species: "인간", home: "사우스 블루 · 바테리라" }, 25);
+  assert.notEqual(getScene(otherHome).title, "전보벌레가 뒤섞은 신호");
 });
 
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {

@@ -203,6 +203,48 @@ export function childhoodScene(life, card) {
   const crisis = selected(life, 0x5a7180e4, CRISES, childhoodArt(life, practice.art));
   const school = selected(life, 0x1d6ee143, SCHOOL);
   const training = selected(life, 0x24c1532b, TRAINING, childhoodArt(life, school.art));
+
+  // Rule 25: this single Loguetown childhood route gains local color and a choice remembered years later.
+  if (life.creationVersion >= 25 && life.birth.species === "인간" && life.birth.home === "이스트 블루 · 로그 타운") {
+    if (card.id === "life_home") return { ...card, title: "수배서가 날아온 아침", art: "childMarket",
+      body: "로그 타운의 장터에 해군이 놓친 수배서가 눈처럼 흩날렸다. 한 장이 생선 장수의 얼굴에 붙자 아이들은 해적 선장이 나타났다며 깔깔 웃었다. 그러나 항구의 어른들은 멀리 들어오는 낯선 깃발을 보자 웃음을 멈췄다." };
+
+    if (card.id === "life_first_skill") return { ...card, title: "전보벌레가 뒤섞은 신호", art: "childInlet",
+      body: "전보벌레가 해군 순찰선의 검문 명령과 상선의 구조 요청을 한꺼번에 따라 했다. 수평선에는 정체 모를 해적 깃발도 떠올랐다. 어른들이 항구를 지키는 사이, 너도 신호를 가리거나 안내등을 밝힐 수 있었다.",
+      choices: practice.choices.map((option) => {
+        const learned = option.id === "learn";
+        const base = buildChoice({ ...option,
+          label: learned ? "순찰선과 상선의 신호를 구분해 적는다" : "이웃과 함께 상선에 안전한 길을 알린다",
+          result: learned ? "신호를 하나씩 구분해 기록했다. 헷갈리던 전보벌레도 마침내 정확한 말을 따라 했다."
+            : "해안의 불빛을 따라 상선이 암초를 벗어났다. 선장은 이름을 물었고 사람들은 너를 기억했다." });
+        return { ...base, apply: (state) => { const result = base.apply(state); state.loguetownSignal = option.id; return result; } };
+      }) };
+
+    if (card.id === "life_school") return { ...card, title: "항구에 남은 기억", art: "childChart",
+      body: life.loguetownSignal === "learn"
+        ? "몇 해 전 네가 구분해 적은 전보벌레 신호가 해군 초소의 장부에 남아 있었다. 새 수병이 상선의 신호를 해적의 암호로 오해하자, 경비는 그때의 기록을 펼쳐 보였다. 목소리 하나를 정확히 듣는 일이 바다에서는 중요했다."
+        : "몇 해 전 네가 안내했던 상선이 다시 로그 타운에 들어왔다. 선장은 그날 불빛을 비춰 준 아이를 기억했다. 해군의 검문이 길어지자 선장은 네게 항구의 안전한 길을 알려 달라고 부탁했다." };
+
+    if (card.id === "life_training") {
+      const memory = life.loguetownSignal;
+      const bonus = memory === "learn" ? { skill: 5 } : memory === "help" ? { trust: 5 } : null;
+      const reminder = memory === "learn" ? "그때의 기록 덕분에 신호를 읽는 기술이 한층 늘었다."
+        : "지난번 도움을 기억한 선장의 소개로 항구 사람들의 신뢰가 더해졌다.";
+      return { ...card, title: "다시 울린 구조 신호", art: "childLantern",
+        body: memory === "learn"
+          ? "몇 해 전 신호를 헷갈렸던 전보벌레가 다시 울었다. 새로 온 상선이 암초에 접근했지만, 네가 남긴 신호표가 해군 순찰선의 장부에 있었다. 이번에는 누구도 경고를 잘못 듣지 않도록 해야 했다."
+          : "몇 해 전 네가 길을 알려 준 상선이 구조 신호를 보내며 돌아왔다. 선장은 네 이름을 기억했고, 해군 순찰선도 항구 진입로를 물었다. 위험한 밤바다를 지나려면 이번에도 여러 사람의 손이 필요했다.",
+        choices: training.choices.map((option) => {
+          const labels = { practice: "구조 신호표를 다시 익힌다", earn: "순찰선의 보급 일을 맡는다", help: "상선과 해군에 함께 안전 항로를 알린다" };
+          const results = { practice: "밤새 신호표를 고쳐 써서 다음 배도 알아볼 수 있게 했다.",
+            earn: "군함과 상선 사이에서 물자를 옮기고 품삯을 받았다. 쉬는 시간은 줄었다.",
+            help: "등불을 나눠 들자 상선과 순찰선이 차례로 암초를 빠져나왔다." };
+          const base = buildChoice({ ...option, label: labels[option.id], result: results[option.id] });
+          return { ...base, risk: bonus ? `${base.risk} · ${memory === "learn" ? "옛 신호 기록으로 기술 +5" : "옛 인연으로 지역의 신뢰 +5"}` : base.risk,
+            apply: (state) => { const result = base.apply(state); if (bonus) applyEffects(state, bonus); return bonus ? `${result} ${reminder}` : result; } };
+        }) };
+    }
+  }
   if (card.id === "life_home") {
     return { ...card, ...home, art: childhoodArt(life, home.art) };
   }
