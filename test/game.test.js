@@ -20,6 +20,48 @@ import { FATES } from "../src/fates.js";
 import { peopleSummary } from "../src/people.js";
 import { DUTIES } from "../src/adventures.js";
 import { routeChartFor, routeMapLabel } from "../src/route-map.js";
+import { LOCAL_ARCS_V23, localCanonRipple } from "../src/canon-local-events.js";
+
+test("23번 연결 지역은 원작 시간대에 고유 상호작용을 보여 주고 과거 기록은 유지한다", () => {
+  const v23 = createGame("original", 135, { species: "인간" }, 3, 23);
+  const v22 = createGame("original", 135, { species: "인간" }, 3, 22);
+  v23.age = v23.birth.yearsBeforeCurrent + 20;
+  v22.age = v23.age;
+  v23.path = v22.path = "pirate";
+  v23.supplies = v22.supplies = 80;
+  const all = ["departure", "zoro", "buggy", "usopp", "baratie", "arlong",
+    "skypiea_trial", "skypiea_bell", "enies_lobby", "thriller_shadows", "thriller_aftermath", "amazon_lily"];
+  assert.ok(all.every((id) => LOCAL_ARCS_V23[id]?.scenes?.length >= 1));
+  for (const id of all) {
+    const arc = LOCAL_ARCS_V23[id];
+    const original = { ...v23, location: arc.place, people: { ...v23.people } };
+    const scenes = arc.scenes.map((_, index) => ({
+      preCanonStep: null, location: arc.place, entry: index, id: `canon_arc_${id}_${index}`
+    }));
+    assert.ok(scenes.every(({ id: sceneId }) => sceneId.startsWith("canon_arc_")));
+    assert.ok(arc.scenes.some((scene) => scene.choices.some((choice) => choice.id.startsWith("change_"))));
+    assert.ok(arc.scenes.every((scene) => scene.choices.every((choice) =>
+      !choice.id.startsWith("change_") || choice.when({ ...original, mode: "original" }) === false)));
+    assert.ok(arc.scenes.some((scene) => scene.choices.some((choice) =>
+      choice.id.startsWith("change_") && choice.when({ ...original, mode: "free" }))));
+  }
+  assert.ok(!("canonRipples" in v22.people), "이전 세이브에 새로운 필드를 강제로 추가하지 않는다");
+});
+
+test("23번 자유 모드에서 개입한 뒤 원작 사건의 후속 선택과 인연 기록이 남는다", () => {
+  const free = createGame("free", 134, { species: "인간" }, 3, 23);
+  free.path = "pirate";
+  free.supplies = 90;
+  const i = LOCAL_ARCS_V23.skypiea_trial.scenes[0].choices.find(({ id }) => id === "change_skypiea_trial");
+  assert.ok(i.when(free));
+  const beforeSupplies = free.supplies;
+  i.apply(free);
+  assert.equal(free.supplies, beforeSupplies - 8);
+  assert.match(localCanonRipple(free, "upper_yard").body, /샨디아/);
+  assert.equal(localCanonRipple({ ...free, mode: "original" }, "upper_yard"), null);
+  assert.equal(localCanonRipple({ ...free, creationVersion: 22 }, "upper_yard"), null);
+  assert.equal(localCanonRipple(free, "maxim"), null);
+});
 
 test("22번 항로는 임의 지명 접근을 줄이고 주요 원작 장소를 연결한다", () => {
   const old = createGame("free", 21, { species: "인간" }, 3, 21);
@@ -1004,7 +1046,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 22);
+  assert.equal(createGame("original", 0).creationVersion, 23);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
