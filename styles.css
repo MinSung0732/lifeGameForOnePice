@@ -857,7 +857,7 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
   .game.has-choices .scene-art img { height: 72px; }
   .game.many-choices .scene-art img { height: 42px; }
   .scene-copy h1 { margin-top: 6px; padding-bottom: 6px; font-size: 23px; }
-  .scene-body { margin: 8px 0 10px; font-size: 14px; line-height: 1.48; }
+  .scene-body { margin: 8px 0 10px; font-size: 16px; line-height: 1.55; }
   .growth-panels { gap: 9px; margin-bottom: 6px; }
   .stats-panel { padding: 4px 0 6px; }
   .stats-panel h2 { margin-bottom: 3px; font-size: 13px; }
@@ -869,9 +869,9 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
   .stat-head { margin-bottom: 1px; font-size: 10px; line-height: 1.15; }
   .stat-head strong { font-size: 10px; text-align: right; }
   .stat-track { height: 4px; }
-  .choice { min-height: 0; padding: 4px 5px; }
-  .choice strong { font-size: 13px; }
-  .choice small { font-size: 11px; }
+  .choice { min-height: 44px; padding: 10px 8px; }
+  .choice strong { font-size: 15px; }
+  .choice small { font-size: 13px; }
   .choice-dice { flex-basis: 96px; padding-left: 8px; }
   .life-strip { grid-template-columns: 1fr; gap: 8px; margin: 0 0 8px; padding: 6px 0; }
   .life-pane.char-pane { padding-right: 0; border-right: none; border-bottom: 1px dashed var(--line); padding-bottom: 6px; gap: 5px; }

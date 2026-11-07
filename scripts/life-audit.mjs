@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { advance, createGame, getScene, replay, saveRecord } from "../src/game.js";
 import { endingMemories } from "../src/ending-memories.js";
 
+const VERSION = Number(process.env.CREATION_VERSION || 29);
 const SPECIES = ["인간", "어인", "밍크족", "하늘섬 사람", "거인족"];
 const MODES = ["original", "free"];
 const POLICIES = ["first", "last", "balanced", "helpful"];
@@ -57,7 +58,7 @@ for (let index = 0; index < 1000; index += 1) {
   speciesCounts[species] += 1;
   let life, sceneId = null, step = 0;
   try {
-    life = createGame(mode, seed, { species }, 3, 29);
+    life = createGame(mode, seed, { species }, 3, VERSION);
     if (life.birth.species === "인간" && life.birth.home === "이스트 블루 · 로그 타운") relevantLoguetown += 1;
     const pathHistory = new Set();
     const firstTen = [];
@@ -98,7 +99,7 @@ for (let index = 0; index < 1000; index += 1) {
 }
 
 const report = {
-  requested: 1000, finished, completionRate: finished / 1000,
+  creationVersion: VERSION, requested: 1000, finished, completionRate: finished / 1000,
   replayed, replayFailures: finished - replayed,
   modes, species: speciesCounts, endingByPath: careers, endingReasons: finishedReasons,
   switchedCareers, averageChoices: Number((chosenCount / 1000).toFixed(2)),

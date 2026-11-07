@@ -256,6 +256,29 @@ export function childhoodScene(life, card) {
       choices: practice.choices.map((choice) => buildChoice(choice)) };
   }
   if (card.id === "life_school") return { ...card, ...school, art: childhoodArt(life, school.art) };
+  if (card.id === "life_training" && life.creationVersion >= 30
+    && ["어인", "밍크족"].includes(life.birth.species)) {
+    const oldChoice = life.journal.find((entry) => entry.id === "life_first_skill")?.choice;
+    const memory = practice.choices.find((choice) => choice.label === oldChoice)?.id;
+    if (memory) {
+      const learned = memory === "learn", place = life.birth.species === "어인" ? "어인섬의 물길" : "조의 숲길";
+      return { ...card, ...training, art: childhoodArt(life, training.art),
+        body: training.body + " " + place + "에서 " + (learned
+          ? "어릴 때 기록해 두었던 표식을 다시 떠올렸다." : "함께 일을 나눴던 이웃들의 방법을 다시 떠올렸다."),
+        choices: training.choices.map((choice) => {
+          const built = buildChoice(choice);
+          const bonus = learned && choice.id === "practice" ? { skill: 3 }
+            : !learned && choice.id === "help" ? { friendBond: 3 } : null;
+          return bonus ? { ...built,
+            risk: built.risk + (learned ? " · 옛 기록으로 기술 +3" : " · 옛 협력으로 친구 유대 +3"),
+            apply: (state) => {
+              const result = built.apply(state); applyEffects(state, bonus);
+              return result + (learned ? " 어린 날의 관찰이 기술에 보탬이 됐다." : " 오래된 협력의 기억이 동료와의 일을 도왔다.");
+            }
+          } : built;
+        }) };
+    }
+  }
   if (card.id === "life_training") return { ...card, ...training, art: childhoodArt(life, training.art),
     choices: training.choices.map((choice) => buildChoice(choice)) };
   if (card.id === "life_child_crisis" || card.id === "life_after_storm") {

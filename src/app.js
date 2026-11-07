@@ -45,22 +45,8 @@ function safeReplay(record) {
     }
     return state;
   } catch {
-    if (!record || record.version !== 1 || !Array.isArray(record.actions)) throw new Error("저장 기록 형식이 맞지 않습니다.");
-    const rules = record.rules === undefined ? 1 : record.rules;
-    let state = createGame(record.mode, record.seed, record.profile === undefined ? {} : record.profile, rules,
-      record.creationVersion === undefined ? 1 : record.creationVersion);
-    const validActions = [];
-    for (const action of record.actions) {
-      if (action !== null && typeof action !== "string") break;
-      try {
-        state = advance(state, action);
-        validActions.push(action);
-      } catch {
-        break;
-      }
-    }
-    record.actions = validActions;
-    return state;
+    // Do not trim invalid actions in the user's only copy of a saved life.
+    throw new Error("저장 기록을 복원하지 못했습니다. 선택 기록은 변경하지 않았습니다.");
   }
 }
 
@@ -85,6 +71,7 @@ function loadLibrary() {
         safeReplay(saved.lives[saved.active]);
       } catch {
         saved.active = -1;
+        showStorageMessage("활성 기록을 복원하지 못했습니다. 저장 목록과 원래 선택 기록은 보존했습니다.");
       }
     }
     library = saved;

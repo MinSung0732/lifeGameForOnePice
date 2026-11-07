@@ -657,6 +657,8 @@ function crewVoyageScene(life, age) {
   const scattered = strawHat && life.seen?.includes("canon_before_sabaody_scatter") && !life.seen?.includes("canon_reunion");
   const captain = strawHat ? "루피와 나미" : "선장과 항해사";
   const voyageTitle = scattered ? "다시 만날 날을 위한 수련" : `${captain}의 항로`;
+  const strained = life.creationVersion >= 30 && !scattered && life.friendBond < 40;
+  const shortSupplies = life.creationVersion >= 30 && !scattered && life.supplies < 20;
   // Rule 29: only new lives distinguish returning crew voyages; older journals retain their titles.
   const repeats = life.creationVersion >= 29
     ? life.journal.filter((entry) => entry.title === voyageTitle || entry.title.startsWith(voyageTitle + " ·")).length : 0;
@@ -672,12 +674,24 @@ function crewVoyageScene(life, age) {
     art: "deck", title: repeats ? `${voyageTitle} · ${repeats + 1}번째 항해` : voyageTitle,
     body: scattered
       ? "샤본디에서 흩어진 일당은 각자의 자리에서 수련하고 있다. 재집결의 약속 전까지는 선장의 항해에 합류할 수 없다."
+      : strained ? `${captain}가 항로를 정했지만 최근의 말다툼으로 조타 지시가 잘 전해지지 않았다. 선원인 ${life.birth.name}은 혼자 일을 떠맡을지, 동료와 신호를 맞출지 골라야 했다.`
+      : shortSupplies ? `${captain}가 항로를 정했지만 식량과 수리 자재가 모자랐다. 선원들은 서로의 몸과 배를 돌보며 다음 기항지까지 맡을 일을 나눠야 했다.`
+      : life.creationVersion >= 30 ? `${captain}가 다음 항로를 정했다. ${life.role === "견습 선원" ? "견습인 너는 선배의 판단을 확인하며" : "선원인 너는 동료와 의견을 나누며"} 조타를 돕거나 선체를 점검한다. 맡은 일이 달라도 함께 바다를 건넌다.`
       : `${captain}가 다음 목적지를 정했다. 선원인 ${life.birth.name}은 어디로 갈지 고르는 대신 항해 중 맡을 일을 결정했다.`,
     choices: [
       { id: "sail", label: scattered ? "각자의 자리에서 수련한다" : "항해와 조타 준비를 돕는다", risk: scattered ? "기술 +5 · 재결집을 준비" : "기술 +5 · 선장의 항로에 동행",
         personality: { loyalty: 5 }, apply: (state) => { state.skill += 5; return depart(state); } },
       { id: "prepare", label: scattered ? "몸을 회복하며 약속을 기다린다" : "식량과 선체를 점검한다", risk: scattered ? "건강 +5 · 재결집을 준비" : "건강 +5 · 선장의 항로에 동행",
-        personality: { caution: 5 }, apply: (state) => { state.health += 5; return depart(state); } }
+        personality: { caution: 5 }, apply: (state) => { state.health += 5; return depart(state); } },
+      ...(strained ? [{
+        id: "coordinate", cost: 5, label: "물자를 나눠 쓰고 동료와 조타 신호를 다시 맞춘다",
+        risk: "물자 5 필요 · 동료 유대 +8", personality: { loyalty: 5, empathy: 5 },
+        apply: (state) => {
+          state.supplies -= 5; state.friendBond += 8;
+          const voyage = depart(state);
+          return "서로 잘못 들었던 신호를 고쳤다. 남은 물자는 줄었지만 조타 당직을 다시 나눌 수 있었다. " + voyage;
+        }
+      }] : [])
     ]
   };
 }
@@ -764,6 +778,18 @@ function distanceProportionalTravelScene(life, age) {
   const canSail = (state, route, cost) => state.supplies >= cost
     && (state.creationVersion < 22 || specialRouteReady(state, route));
 
+  // Rule 30: show a past contact only on a reachable route during their supported era.
+  const rememberedPort = (dest) => {
+    if (life.creationVersion < 30 || !life.people?.canonContacts) return "";
+    const person = dest === "드럼섬" ? ["kureha", 30] : dest === "쌍둥이 언덕" ? ["crocus", 24] : null;
+    if (!person) return "";
+    const [key, earliest] = person, contact = life.people.canonContacts[key];
+    const before = storyBefore(life, age);
+    return contact?.meetings && life.seen.includes("life_meet_" + key)
+      && age - (contact.lastAge ?? age) >= 3 && age - (life.people.lastBondAge ?? -100) >= 3
+      && before >= 0 && before <= earliest && !life.seen.includes("life_encounter_return_" + key)
+      ? " · 지난 인연을 다시 찾을 기회" : "";
+  };
   const nearCost = life.location === "샤본디 제도" && near.dest === "어인섬" ? 30 : near.cost;
   const midCost = life.location === "샤본디 제도" && mid.dest === "어인섬" ? 30 : mid.cost;
   const farCost = life.location === "샤본디 제도" && far.dest === "어인섬" ? 30 : far.cost;
@@ -781,7 +807,7 @@ function distanceProportionalTravelScene(life, age) {
   const choices = [
     {
       id: "near",
-      label: travelLabel(near, `[단거리] 기록지침을 따라 ${ro(near.dest)} 간다`),
+      label: travelLabel(near, `[단거리] 기록지침을 따라 ${ro(near.dest)} 간다`) + rememberedPort(near.dest),
       available: (state) => canSail(state, near, nearCost),
       risk: travelRisk(near, nearCost, nearRisk),
       personality: { caution: 4 },
@@ -789,7 +815,7 @@ function distanceProportionalTravelScene(life, age) {
     },
     {
       id: "mid",
-      label: travelLabel(mid, `[중거리] 바닷길을 넓혀 ${ro(mid.dest)} 간다`),
+      label: travelLabel(mid, `[중거리] 바닷길을 넓혀 ${ro(mid.dest)} 간다`) + rememberedPort(mid.dest),
       available: (state) => canSail(state, mid, midCost),
       risk: travelRisk(mid, midCost, midRisk),
       personality: { freedom: 4 },
@@ -797,7 +823,7 @@ function distanceProportionalTravelScene(life, age) {
     },
     {
       id: "far",
-      label: travelLabel(far, `[원거리] 먼 바다를 건너 ${ro(far.dest)} 간다`),
+      label: travelLabel(far, `[원거리] 먼 바다를 건너 ${ro(far.dest)} 간다`) + rememberedPort(far.dest),
       when: () => life.creationVersion < 22 || routes.length >= 3,
       available: (state) => canSail(state, far, farCost),
       risk: travelRisk(far, farCost, farRisk),
@@ -807,7 +833,7 @@ function distanceProportionalTravelScene(life, age) {
     {
       id: "detour",
       when: () => Boolean(detour),
-      label: detour ? travelLabel(detour, `[특수 항로] ${ro(detour.dest)} 간다`) : "",
+      label: detour ? travelLabel(detour, `[특수 항로] ${ro(detour.dest)} 간다`) + rememberedPort(detour.dest) : "",
       available: (state) => detour && canSail(state, detour, detour.cost),
       risk: detour ? travelRisk(detour, detour.cost, `물자 ${detour.cost} 필요 · ${detour.note}`) : "",
       personality: { freedom: 6, caution: 3 },
@@ -851,7 +877,15 @@ function distanceProportionalTravelScene(life, age) {
     urgent: true,
     art: "deck",
     title: displayTitle,
-    body: life.creationVersion >= 22
+    body: life.creationVersion >= 30
+      ? life.supplies < 20
+        ? "배의 식량과 수리 자재가 얼마 남지 않았다. 가까운 항로라도 준비 없이 나설 수는 없다. 선단에 동승하면 당장의 물자는 아낄 수 있지만 동료의 부담이 커진다."
+        : (life.travelHistory || []).filter((place) => place === life.location).length >= 2
+          ? "이미 들렀던 항구에서 낯익은 사람들의 이야기를 들었다. 예전에 맺은 인연도 달라졌을 수 있지만 오늘 갈 길은 스스로 선택해야 한다. 기록지침과 물자 소모를 확인하고 다음 기항지를 정한다."
+          : life.path === "civilian"
+            ? "기항지의 운송 일을 맡은 사람들은 화물 장부와 물때를 함께 살폈다. 빠른 항로보다 무사히 도착하는 일이 중요한 날이다. 거리와 수리 비용을 따져 앞으로 일할 곳을 정해야 한다."
+            : "기록지침이 여러 길을 가리켰다. 선원들은 물자와 항해 경험을 따져 가까운 길과 먼 길의 위험을 비교했다. 특수 항로에는 별도 준비가 필요하고 오늘의 선택은 동료의 다음 생활도 바꿀 수 있다."
+      : life.creationVersion >= 22
       ? "기록지침과 해도가 여러 항로를 가리켰다. 드문 미개척 암초보다는 알려진 섬을 중심으로 길을 고르고, 하늘길과 정부 구역 같은 특수 항로에는 별도 준비가 필요하다."
       : `기록지침과 나침반의 바늘이 제각기 다른 물길을 가리켰다. 거리에 따라 채워 넣을 물자와 식량이 달랐고, 지도에 없는 임의 지명의 작은 섬이나 미개척 암초를 경유할 수도 있었다.`,
     choices

@@ -28,6 +28,11 @@ export function endingMemories(life) {
   }
   const final = journal.at(-1);
   pick(final);
+  if (life.creationVersion >= 30) {
+    const chosen = selected.filter((entry) => entry !== final).slice(0, 4);
+    if (final) chosen.push(final);
+    return chosen.sort((a, b) => journal.indexOf(a) - journal.indexOf(b));
+  }
   return selected.slice(0, final && selected.includes(final) ? 5 : 4)
     .sort((a, b) => journal.indexOf(a) - journal.indexOf(b));
 }

@@ -2,13 +2,14 @@ import assert from "node:assert/strict";
 import { advance, createGame, getScene, replay, saveRecord } from "../src/game.js";
 import { endingMemories } from "../src/ending-memories.js";
 
+const VERSION = Number(process.env.CREATION_VERSION || 29);
 const species = ["인간", "어인", "밍크족", "하늘섬 사람", "거인족"];
 const pairs = [];
 const repeatedBodies = new Map();
 const failures = [];
 
 function play(mode, seed, kind, policy) {
-  let life = createGame(mode, seed, { species: kind }, 3, 29);
+  let life = createGame(mode, seed, { species: kind }, 3, VERSION);
   const birth = structuredClone(life.birth);
   const initial = structuredClone(life.birthStats);
   const early = [], middle = [], decisions = new Map(), roles = new Set(), contactNames = new Set();
@@ -80,7 +81,7 @@ const repeated = [...repeatedBodies.entries()]
   .slice(0, 12).map(([name, count]) => ({ count, family: name.split("|")[0], body: name.split("|")[1].slice(0, 85) }));
 const mean = (key) => pairs.length ? Number((pairs.reduce((total, item) => total + item[key], 0) / pairs.length).toFixed(3)) : null;
 const report = {
-  requestedPairs: 24, completedPairs: pairs.length,
+  creationVersion: VERSION, requestedPairs: 24, completedPairs: pairs.length,
   meanEarlyOverlap: mean("earlyOverlap"), meanMiddleOverlap: mean("middleOverlap"),
   meanDifferentChoicesOnCommonScenes: mean("differentSharedChoices"),
   finalPathDifferences: pairs.filter((p) => p.finalPathDifferent).length,
