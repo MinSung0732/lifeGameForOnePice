@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#f5f1e7">
   <meta name="description" content="원피스 세계의 다섯 출생지에서 한 사람의 삶을 살아 보는 비공식 웹게임 시범판">
   <title>한 사람의 바다</title>
-  <link rel="stylesheet" href="./styles.css?v=20261107-3">
-  <script type="module" src="./src/app.js?v=20261107-3"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261107-10">
+  <script type="module" src="./src/app.js?v=20261107-12"></script>
 </head>
 <body>
   <div class="page-shell">
@@ -145,6 +145,7 @@
           <div id="age-progress" class="age-track" role="meter" aria-label="원작 현재 시점까지 흐른 세월" aria-valuemin="0" aria-valuemax="66" aria-valuenow="0"><span id="age-fill"></span></div>
         </div>
 
+        <div class="game-status-column" role="region" aria-label="캐릭터와 항로 상태" tabindex="0">
         <aside class="life-strip" aria-label="현재의 삶과 항해">
           <!-- 좌측: 내 캐릭터 정보 (신상 · 소속 · 직책·힘 · 목표 · 평판) -->
           <div class="life-pane char-pane">
@@ -234,19 +235,26 @@
               <span>항로</span>
               <strong id="route-trail"></strong>
             </nav>
+            <section class="route-map" aria-label="현재 항로 미니맵">
+              <div class="route-map-heading"><span>항해도</span><strong id="route-map-place">현재 위치</strong></div>
+              <div class="route-map-zones" aria-label="현재 항해 구간">
+                <span data-route-zone="blue">4대 블루</span>
+                <span data-route-zone="paradise">낙원</span>
+                <span data-route-zone="crossing">샤본디·심해</span>
+                <span data-route-zone="new">신세계</span>
+              </div>
+              <svg id="route-map-svg" class="route-map-svg" viewBox="0 0 520 164" role="img" aria-label="현재 위치와 인접 항로를 보여주는 개념도"></svg>
+              <div class="route-map-status">
+                <span id="route-map-previous">이전: 출항 전</span>
+                <span id="route-map-neighbors">연결 항로 확인 전</span>
+              </div>
+              <p class="route-map-note">게임 항로 연결을 그린 개념도 · 실제 거리·방위와 다름</p>
+            </section>
             <p class="route-trail" id="crew-line" hidden>
               <span>같은 시기 원작 소식</span>
               <strong id="crew-news"></strong>
               <canvas id="crew-fx" class="crew-fx" width="38" height="14" aria-hidden="true"></canvas>
             </p>
-            <div class="life-crew">
-              <span>곁의 사람</span>
-              <strong id="life-crew"></strong>
-            </div>
-            <div class="life-relationships">
-              <span>원작 인물 관계</span>
-              <strong id="life-relationships"></strong>
-            </div>
           </div>
         </aside>
 
@@ -260,6 +268,19 @@
             <div class="personality-heading"><h2 id="personality-title">성격</h2><strong id="personality-summary"></strong></div>
             <div id="personality-grid" class="stats-grid"></div>
           </aside>
+          <section class="relations-panel" aria-labelledby="relations-title">
+            <div class="relations-heading">
+              <h2 id="relations-title">인물과 세력</h2>
+              <button id="relations-open" class="text-button" type="button" aria-haspopup="dialog" aria-controls="relations-dialog">상세 보기 ↗</button>
+            </div>
+            <div class="relations-summary" aria-label="현재 관계 요약">
+              <div class="relations-metric" id="life-relationships"><span>인연</span><strong id="relations-bonds-count">0명</strong></div>
+              <div class="relations-metric" id="life-crew"><span>동료</span><strong id="relations-crew-count">0명</strong></div>
+              <div class="relations-metric" id="relations-factions-metric" hidden><span>세력</span><strong id="relations-factions-count">0개</strong></div>
+            </div>
+            <p id="relations-preview" class="relations-preview">아직 기록된 인연이 없습니다.</p>
+          </section>
+        </div>
         </div>
 
         <div id="scene-layout" class="scene-layout">
@@ -335,6 +356,31 @@
     </div>
     <div id="journal-current"></div>
     <div id="journal-past"></div>
+  </dialog>
+  <dialog id="relations-dialog" class="relations-dialog" aria-labelledby="relations-dialog-title">
+    <div class="relations-dialog-head">
+      <div><p class="eyebrow">함께한 사람들</p><h2 id="relations-dialog-title">인연과 동료</h2></div>
+      <button id="relations-close" class="text-button" type="button">닫기</button>
+    </div>
+    <div class="relations-tabs" role="tablist" aria-label="인물 및 세력 분류">
+      <button id="relations-tab-bonds" type="button" role="tab" aria-controls="relations-pane-bonds" aria-selected="true">인연 <span id="relations-tab-bonds-count">0</span></button>
+      <button id="relations-tab-crew" type="button" role="tab" aria-controls="relations-pane-crew" aria-selected="false" tabindex="-1">동료 <span id="relations-tab-crew-count">0</span></button>
+      <button id="relations-tab-factions" type="button" role="tab" aria-controls="relations-pane-factions" aria-selected="false" tabindex="-1" hidden>세력 <span id="relations-tab-factions-count">0</span></button>
+    </div>
+    <div class="relations-search-row">
+      <label for="relations-search">인물 검색</label>
+      <input id="relations-search" type="search" autocomplete="off" placeholder="이름 또는 관계로 검색" aria-controls="relations-pane-bonds relations-pane-crew relations-pane-factions">
+      <p id="relations-filter-count" role="status" aria-live="polite"></p>
+    </div>
+    <section id="relations-pane-bonds" class="relations-pane" role="tabpanel" aria-labelledby="relations-tab-bonds" tabindex="0">
+      <ul id="relations-list-bonds" class="relations-list"></ul>
+    </section>
+    <section id="relations-pane-crew" class="relations-pane" role="tabpanel" aria-labelledby="relations-tab-crew" tabindex="0" hidden>
+      <ul id="relations-list-crew" class="relations-list"></ul>
+    </section>
+    <section id="relations-pane-factions" class="relations-pane" role="tabpanel" aria-labelledby="relations-tab-factions" tabindex="0" hidden>
+      <ul id="relations-list-factions" class="relations-list"></ul>
+    </section>
   </dialog>
   <noscript><p class="noscript">이 게임을 플레이하려면 브라우저에서 JavaScript를 켜야 합니다.</p></noscript>
   <script>

@@ -1,6 +1,7 @@
 import { moveTo, ro, routeFor, yearRoll } from "./world.js";
 import { takenText } from "./canon-timeline.js";
 import { attachCanonContact, canonRelationshipChanged, custodyArcScene } from "./canon-relationships.js";
+import { LOCAL_ARCS_V23, localCanonRipple } from "./canon-local-events.js";
 
 // Rule 8: a canon milestone opens a few dated scenes on its island. Someone already there gets swept up;
 // someone sailing nearby may hear the rumor and head there. The canon outcome never changes in these
@@ -261,7 +262,7 @@ const arcId = (beatId, index) => `canon_arc_${beatId}_${index}`;
 
 // Returns the next arc scene for this milestone, a lure to sail there, or null to show the milestone itself.
 export function arcScene(life, beat, age) {
-  const arc = ARCS[beat.id];
+  const arc = life.creationVersion >= 23 ? LOCAL_ARCS_V23[beat.id] || ARCS[beat.id] : ARCS[beat.id];
   if (life.creationVersion < 8 || !arc) return null;
   const base = { age, act: 3, species: "all", yearly: true, urgent: true };
   if (life.location.includes(arc.place)) {
@@ -272,11 +273,19 @@ export function arcScene(life, beat, age) {
     const timeLabel = `${canonRelationshipChanged(life) ? "IF 세계선 · " : ""}${scene.time}`;
     const custodyScene = custodyArcScene(life, beat.id, index, age, scene.time, originalId);
     if (custodyScene) return custodyScene;
+    const ripple = localCanonRipple(life, beat.id);
+    const story = takenText(life, `arc:${beat.id}:${index}`) || (typeof scene.body === "function" ? scene.body(life) : scene.body);
     const card = { ...base, id: originalId, art: scene.art || arc.art, title: scene.title, timeLabel,
-      body: takenText(life, `arc:${beat.id}:${index}`) || (typeof scene.body === "function" ? scene.body(life) : scene.body),
+      body: ripple ? `${story} IF 세계선: ${ripple.body}` : story,
       ...(scene.choices ? { choices: scene.choices } : { after: scene.after, manual: true }) };
-    return attachCanonContact(life, beat.id, index, age, card);
+    const attached = attachCanonContact(life, beat.id, index, age, card);
+    // New original-mode scenes can build personal ties without rewriting the canon via arrests.
+    return life.creationVersion >= 23 && life.mode === "original" && LOCAL_ARCS_V23[beat.id] && attached.choices
+      ? { ...attached, choices: attached.choices.filter((choice) => choice.id !== "canon_contact_capture") }
+      : attached;
   }
+  // Rule-23 local arcs must be reached through their real routes, not the old rumor teleport.
+  if (life.creationVersion >= 23 && LOCAL_ARCS_V23[beat.id]) return null;
   const lure = `canon_arc_${beat.id}_lure`;
   const route = routeFor(life);
   const reachable = route.some((place) => place.includes(arc.place)) || arc.place === "에그헤드 외해" && route.includes("엘바프");

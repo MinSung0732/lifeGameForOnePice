@@ -6,7 +6,7 @@ import { createObservation, tickObservation } from "../src/observation.js";
 import { scenes } from "../src/story.js";
 import { degreeHz, moodFor } from "../src/music.js";
 import { OLD_ERA } from "../src/canon-old-era.js";
-import { crewVesselKind, encounterAt, eraStart, isNewWorld, presentAge, ROUTES_V20, sailToNextPort, storyBefore, travelScene } from "../src/world.js";
+import { crewVesselKind, encounterAt, encounterScene, eraStart, isNewWorld, presentAge, ROUTES_V20, ROUTES_V22, routeOptionsFor, sailToNextPort, storyBefore, travelScene } from "../src/world.js";
 import { fruitFor } from "../src/fruits.js";
 import { bountyScene, formatBounty, marinePatrolScene, pursuerFor } from "../src/bounty.js";
 import { CANON_BEAT_COUNT, canonAge, canonScene } from "../src/canon-events.js";
@@ -19,6 +19,222 @@ import { attachCanonContact, canonEraFor, canonPowerAt, canonRelationshipLine, c
 import { FATES } from "../src/fates.js";
 import { peopleSummary } from "../src/people.js";
 import { DUTIES } from "../src/adventures.js";
+import { routeChartFor, routeMapLabel } from "../src/route-map.js";
+import { LOCAL_ARCS_V23, localCanonRipple } from "../src/canon-local-events.js";
+import { arcScene } from "../src/canon-arcs.js";
+
+test("23번 연결 지역은 원작 시간대에 고유 상호작용을 보여 주고 과거 기록은 유지한다", () => {
+  const v23 = createGame("original", 135, { species: "인간" }, 3, 23);
+  const v22 = createGame("original", 135, { species: "인간" }, 3, 22);
+  v23.age = v23.birth.yearsBeforeCurrent + 20;
+  v22.age = v23.age;
+  v23.path = v22.path = "pirate";
+  v23.supplies = v22.supplies = 80;
+  const all = ["departure", "zoro", "buggy", "usopp", "baratie", "arlong",
+    "skypiea_trial", "skypiea_bell", "enies_lobby", "thriller_shadows", "thriller_aftermath", "amazon_lily"];
+  assert.ok(all.every((id) => LOCAL_ARCS_V23[id]?.scenes?.length >= 1));
+  for (const id of all) {
+    const arc = LOCAL_ARCS_V23[id];
+    const original = { ...v23, location: arc.place, people: { ...v23.people } };
+    const scenes = arc.scenes.map((_, index) => ({
+      preCanonStep: null, location: arc.place, entry: index, id: `canon_arc_${id}_${index}`
+    }));
+    assert.ok(scenes.every(({ id: sceneId }) => sceneId.startsWith("canon_arc_")));
+    assert.ok(arc.scenes.some((scene) => scene.choices.some((choice) => choice.id.startsWith("change_"))));
+    assert.ok(arc.scenes.every((scene) => scene.choices.every((choice) =>
+      !choice.id.startsWith("change_") || choice.when({ ...original, mode: "original" }) === false)));
+    assert.ok(arc.scenes.some((scene) => scene.choices.some((choice) =>
+      choice.id.startsWith("change_") && choice.when({ ...original, mode: "free" }))));
+  }
+  assert.ok(!("canonRipples" in v22.people), "이전 세이브에 새로운 필드를 강제로 추가하지 않는다");
+  assert.equal(arcScene({ ...v22, location: "위대한 항로 상공 · 스카이피아" },
+    { id: "skypiea_trial" }, v22.age), null, "22번 세이브는 신규 원작 상호작용 이벤트를 볼 수 없다");
+  assert.equal(arcScene({ ...v23, location: "자야 · 모크 타운", leftHome: true },
+    { id: "skypiea_trial" }, v23.age), null, "특수 항로를 건너뛰는 무료 순간이동 이벤트를 만들지 않는다");
+});
+
+test("23번 자유 모드에서 개입한 뒤 원작 사건의 후속 선택과 인연 기록이 남는다", () => {
+  const free = createGame("free", 134, { species: "인간" }, 3, 23);
+  free.path = "pirate";
+  free.supplies = 90;
+  const i = LOCAL_ARCS_V23.skypiea_trial.scenes[0].choices.find(({ id }) => id === "change_skypiea_trial");
+  assert.ok(i.when(free));
+  const beforeSupplies = free.supplies;
+  i.apply(free);
+  assert.equal(free.supplies, beforeSupplies - 8);
+  assert.match(localCanonRipple(free, "upper_yard").body, /샨디아/);
+  assert.equal(localCanonRipple({ ...free, mode: "original" }, "upper_yard"), null);
+  assert.equal(localCanonRipple({ ...free, creationVersion: 22 }, "upper_yard"), null);
+  assert.equal(localCanonRipple(free, "maxim"), null);
+});
+
+test("23번 원작 모드의 현장 조우는 관계만 쌓고 체포·IF 개입을 제한한다", () => {
+  const original = createGame("original", 138, { species: "인간" }, 3, 23);
+  original.path = "marine";
+  original.location = "위대한 항로 상공 · 스카이피아";
+  original.age = original.birth.yearsBeforeCurrent - 2;
+  const scene = arcScene(original, { id: "skypiea_trial" }, original.age);
+  assert.equal(scene.id, "canon_arc_skypiea_trial_0");
+  assert.ok(scene.choices.some(({ id }) => id === "canon_contact_talk"));
+  assert.ok(!scene.choices.some(({ id }) => id === "canon_contact_capture"),
+    "원작 모드의 주요 원작 인물은 체포로 원작에서 제거하지 않는다");
+  assert.ok(scene.choices.filter(({ when }) => !when || when(original))
+    .every(({ id }) => !id.startsWith("change_")), "원작 모드는 개입 선택지가 숨겨져야 한다");
+  const after = structuredClone(original);
+  scene.choices.find(({ id }) => id === "canon_contact_talk").apply(after);
+  assert.equal(after.people.canonContacts.wyper.meetings, 1);
+  assert.ok(after.people.canonContacts.wyper.score > 0, "원작 모드에서도 인연은 쌓인다");
+  assert.equal(after.people.canonRipples, undefined, "원작 모드는 원작 연표에 개입한 후속 흔적을 만들지 않는다");
+
+  const free = createGame("free", 138, { species: "인간" }, 3, 23);
+  free.path = "pirate";
+  free.location = original.location;
+  free.age = original.age;
+  free.supplies = 80;
+  const freeScene = arcScene(free, { id: "skypiea_trial" }, free.age);
+  const act = freeScene.choices.find(({ id }) => id === "change_skypiea_trial");
+  assert.ok(act.when(free));
+  act.apply(free);
+  assert.equal(free.people.canonContacts.wyper.meetings, 1);
+  assert.ok(free.people.canonContacts.wyper.score > 0, "직접 도운 인물과 관계가 실제로 변화한다");
+  assert.match(localCanonRipple(free, "upper_yard").body, /샨디아/);
+  const record = saveRecord(free);
+  assert.equal(record.creationVersion, 23);
+});
+
+test("22번 항로는 임의 지명 접근을 줄이고 주요 원작 장소를 연결한다", () => {
+  const old = createGame("free", 21, { species: "인간" }, 3, 21);
+  const fresh = createGame("free", 21, { species: "인간" }, 3, 22);
+  const custom = (network) => new Set(Object.values(network).flat().map(({ dest }) => dest)
+    .filter((name) => name.includes("(임의 지명)")));
+  assert.equal(custom(ROUTES_V20).size, 25);
+  assert.equal(custom(ROUTES_V22).size, 4);
+  assert.deepEqual(routeOptionsFor(old, "자야 · 모크 타운"), ROUTES_V20["자야 · 모크 타운"],
+    "21번 세이브는 종전의 선택지를 그대로 유지");
+  assert.deepEqual(routeOptionsFor(fresh, "자야 · 모크 타운"), ROUTES_V22["자야 · 모크 타운"]);
+
+  for (const place of ["위대한 항로 상공 · 스카이피아", "스릴러 바크", "에니에스 로비",
+    "아마존 릴리 외해", "바라티에", "오렌지 마을", "셸즈 타운", "시럽 마을",
+    "아론 파크", "이스트 블루 · 푸샤 마을"]) {
+    assert.ok(Object.values(ROUTES_V22).some((links) => links.some(({ dest }) => dest === place)),
+      `${place}은(는) 다른 항구에서 들어오는 항로가 있어야 한다`);
+  }
+  assert.equal(routeOptionsFor(old, "위대한 항로 · 알라바스타 나노하나"), undefined,
+    "기존 출생지 별칭 처리로 21번 세이브가 달라지면 안 된다");
+  assert.equal(routeOptionsFor(fresh, "위대한 항로 · 알라바스타 나노하나"),
+    ROUTES_V22["알라바스타 · 나노하나"]);
+});
+
+test("22번 특수 항로는 조건과 도착 후 이벤트를 지킨다", () => {
+  const base = createGame("free", 77, { species: "인간" }, 3, 22);
+  Object.assign(base, { path: "pirate", independent: true, canonCrew: null, role: "선장",
+    leftHome: true, homebound: false, supplies: 80, health: 70, skill: 40 });
+  const voyage = (place) => travelScene({ ...base, location: place }, base.age);
+
+  const sky = voyage("자야 · 모크 타운").choices.find(({ id }) => id === "far");
+  assert.match(sky.label, /노크 업 스트림/);
+  assert.equal(sky.available(base), false, "충분한 기술 없이 상승 해류에 오를 수 없음");
+  const prepared = { ...base, skill: 65, location: "자야 · 모크 타운" };
+  assert.equal(sky.available(prepared), true);
+  const flown = structuredClone(prepared);
+  sky.apply(flown);
+  assert.equal(flown.location, "위대한 항로 상공 · 스카이피아");
+  assert.equal(flown.pendingEncounter, "sky_arrival_v22");
+  assert.equal(encounterScene(flown).art, "arcSkypiea");
+  assert.equal(encounterScene(flown).choices.length, 2);
+
+  const docks = voyage("워터 세븐");
+  const court = docks.choices.find(({ id }) => id === "far");
+  const fog = docks.choices.find(({ id }) => id === "detour");
+  assert.match(court.label, /해상 열차/);
+  assert.match(fog.label, /삼각지대/);
+  assert.equal(court.available(base), false);
+  assert.equal(court.available({ ...base, path: "marine" }), true);
+  const inside = { ...base, path: "marine", location: "워터 세븐" };
+  court.apply(inside);
+  assert.equal(inside.location, "에니에스 로비");
+  assert.equal(inside.pendingEncounter, "enies_arrival_v22");
+  const drifting = { ...base, location: "워터 세븐" };
+  fog.apply(drifting);
+  assert.equal(drifting.location, "스릴러 바크");
+  assert.equal(drifting.pendingEncounter, "thriller_arrival_v22");
+
+  const calm = voyage("샤본디 제도").choices.find(({ id }) => id === "far");
+  assert.equal(calm.available(base), false);
+  const seasoned = { ...base, location: "샤본디 제도", skill: 65 };
+  calm.apply(seasoned);
+  assert.equal(seasoned.location, "아마존 릴리 외해");
+  assert.equal(seasoned.pendingEncounter, "calm_arrival_v22");
+  assert.match(encounterScene(seasoned).body, /상륙/);
+
+  const east = { ...base, location: "이스트 블루 · 로그 타운" };
+  const dining = travelScene(east, east.age).choices.find(({ id }) => id === "mid");
+  dining.apply(east);
+  assert.equal(east.location, "바라티에");
+  assert.equal(east.pendingEncounter, "baratie_arrival_v22");
+
+  const old = createGame("free", 77, { species: "인간" }, 3, 21);
+  Object.assign(old, { path: "pirate", independent: true, leftHome: true, homebound: false, location: "자야 · 모크 타운", supplies: 80 });
+  const oldVoyage = travelScene(old, old.age);
+  assert.match(oldVoyage.choices.find(({ id }) => id === "far").label, /임의 지명/);
+  assert.equal(oldVoyage.choices.find(({ id }) => id === "detour").when(old), false,
+    "21번 항로에는 22번 특수 선택지가 노출되지 않는다");
+  const chart22 = routeChartFor({ ...base, location: "워터 세븐" });
+  assert.equal(chart22.connections.length, 4, "워터 세븐의 네 경로 모두 미니맵에 표시해야 한다");
+  assert.ok(chart22.connections.includes("스릴러 바크"));
+  const chart21 = routeChartFor({ ...old, location: "워터 세븐" });
+  assert.equal(chart21.connections.length, 3);
+
+  assert.equal(encounterAt({ ...old, location: "위대한 항로 상공 · 스카이피아" }), null,
+    "21번 세이브에는 새 도착 이벤트가 끼어들지 않는다");
+});
+
+test("지도 라벨은 영역별 길이에 맞춰 줄이고 원본 지명은 변경하지 않는다", () => {
+  const longName = "거품여울 군도(임의 지명)";
+  assert.equal(routeMapLabel(longName, "next"), "거품여울 군…");
+  assert.equal(routeMapLabel(longName, "previous"), "거품여울 군도…");
+  assert.equal(routeMapLabel("샤본디 제도", "current"), "샤본디 제도");
+  assert.equal(routeMapLabel("조", "next"), "조");
+  assert.equal(longName, "거품여울 군도(임의 지명)", "표시용 라벨 때문에 실제 항로명을 바꾸면 안 된다");
+});
+
+test("미니맵은 실제 항해 기록·항로 연결만 사용하고 모르는 좌표를 만들지 않는다", () => {
+  const sea = createGame("free", 17, { species: "인간" });
+  const visited = { ...sea, location: "샤본디 제도",
+    travelHistory: ["이스트 블루 · 로그 타운", "워터 세븐", "샤본디 제도", "샤본디 제도"] };
+  const map = routeChartFor(visited);
+  assert.equal(map.current, "샤본디 제도");
+  assert.equal(map.previous, "워터 세븐");
+  assert.equal(map.zone, "crossing");
+  assert.deepEqual(map.connections, ROUTES_V22["샤본디 제도"].map(({ dest }) => dest).slice(0, 3));
+  assert.deepEqual(visited.travelHistory, ["이스트 블루 · 로그 타운", "워터 세븐", "샤본디 제도", "샤본디 제도"], "지도 표시가 저장 기록을 수정하면 안 된다");
+
+  const sky = routeChartFor({ ...sea, location: "위대한 항로 상공 · 스카이피아",
+    travelHistory: ["위대한 항로 상공 · 스카이피아"] });
+  assert.equal(sky.zone, "paradise");
+  assert.equal(sky.previous, null);
+  assert.equal(sky.connections[0], "자야 · 모크 타운");
+
+  const underwater = routeChartFor({ ...sea, location: "위대한 항로 해저 · 어인섬" });
+  assert.equal(underwater.zone, "crossing");
+  assert.equal(underwater.connections[0], "펑크 하자드");
+
+  const blue = routeChartFor({ ...sea, location: "이스트 블루 · 로그 타운" });
+  assert.equal(blue.zone, "blue");
+  assert.equal(blue.connections[0], "리버스 마운틴");
+
+  const aliased = routeChartFor({ ...sea, location: "위대한 항로 · 알라바스타 나노하나" });
+  assert.deepEqual(aliased.connections, ROUTES_V20["알라바스타 · 나노하나"].map(({ dest }) => dest));
+
+  const unknown = routeChartFor({ ...sea, location: "좌표 미등록 새 섬",
+    travelHistory: ["이스트 블루 · 로그 타운", "좌표 미등록 새 섬"] });
+  assert.equal(unknown.zone, "unknown");
+  assert.equal(unknown.previous, "이스트 블루 · 로그 타운");
+  assert.deepEqual(unknown.connections, [], "지도가 섬이나 이동 경로를 지어내면 안 된다");
+
+  const legacy = routeChartFor({ ...visited, creationVersion: 7 });
+  assert.deepEqual(legacy.connections, [], "기존 규칙의 세이브에 새 항로를 사실처럼 표시하지 않는다");
+});
 
 function play(mode, seed, picks = {}, profile = { species: "인간" }, rules = 3, version = 3) {
   let life = createGame(mode, seed, profile, rules, version);
@@ -869,7 +1085,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 21);
+  assert.equal(createGame("original", 0).creationVersion, 24);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1377,6 +1593,149 @@ test("rule 20 gives low-ranked marines canon supervisor and earned-friend scenes
     "earned Straw Hat affinity remains claimable after the war-era boundary");
 });
 
+test("소꿉친구 획득 이펙트의 도착지에 친구가 표시되고 합류 상태가 구분된다", async () => {
+  const { crewFor, crewLine } = await import("../src/crew.js");
+  const before = createGame("free", 27, { species: "인간" });
+  const after = structuredClone(before);
+  after.people.mate = { name: "로웰", bond: 60, fate: "곁" };
+
+  assert.ok(collectMilestones(before, after).some((item) => item.kind === "bond" && item.targetId === "life-relationships"));
+  assert.match(crewLine(after), /로웰\(소꿉친구 · 동행 전\)/);
+  after.people.mate.together = true;
+  assert.match(crewLine(after), /로웰\(어릴 적 친구 · 동료\)/);
+  after.people.mate.together = false;
+  after.people.mate.fate = "다른 길";
+  assert.ok(!crewFor(after).some((person) => person.name === "로웰"));
+});
+
+test("인연·동료·세력은 조직 단위 산하 선단을 분리하고 해군 상관을 동료로 보여 준다", async () => {
+  const { relationshipGroups } = await import("../src/crew.js");
+  const initial = createGame("free", 23, { species: "인간" });
+  const mateLife = { ...initial, people: { ...initial.people, mate: { name: "로웰", fate: "곁", bond: 60 } } };
+  const first = relationshipGroups(mateLife);
+  assert.ok(first.bonds.some(({ name }) => name === "로웰"));
+  assert.ok(!first.crew.some(({ name }) => name === "로웰"), "동행하지 않는 소꿉친구는 인연에만 기록");
+  assert.equal(first.factions.length, 0);
+
+  const withFriend = { ...mateLife, people: { ...mateLife.people, mate: { ...mateLife.people.mate, together: true } } };
+  const joined = relationshipGroups(withFriend);
+  assert.ok(joined.bonds.some(({ name }) => name === "로웰"));
+  assert.ok(joined.crew.some(({ name }) => name === "로웰"));
+  assert.equal(joined.factions.length, 0);
+
+  const captain = { ...initial, path: "pirate", independent: true, careerStartAge: 20, bounty: 1_000_000_000 };
+  const pirate = relationshipGroups(captain);
+  assert.equal(pirate.factions.length, 3);
+  assert.ok(pirate.factions.every(({ role }) => role === "산하 해적단"));
+  assert.ok(pirate.crew.every(({ role }) => role !== "산하 선단"));
+
+  const marine = { ...initial, path: "marine", rankTier: 2, careerStartAge: 20 };
+  const fleet = relationshipGroups(marine);
+  assert.ok(fleet.crew.some(({ role }) => role === "직속 상관" || role === "본부 사령" || role === "부관"));
+  assert.equal(fleet.factions.length, 0);
+});
+
+test("인연 검색은 이름과 관계를 구별 없이 찾으며 빈 결과도 지원한다", async () => {
+  const { filterRelationshipEntries } = await import("../src/crew.js");
+  const entries = [
+    { name: "로웰", role: "소꿉친구 · 동행 전" },
+    { name: "몽키 D. 루피", role: "선장" },
+    { name: "센고쿠", role: "해군 원수" },
+    { name: "붉은 닻 해적단", role: "산하 해적단" }
+  ];
+  assert.deepEqual(filterRelationshipEntries(entries, ""), entries);
+  assert.deepEqual(filterRelationshipEntries(entries, "   "), entries);
+  assert.deepEqual(filterRelationshipEntries(entries, "  소꿉친구 "), [entries[0]]);
+  assert.deepEqual(filterRelationshipEntries(entries, "d. 루피"), [entries[1]]);
+  assert.deepEqual(filterRelationshipEntries(entries, "해적단"), [entries[3]]);
+  assert.deepEqual(filterRelationshipEntries(entries, "사보"), []);
+  const many = Array.from({ length: 50 }, (_, index) => ({ name: `동료 ${index + 1}`, role: "선원" }));
+  assert.equal(filterRelationshipEntries(many, "").length, 50, "인원이 많아도 목록을 누락하지 않는다");
+  assert.deepEqual(filterRelationshipEntries(many, "동료 50"), [many[49]]);
+});
+
+test("로빈과 책을 읽는 인연 이벤트는 우솝이 아니라 로빈의 인연을 올린다", () => {
+  const life = createGame("free", 122, { species: "인간" }, 3, 24);
+  life.path = "pirate";
+  life.age = life.birth.yearsBeforeCurrent - 2;
+  life.friendBond = 70;
+  life.trust = 65;
+  life.people.canonContacts = {
+    usopp: { score: 10, meetings: 2, lastOrder: 20 },
+    robin: { score: 30, meetings: 1, lastOrder: 10 }
+  };
+  const book = canonBondScene(life, life.age, { age: life.age });
+  assert.equal(book?.id, "life_bond_robin_30");
+  const after = structuredClone(life);
+  book.choices.find(({ id }) => id === "quiet").apply(after);
+  assert.equal(after.people.canonContacts.usopp.score, 10);
+  assert.notEqual(after.people.canonContacts.robin.score, 30);
+  assert.match(collectMilestones(life, after).find((item) => item.kind === "canon-bond").title, /^로빈 ·/);
+});
+
+test("관계 알림은 화면 맨 앞 인물 대신 실제 변경 인물로 표시한다", () => {
+  const before = createGame("free", 120, { species: "인간" }, 3, 24);
+  before.people.canonContacts = {
+    usopp: { score: 10, meetings: 2, lastOrder: 9 },
+    robin: { score: 30, meetings: 1, lastOrder: 4 }
+  };
+  const after = structuredClone(before);
+  after.people.canonContacts.robin.score = 42;
+  const notices = collectMilestones(before, after).filter((item) => item.kind === "canon-bond");
+  assert.equal(notices.length, 1);
+  assert.equal(notices[0].title, "로빈 · 우호 +42");
+
+  const both = structuredClone(after);
+  both.people.canonContacts.usopp.score = 15;
+  both.people.canonContacts.robin.score = 45;
+  assert.deepEqual(collectMilestones(before, both).filter((item) => item.kind === "canon-bond").map((item) => item.title),
+    ["우솝 · 우호 +15", "로빈 · 신뢰 +45"]);
+  const reordering = structuredClone(before);
+  reordering.people.canonContacts.robin.lastOrder = 15;
+  assert.deepEqual(collectMilestones(before, reordering), [], "순서 변경은 관계 변경이 아니다");
+});
+
+test("24번 규칙은 구경·피난을 원작 인물과의 만남으로 기록하지 않는다", () => {
+  const setup = (version, location) => {
+    const life = createGame("free", 121, { species: "인간" }, 3, version);
+    Object.assign(life, { path: "pirate", location, skill: 90, health: 90, supplies: 100 });
+    return life;
+  };
+  const examples = [
+    ["wano", "와노국 외해", "watch", "zoro", []],
+    ["whole_cake", "홀케이크 아일랜드 외해", "cake", "sanji", []],
+    ["egghead", "에그헤드 외해", "listen", "bonney", []],
+    ["water_seven", "워터 세븐", "away", "robin", ["canon_arc_water_seven_0"]],
+    ["dressrosa", "드레스로자", "help", "rebecca", ["canon_arc_dressrosa_0"]]
+  ];
+  for (const [id, place, choice, wrongPerson, seen] of examples) {
+    const life = setup(24, place);
+    life.seen = seen;
+    const scene = arcScene(life, { id }, life.age);
+    assert.ok(scene && !scene.choices.some((item) => item.id === "canon_contact_talk"), id);
+    scene.choices.find((item) => item.id === choice).apply(life);
+    assert.equal(life.people.canonContacts[wrongPerson], undefined, id);
+  }
+
+  const jaya = setup(24, "자야 · 모크 타운");
+  const scene = arcScene(jaya, { id: "jaya" }, jaya.age);
+  scene.choices.find((c) => c.id === "mock").apply(jaya);
+  assert.equal(jaya.people.canonContacts.blackbeard, undefined);
+  const spoken = setup(24, "자야 · 모크 타운");
+  scene.choices.find((c) => c.id === "laugh").apply(spoken);
+  assert.equal(spoken.people.canonContacts.blackbeard?.meetings, 1);
+
+  const robin = setup(24, "에니에스 로비");
+  const meeting = arcScene(robin, { id: "enies_lobby" }, robin.age);
+  meeting.choices.find((c) => c.id === "clear").apply(robin);
+  assert.equal(robin.people.canonContacts.robin?.meetings, 1);
+  assert.ok(meeting.choices.some((c) => c.id === "canon_contact_talk"));
+
+  const old = setup(23, "와노국 외해");
+  arcScene(old, { id: "wano" }, old.age).choices.find((c) => c.id === "watch").apply(old);
+  assert.equal(old.people.canonContacts.zoro?.meetings, 1, "기존 세이브의 재생 결과는 보존");
+});
+
 test("collectMilestones detects affiliation, devil fruit, haki, bounty, and relationship changes", () => {
   const before = createGame("free", 1, { species: "인간" });
   assert.deepEqual(collectMilestones(before, before), []);
@@ -1399,7 +1758,7 @@ test("collectMilestones detects affiliation, devil fruit, haki, bounty, and rela
   assert.deepEqual(milestones.map((item) => item.kind), ["rank", "fruit", "haki-conqueror", "haki-observation", "bounty", "bond", "canon-bond"]);
   assert.equal(milestones[0].targetId, "life-role");
   assert.equal(milestones[4].to, 30_000_000);
-  assert.equal(milestones[5].targetId, "life-crew");
+  assert.equal(milestones[5].targetId, "life-relationships");
   assert.equal(milestones[6].targetId, "life-relationships");
 
   const summary = peopleSummary({ ...after, age: 50, careerStartAge: 19, canonCrew: "흰 수염 해적단", affiliation: "흰 수염 해적단" });

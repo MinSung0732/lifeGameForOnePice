@@ -149,7 +149,17 @@ const CHARACTER_POWERS = {
   },
   hachi: {
     default: 46
-  }
+  },
+  nami: { east_blue: 30, skypiea: 44, enies_lobby: 54, default: 62 },
+  buggy: { east_blue: 48, default: 62 },
+  kaya: { default: 12 },
+  zeff: { default: 70 },
+  arlong: { east_blue: 68, default: 68 },
+  wyper: { skypiea: 90, default: 90 },
+  enel: { skypiea: 132, default: 132 },
+  lucci: { enies_lobby: 115, default: 140 },
+  moria: { enies_lobby: 116, default: 116 },
+  hancock: { marineford: 150, default: 150 }
 };
 
 export function canonEraFor(life, beatId) {
@@ -324,11 +334,34 @@ const CHARACTERS = {
   sabo: { name: "사보", display: "사보", group: "혁명군", captureable: true },
   bigMom: { name: "샬롯 링링", display: "빅 맘", group: "빅 맘 해적단", captureable: true },
   vegapunk: { name: "베가펑크", display: "베가펑크", group: "세계정부" },
-  bonney: { name: "쥬얼리 보니", display: "보니", group: "보니 해적단", captureable: true }
+  bonney: { name: "쥬얼리 보니", display: "보니", group: "보니 해적단", captureable: true },
+  nami: { name: "나미", display: "나미", group: "밀짚모자 일당", captureable: true },
+  buggy: { name: "버기", display: "버기", group: "버기 해적단", captureable: true },
+  kaya: { name: "카야", display: "카야", group: "시럽 마을" },
+  zeff: { name: "제프", display: "제프", group: "바라티에" },
+  arlong: { name: "아론", display: "아론", group: "아론 일당", captureable: true },
+  wyper: { name: "와이퍼", display: "와이퍼", group: "샨디아 전사" },
+  enel: { name: "에넬", display: "에넬", group: "스카이피아", captureable: true },
+  lucci: { name: "롭 루치", display: "루치", group: "CP9", captureable: true },
+  moria: { name: "겟코 모리아", display: "모리아", group: "스릴러 바크", captureable: true },
+  hancock: { name: "보아 핸콕", display: "핸콕", group: "구사 해적단" }
 };
 
 // Each entry is the named person the player can actually meet in that authored island scene.
 const ARC_CONTACTS = {
+  // These indices match the new rule-23 island scenes, so every direct meeting records a bond.
+  departure: ["luffy"],
+  zoro: ["zoro", "zoro"],
+  buggy: ["luffy", "nami"],
+  usopp: ["usopp", "kaya"],
+  baratie: ["sanji", "zoro"],
+  arlong: ["nami", "nami"],
+  skypiea_trial: ["wyper", "enel"],
+  skypiea_bell: ["luffy"],
+  enies_lobby: ["robin", "zoro"],
+  thriller_shadows: ["brook", "moria"],
+  thriller_aftermath: ["zoro"],
+  amazon_lily: ["hancock", "luffy"],
   loguetown: ["luffy", (life) => life.path === "marine" ? "smoker" : "luffy"],
   whiskey: ["zoro"],
   little_garden: ["dorry"],
@@ -346,6 +379,45 @@ const ARC_CONTACTS = {
   wano: ["zoro"],
   egghead: [(life) => life.path === "marine" ? "vegapunk" : "bonney"],
   elbaf: ["luffy"]
+};
+
+// Rule 24: watching a distant canon event is not a personal encounter. Earlier
+// versions keep their original tracking so saved action logs replay unchanged.
+const DISTANT_ARC_SCENES_V24 = {
+  little_garden: [0],
+  drum: [1],
+  alabasta_war: [1, 3],
+  jaya: [1],
+  water_seven: [1, 2],
+  sabaody_auction: [1],
+  dressrosa: [0, 1, 2],
+  zou: [0],
+  whole_cake: [0],
+  wano: [0],
+  egghead: [0],
+  skypiea_trial: [1],
+  thriller_shadows: [1],
+  amazon_lily: [1]
+};
+
+// A general action (watching, fleeing, helping bystanders) does not mean the
+// protagonist met the named character. Explicit contact actions still do.
+const DIRECT_CONTACT_CHOICES_V24 = {
+  departure: { 0: ["wish", "change_departure"] },
+  zoro: { 1: ["speak"] },
+  buggy: { 1: ["offer"] },
+  usopp: { 0: ["listen", "change_usopp"], 1: ["repair"] },
+  baratie: { 0: ["serve", "change_baratie"], 1: ["bandage"] },
+  arlong: { 0: ["comfort"], 1: ["cheer"] },
+  skypiea_trial: { 0: ["talk", "change_skypiea_trial"] },
+  skypiea_bell: { 0: ["reply"] },
+  enies_lobby: { 0: ["clear", "change_enies_lobby"], 1: ["evacuate"] },
+  thriller_shadows: { 0: ["comfort", "change_thriller_shadows"] },
+  thriller_aftermath: { 0: ["bandage", "change_thriller_aftermath"] },
+  amazon_lily: { 0: ["respect", "change_amazon_lily"] },
+  whiskey: { 0: ["join"] },
+  jaya: { 0: ["laugh"] },
+  reunion: { 0: ["laugh"] }
 };
 
 const ARC_CUSTODY_TARGETS = {
@@ -380,6 +452,7 @@ const object = (name) => `${name}${hasBatchim(name) ? "을" : "를"}`;
 const withName = (name) => `${name}${hasBatchim(name) ? "과" : "와"}`;
 
 export function canonContactForArc(life, beatId, index) {
+  if (life.creationVersion >= 24 && DISTANT_ARC_SCENES_V24[beatId]?.includes(index)) return null;
   const entry = ARC_CONTACTS[beatId]?.[index];
   const key = typeof entry === "function" ? entry(life) : entry;
   return key && CHARACTERS[key] ? { key, ...CHARACTERS[key] } : null;
@@ -404,7 +477,7 @@ function noteMeeting(state, key, beatId, age, delta, choice) {
 }
 
 function baseChoiceDelta(id) {
-  if (/^(aid|help|rescue|protect|evacuate|feast|children|share)/.test(id)) return 7;
+  if (/^(aid|help|rescue|protect|evacuate|feast|children|share|change_)/.test(id)) return 7;
   if (/^(fight|join|stand|capture|report|checkpoint|enter|attack)/.test(id)) return -7;
   return 0;
 }
@@ -573,7 +646,9 @@ export function attachCanonContact(life, beatId, index, age, scene) {
   if (!enabled(life)) return scene;
   const contact = canonContactForArc(life, beatId, index);
   if (!contact) return scene;
-  const baseChoices = (scene.choices || []).map((choice) => withContactTracking(choice, contact, beatId, age));
+  const baseChoices = (scene.choices || []).map((choice) =>
+    life.creationVersion >= 24 && !DIRECT_CONTACT_CHOICES_V24[beatId]?.[index]?.includes(choice.id)
+      ? choice : withContactTracking(choice, contact, beatId, age));
   return { ...scene, manual: false, choices: [...baseChoices, ...interactionChoices(life, contact, beatId, index, age)] };
 }
 
@@ -683,12 +758,12 @@ export function canonRelationshipChanged(life) {
     ["pending", "held", "transferred", "escaped"].includes(entry.custody));
 }
 
-export function canonRelationshipSummary(life) {
-  if (!enabled(life)) return "";
+// Return every recorded contact for the relationship dialog; the compact line still shows three.
+export function canonRelationshipEntries(life) {
+  if (!enabled(life)) return [];
   return Object.entries(life.people?.canonContacts || {})
     .filter(([, entry]) => entry.meetings > 0)
     .sort((a, b) => (b[1].lastOrder || 0) - (a[1].lastOrder || 0))
-    .slice(0, 3)
     .map(([key, entry]) => {
       const person = CHARACTERS[key];
       const custody = entry.custody === "pending" ? " · 임시 구금"
@@ -696,8 +771,12 @@ export function canonRelationshipSummary(life) {
         : entry.custody === "transferred" ? " · 본부 수감"
           : entry.custody === "escaped" ? " · 도주" : "";
       const value = `${entry.score >= 0 ? "+" : ""}${entry.score}`;
-      return `${person?.display || key} · ${relationWord(entry.score)} ${value}${custody} · ${entry.meetings}회`;
-    }).join(" / ");
+      return { name: person?.display || key, role: `${relationWord(entry.score)} ${value}${custody} · ${entry.meetings}회` };
+    });
+}
+
+export function canonRelationshipSummary(life) {
+  return canonRelationshipEntries(life).slice(0, 3).map(({ name, role }) => `${name} · ${role}`).join(" / ");
 }
 
 export function canonRelationshipLine(life) {

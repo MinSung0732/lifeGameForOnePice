@@ -1,9 +1,10 @@
 import { fruitFxKind, powerFxForChoice } from "./power-fx.js";
 import { ART, PERSONALITY, PROFILE_OPTIONS, STATS, advance, collectMilestones, createGame, getScene, personalitySummary, replay, saveRecord } from "./game.js";
 import { crewNews, crewVesselKind, eraStart, presentAge, stretched } from "./world.js";
+import { routeChartFor, routeMapLabel } from "./route-map.js";
 import { peopleSummary } from "./people.js";
-import { canonRelationshipLine, canonRelationshipSummary } from "./canon-relationships.js";
-import { crewLine } from "./crew.js";
+import { canonRelationshipSummary } from "./canon-relationships.js";
+import { filterRelationshipEntries, relationshipGroups } from "./crew.js";
 import { canonCount, canonStatus } from "./canon-events.js";
 import { formatBounty } from "./bounty.js";
 import { fateLegacy } from "./fates.js";
@@ -119,7 +120,7 @@ function scheduleObservation() {
   }
   const now = performance.now();
   if (!observation || observation.sceneId !== scene.id) observation = createObservation(scene, now);
-  const running = !paused && !document.hidden && !byId("journal").open;
+  const running = !paused && !document.hidden && !byId("journal").open && !byId("relations-dialog").open;
   observation = tickObservation(observation, now, speed, running);
   const percent = Math.round(observation.elapsed / observation.duration * 100);
   const seconds = Math.ceil((observation.duration - observation.elapsed) / (1000 * speed));
@@ -188,8 +189,84 @@ function renderLifeStrip() {
   byId("life-power").textContent = `${powerSummary()}${life.creationVersion >= 4 && life.bounty ? ` · 현상금 ${formatBounty(life.bounty)}` : ""}`;
   byId("life-goal").textContent = life.goal;
   renderReputation();
-  byId("life-crew").textContent = byId("life-crew").title = crewLine(life);
-  byId("life-relationships").textContent = byId("life-relationships").title = canonRelationshipLine(life);
+  renderRelationshipsOverview();
+}
+
+function renderRelationshipsOverview() {
+  const { bonds, crew, factions } = relationshipGroups(life);
+  byId("relations-bonds-count").textContent = `${bonds.length}명`;
+  byId("relations-crew-count").textContent = `${crew.length}명`;
+  byId("relations-factions-count").textContent = `${factions.length}개`;
+  byId("relations-factions-metric").hidden = !factions.length;
+  byId("life-relationships").title = bonds.map((p) => p.name).join(" · ") || "아직 기록된 인연 없음";
+  byId("life-crew").title = crew.map((p) => p.name).join(" · ") || "현재 함께하는 사람 없음";
+  const preview = [
+    bonds.length && `인연: ${bonds.slice(0, 2).map((p) => p.name).join(", ")}${bonds.length > 2 ? " 외" : ""}`,
+    crew.length && `동료: ${crew.slice(0, 2).map((p) => p.name).join(", ")}${crew.length > 2 ? " 외" : ""}`,
+    factions.length && `산하 세력 ${factions.length}개`
+  ].filter(Boolean);
+  byId("relations-preview").textContent = preview.join(" · ") || "아직 기록된 인연이나 동료가 없습니다.";
+}
+
+let activeRelationshipsTab = "bonds";
+let relationshipDialogGroups = null;
+
+function renderFilteredRelationships() {
+  const key = activeRelationshipsTab;
+  const all = relationshipDialogGroups?.[key] || [];
+  const query = byId("relations-search").value;
+  const matched = filterRelationshipEntries(all, query);
+  const list = byId(`relations-list-${key}`);
+  list.replaceChildren();
+  for (const person of matched) {
+    const row = document.createElement("li");
+    const name = document.createElement("strong");
+    name.textContent = person.name;
+    const role = document.createElement("small");
+    role.textContent = person.role;
+    row.append(name, role);
+    list.append(row);
+  }
+  if (!matched.length) {
+    const empty = document.createElement("li");
+    empty.className = "relations-empty";
+    empty.textContent = query.trim() ? "검색 결과가 없습니다." : key === "bonds"
+      ? "아직 기록된 인연이 없습니다." : key === "crew"
+        ? "현재 함께 활동하는 사람이 없습니다." : "아직 산하 세력이 없습니다.";
+    list.append(empty);
+  }
+  const unit = key === "factions" ? "개" : "명";
+  byId("relations-filter-count").textContent =
+    `${all.length}${unit} 중 ${matched.length}${unit} 표시`;
+}
+
+function selectRelationshipsTab(tab, focus = false) {
+  const available = ["bonds", "crew", ...(byId("relations-tab-factions").hidden ? [] : ["factions"])];
+  const chosen = available.includes(tab) ? tab : "bonds";
+  if (activeRelationshipsTab !== chosen) byId("relations-search").value = "";
+  activeRelationshipsTab = chosen;
+  for (const key of ["bonds", "crew", "factions"]) {
+    const active = chosen === key;
+    byId(`relations-tab-${key}`).setAttribute("aria-selected", String(active));
+    byId(`relations-tab-${key}`).tabIndex = active ? 0 : -1;
+    byId(`relations-pane-${key}`).hidden = !active;
+  }
+  renderFilteredRelationships();
+  byId(`relations-pane-${chosen}`).scrollTop = 0;
+  if (focus) byId(`relations-tab-${chosen}`).focus();
+}
+
+function openRelationshipsDialog() {
+  if (!life) return;
+  stopTimer();
+  relationshipDialogGroups = relationshipGroups(life);
+  for (const key of ["bonds", "crew", "factions"]) {
+    byId(`relations-tab-${key}-count`).textContent = String(relationshipDialogGroups[key].length);
+  }
+  byId("relations-tab-factions").hidden = !relationshipDialogGroups.factions.length;
+  byId("relations-search").value = "";
+  selectRelationshipsTab("bonds");
+  byId("relations-dialog").showModal();
 }
 
 function reputationDesc(rep) {
@@ -388,6 +465,59 @@ function renderPersonality(gridId = "personality-grid", summaryId = "personality
     appendMeter(grid, trait.label, life.personality[trait.key], 100, `trait-${trait.key}`, delta);
   }
   byId(summaryId).textContent = `성향 · ${personalitySummary(life.personality)}`;
+}
+
+// SVG is a connection diagram: the positions are deliberately not geographic coordinates.
+function renderRouteMap() {
+  const chart = routeChartFor(life);
+  byId("route-map-place").textContent = chart.current;
+  byId("route-map-previous").textContent = `이전: ${chart.previous || "출항 전"}`;
+  byId("route-map-neighbors").textContent = chart.connections.length
+    ? `연결된 항로 ${chart.connections.length}곳` : "연결된 항로 미등록";
+  byId("route-map-neighbors").title = chart.connections.join(" · ");
+  for (const zone of document.querySelectorAll("[data-route-zone]")) {
+    zone.dataset.active = String(zone.dataset.routeZone === chart.zone);
+  }
+
+  const svg = byId("route-map-svg");
+  svg.setAttribute("aria-label", `현재 ${chart.current}. ${chart.previous ? `직전 ${chart.previous}. ` : ""}연결된 항로: ${chart.connections.join(", ") || "미등록"}.`);
+  svg.replaceChildren();
+  const ns = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, value) => {
+    const element = document.createElementNS(ns, tag);
+    for (const [key, attribute] of Object.entries(attrs)) element.setAttribute(key, String(attribute));
+    if (value !== undefined) element.textContent = value;
+    return element;
+  };
+  const line = (x1, y1, x2, y2, visited = false) => {
+    svg.append(el("line", { x1, y1, x2, y2,
+      class: visited ? "route-chart-line route-chart-visited" : "route-chart-line" }));
+  };
+  const mark = (x, y, name, kind, labelX, labelY, anchor = "middle") => {
+    const group = el("g", {});
+    group.append(el("title", {}, name));
+    if (kind === "current") group.append(el("circle", { cx: x, cy: y, r: 18, class: "route-chart-ring" }));
+    group.append(el("circle", { cx: x, cy: y, r: kind === "current" ? 9 : 6,
+      class: kind === "current" ? "route-chart-current" : kind === "previous" ? "route-chart-point route-chart-visited-point" : "route-chart-point" }));
+    group.append(el("text", { x: labelX, y: labelY, "text-anchor": anchor,
+      class: kind === "previous" ? "route-chart-muted" : "" }, routeMapLabel(name, kind)));
+    svg.append(group);
+  };
+  svg.append(el("text", { x: 55, y: 28, class: "route-chart-muted" }, "지난 기항지"));
+  svg.append(el("text", { x: 210, y: 28, class: "route-chart-muted" }, "현재 위치"));
+  svg.append(el("text", { x: 377, y: 16, class: "route-chart-muted" }, "연결 항로"));
+  if (chart.previous) line(68, 83, 226, 83, true);
+  const connectionHeights = chart.connections.length > 3 ? [34, 73, 110, 147] : [36, 87, 138];
+  chart.connections.forEach((_, index) => line(226, 83, 373, connectionHeights[index]));
+  if (chart.previous) mark(68, 83, chart.previous, "previous", 68, 111);
+  else svg.append(el("text", { x: 68, y: 89, class: "route-chart-muted", "text-anchor": "middle" }, "출항 전"));
+  mark(226, 83, chart.current, "current", 226, 116);
+  if (!chart.connections.length) {
+    svg.append(el("text", { x: 382, y: 92, class: "route-chart-muted" }, "연결 정보 없음"));
+  } else chart.connections.forEach((place, index) => {
+    const y = connectionHeights[index];
+    mark(373, y, place, "next", 389, y + 4, "start");
+  });
 }
 
 function renderAgeTimeline(scene) {
@@ -614,8 +744,11 @@ function renderGame(focusTitle = false, statsUpdated = false, arrivedPlace = "")
   byId("scene-chapter").textContent = `${life.journal.length + 1}번째 장면 · ${scene.timeLabel || passage}`;
   byId("scene-title").textContent = scene.title;
   byId("scene-body").textContent = scene.body;
+  if (focusTitle) byId("scene-layout").querySelector(".scene-copy").scrollTop = 0;
   updateSceneImage(byId("scene-image"), scene.art?.src || ART.deck.src, scene.art?.alt || "");
   byId("route-trail").textContent = (life.travelHistory || [life.birth.home]).join(" → ");
+  byId("route-trail").title = byId("route-trail").textContent;
+  renderRouteMap();
   byId("crew-line").hidden = life.rules !== 3;
   byId("crew-news").textContent = byId("crew-news").title = life.rules === 3
     ? life.creationVersion >= 4 && life.seen.includes("life_marineford_news")
@@ -1652,6 +1785,23 @@ function selectedProfile() {
   return profile;
 }
 
+byId("relations-open").addEventListener("click", openRelationshipsDialog);
+byId("relations-search").addEventListener("input", renderFilteredRelationships);
+byId("relations-close").addEventListener("click", () => byId("relations-dialog").close());
+byId("relations-dialog").addEventListener("close", scheduleObservation);
+for (const key of ["bonds", "crew", "factions"]) {
+  const tab = byId(`relations-tab-${key}`);
+  tab.addEventListener("click", () => selectRelationshipsTab(key));
+  tab.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const available = ["bonds", "crew", ...(byId("relations-tab-factions").hidden ? [] : ["factions"])];
+    const index = available.indexOf(key);
+    const next = event.key === "Home" ? 0 : event.key === "End" ? available.length - 1
+      : (index + (event.key === "ArrowRight" ? 1 : available.length - 1)) % available.length;
+    selectRelationshipsTab(available[next], true);
+  });
+}
 byId("growth-toggle").addEventListener("click", () => {
   const open = byId("growth-toggle").getAttribute("aria-expanded") !== "true";
   byId("growth-toggle").setAttribute("aria-expanded", String(open));

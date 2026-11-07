@@ -5,7 +5,7 @@ import { canonAge, canonCount, canonIfAfter, canonScene, canonCrewDestination } 
 import { preCanonAge, preCanonCount, preCanonScene, preCanonCrewDestination } from "./canon-before.js";
 import { canonGapFor, canonInterludeScene } from "./canon-interludes.js";
 import { childhoodScene } from "./childhood.js";
-import { canonRelationshipSummary, pendingCanonContactScene } from "./canon-relationships.js";
+import { canonRelationshipEntries, pendingCanonContactScene } from "./canon-relationships.js";
 import { twist } from "./twists.js";
 
 export const SAVE_VERSION = 1;
@@ -241,11 +241,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 21) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 24) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -674,7 +674,7 @@ export function collectMilestones(before, after) {
       eyebrow: "새로운 인연",
       title: `${after.people.mate.name} · 소꿉친구`,
       sub: "먼 바다에서도 잊지 못할 약속을 나눈 친구가 생겼다",
-      targetId: "life-crew"
+      targetId: "life-relationships"
     });
   } else if (!before.people?.mate?.together && after.people?.mate?.together) {
     list.push({
@@ -685,15 +685,15 @@ export function collectMilestones(before, after) {
       targetId: "life-crew"
     });
   }
-  const prevCanon = canonRelationshipSummary(before);
-  const nextCanon = canonRelationshipSummary(after);
-  if (nextCanon && nextCanon !== prevCanon) {
-    const [who, rel, ...rest] = nextCanon.split(" / ")[0].split(" · ");
+  const previousContacts = new Map(canonRelationshipEntries(before).map(({ name, role }) => [name, role]));
+  for (const { name, role } of canonRelationshipEntries(after)) {
+    if (previousContacts.get(name) === role) continue;
+    const [relationship, ...details] = role.split(" · ");
     list.push({
       kind: "canon-bond",
       eyebrow: "원작 인물 인연",
-      title: `${who} · ${rel}`,
-      sub: [...rest, "원작 인물과의 관계가 기록됐다"].filter(Boolean).join(" · "),
+      title: `${name} · ${relationship}`,
+      sub: [...details, "원작 인물과의 관계가 기록됐다"].join(" · "),
       targetId: "life-relationships"
     });
   }

@@ -533,6 +533,281 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
   .choice small { line-height: 1.25; }
 }
 
+
+/* Relationship overview stays small; its dialog owns long individual rosters. */
+.relations-panel { grid-column: 1 / -1; min-width: 0; padding: 12px 14px; border: 1px solid var(--line); background: #faf8f1; }
+.relations-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.relations-heading h2 { margin: 0; font: 700 20px/1.3 "Batang", serif; color: var(--ink); }
+.relations-heading .text-button { flex: 0 0 auto; font-size: 12px; padding: 3px 0; }
+.relations-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.relations-summary:has(#relations-factions-metric:not([hidden])) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.relations-metric { min-width: 0; border: 1px solid var(--line); padding: 7px 10px; background: #fffdf8; }
+.relations-metric span { display: block; font-size: 11px; color: var(--muted); }
+.relations-metric strong { display: block; font: 700 18px/1.35 "Batang", serif; color: var(--ink); }
+.relations-preview { margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.relations-dialog { width: min(650px, calc(100vw - 28px)); height: min(600px, 82dvh); max-height: calc(100dvh - 28px); padding: 24px 28px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--body); box-shadow: 0 18px 60px #0005; overflow: hidden; }
+.relations-dialog[open] { display: flex; flex-direction: column; }
+.relations-dialog-head, .relations-tabs, .relations-search-row { flex: 0 0 auto; }
+.relations-dialog::backdrop { background: rgba(16, 30, 32, .6); }
+.relations-dialog-head { display: flex; align-items: start; justify-content: space-between; gap: 15px; border-bottom: 1px solid var(--line); }
+.relations-dialog-head h2 { margin: 2px 0 14px; font: 700 28px/1.35 "Batang", serif; }
+.relations-tabs { display: flex; gap: 5px; margin-top: 16px; border-bottom: 1px solid var(--line); }
+.relations-tabs button { padding: 8px 14px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--muted); }
+.relations-tabs button[aria-selected="true"] { color: var(--sea); font-weight: 700; border-bottom-color: var(--sea); }
+.relations-tabs span { font-size: 12px; }
+.relations-search-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 7px 12px; margin-top: 13px; }
+.relations-search-row label { color: var(--copper); font-size: 12px; font-weight: 700; }
+.relations-search-row input { width: 100%; min-width: 0; min-height: 40px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 3px; background: #fffdf8; color: var(--ink); }
+.relations-filter-count { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 12px; }
+.relations-pane { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 6px 8px 0 0; }
+.relations-list { list-style: none; padding: 0; margin: 0; }
+.relations-list li { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 14px;
+  padding: 11px 3px; border-bottom: 1px solid var(--line); }
+.relations-list strong { color: var(--ink); font-size: 15px; }
+.relations-list small { color: var(--muted); font-size: 12px; text-align: right; }
+.relations-list .relations-empty { color: var(--muted); font-size: 13px; }
+@media (max-width: 700px) {
+  /* Keep the overview visible when ability and personality meters are folded. */
+  .growth-panels { display: grid; }
+  .growth-panels:not(.open) > .stats-panel { display: none; }
+  .relations-panel { padding: 10px 12px; }
+  .relations-dialog { height: min(550px, calc(100dvh - 28px)); padding: 18px 16px; }
+  .relations-dialog-head h2 { font-size: 23px; }
+  .relations-search-row { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .relations-filter-count { grid-column: 1; }
+}
+
+
+/* Desktop-only schematic: coordinates express route connections, never true geography. */
+.route-map { display: none; min-width: 0; }
+.route-map-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.route-map-heading span { color: var(--copper); font-size: 11px; font-weight: 700; }
+.route-map-heading strong { min-width: 0; color: var(--ink); font-size: 12px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.route-map-zones { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
+.route-map-zones span { min-width: 0; padding: 3px 0; border-bottom: 2px solid var(--line); color: var(--muted); font-size: 10px; text-align: center; white-space: nowrap; }
+.route-map-zones span[data-active="true"] { border-bottom-color: var(--sea); color: var(--sea); font-weight: 800; }
+.route-map-svg { display: block; width: 100%; height: 122px; overflow: hidden; border: 1px solid #b9c4bf; border-radius: 3px;
+  background: radial-gradient(ellipse at 20% 55%, #e5e4d4 0, transparent 48%),
+    radial-gradient(ellipse at 88% 25%, #d7e6df 0, transparent 40%), #e8eee8; }
+.route-map-svg .route-chart-line { fill: none; stroke: #72938c; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 5 7; }
+.route-map-svg .route-chart-visited { stroke: #9c764d; stroke-dasharray: none; }
+.route-map-svg .route-chart-point { fill: #f5f1e7; stroke: var(--sea); stroke-width: 2.5; }
+.route-map-svg .route-chart-visited-point { fill: #c2a17a; stroke: #7b5936; }
+.route-map-svg .route-chart-current { fill: var(--sea); stroke: #fffdf8; stroke-width: 3; }
+.route-map-svg .route-chart-ring { fill: none; stroke: var(--copper); stroke-width: 2; opacity: .7; }
+.route-map-svg text { fill: var(--ink); font: 600 13px/1 "Noto Sans KR", sans-serif; }
+.route-map-svg .route-chart-muted { fill: var(--muted); font-size: 11px; font-weight: 500; }
+.route-map-status { display: flex; justify-content: space-between; gap: 8px; min-width: 0; }
+.route-map-status span { color: var(--muted); font-size: 11px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.route-map-note { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.3; }
+
+/* Desktop reading desk: the life dashboard stays beside the current chapter.
+   Narrow screens retain the original stacked layout; long chapters scroll inside their pane. */
+@media (min-width: 1280px) and (min-height: 780px) {
+  html:has(.page-shell.game-screen) {
+    overflow-y: auto;
+    scrollbar-gutter: auto;
+  }
+  .page-shell.game-screen {
+    max-width: 1920px;
+    padding: 0 clamp(28px, 2.5vw, 52px);
+  }
+
+  .page-shell.game-screen .game {
+    display: grid;
+    grid-template-columns: minmax(390px, 33%) minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    gap: 10px 20px;
+    height: calc(100dvh - 72px);
+    min-height: 0;
+    padding: 10px 0 14px;
+  }
+
+  .game > .game-topline,
+  .game > .age-timeline {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+  .game > .game-topline { grid-row: 1; }
+  .game > .age-timeline { grid-row: 2; }
+
+  .game > .game-status-column {
+    grid-column: 1;
+    grid-row: 3 / 5;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    min-height: 0;
+    padding: 0 8px 18px 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+  }
+  .game > .game-status-column > .life-strip {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    flex: 0 0 auto;
+  }
+  .game .life-pane,
+  .game > .game-status-column > .growth-panels > .stats-panel {
+    min-width: 0;
+    background: #faf8f1;
+    border: 1px solid var(--line);
+    padding: 10px 14px;
+    border-radius: 4px;
+  }
+  .game .life-pane.char-pane {
+    display: grid;
+    gap: 8px;
+  }
+  .game .char-top-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; }
+  .game .char-goal-cell { grid-column: 1 / -1; }
+  .game .char-bot-row { grid-template-columns: 1.25fr .75fr; gap: 16px; }
+  .game .char-cell strong { font-size: 13px; }
+  .game .char-cell small { overflow-wrap: anywhere; }
+
+  .game .life-pane.world-pane {
+    display: grid;
+    gap: 6px;
+  }
+  .game .route-map { display: grid; gap: 5px; max-width: 100%; overflow: hidden; }
+  .game .route-map-svg { max-width: 100%; }
+  .game .route-map-zones span { min-width: 0; font-size: 10px; padding: 3px 0; }
+  .game .route-map-heading span { min-width: 0; }
+  .game .route-map-heading strong { min-width: 0; }
+  .game .route-map-status span { min-width: 0; }
+  .game .world-pane #route-trail {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .game .world-pane .route-trail,
+  .game .world-pane .life-crew,
+  .game .world-pane .life-relationships {
+    align-items: start;
+    line-height: 1.45;
+    font-size: 12px;
+  }
+  .game .world-pane span { min-width: 94px; }
+  .game .world-pane strong {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.45;
+    font-size: 12px;
+  }
+  .game .world-pane #route-trail { justify-content: flex-start; }
+
+  .game > .game-status-column > .growth-panels {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    align-content: start;
+    gap: 8px;
+    min-height: 0;
+    margin: 0;
+    overflow: visible;
+    flex: 0 0 auto;
+  }
+  .game > .game-status-column > .growth-panels > .stats-panel { min-height: 0; }
+  .game > .game-status-column > .growth-panels > .relations-panel { min-height: 0; border-radius: 4px; }
+  .game .relations-heading h2 { font-size: 19px; }
+  .game > .game-status-column > .growth-panels .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 16px;
+  }
+  .game > .game-status-column > .growth-panels .stats-panel h2 { margin-bottom: 7px; }
+  .game > .game-status-column > .growth-panels .stat-head { line-height: 1.3; }
+  .game > .game-status-column > .growth-panels .stat-track { height: 6px; }
+
+  .game > .scene-layout {
+    grid-column: 2;
+    grid-row: 3 / 5;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: clamp(180px, 23vh, 240px) minmax(0, 1fr);
+    gap: 14px;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    padding: 14px 18px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: #faf8f1;
+  }
+  .game .scene-art {
+    height: 100%;
+    min-height: 0;
+    max-height: 240px;
+    overflow: hidden;
+  }
+  .game .scene-art img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    object-fit: cover;
+    object-position: center;
+  }
+  .game .scene-copy {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 6px 0 0;
+    scrollbar-gutter: stable;
+  }
+  .game .scene-copy h1 {
+    margin-top: 4px;
+    padding-bottom: 9px;
+    font-size: clamp(26px, 1.8vw, 34px);
+  }
+  .game .scene-body {
+    max-width: 78ch;
+    margin: 10px 0 16px;
+    font-size: 17px;
+    line-height: 1.65;
+  }
+  .game .choices,
+  .game.many-choices .choices {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    border: 0;
+  }
+  .game .choices > .choice {
+    min-height: 70px;
+    padding: 10px 13px;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--sea);
+    border-radius: 4px;
+    background: #fffdf8;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .game .choices > .choice:hover,
+  .game .choices > .choice:focus-visible {
+    background: #e9eee9;
+    border-color: var(--sea);
+  }
+  .game .choices > .choice:disabled {
+    border-left-color: var(--line);
+    background: #e7e4dd;
+  }
+  .game .choices > .choice:last-child:nth-child(odd),
+  .game .choices > .crew-name-form {
+    grid-column: 1 / -1;
+  }
+  .game.many-choices .choice:nth-child(odd) { border-right: 1px solid var(--line); }
+  .game .scene-hint { margin-top: 12px; }
+}
+
 @media (max-width: 1000px) {
   .page-shell { padding: 0 30px; }
   .intro { gap: 35px; }
@@ -610,8 +885,9 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
   .world-pane strong { font-size: 11px; }
   /* Phones fold the stat panels behind a toggle so the scene stays near the top. */
   .growth-toggle { display: block; width: 100%; margin: 0 0 6px; text-align: center; }
-  .growth-panels { display: none; }
+  .growth-panels { display: grid; }
   .growth-panels.open { display: grid; }
+  .growth-panels:not(.open) > .stats-panel { display: none; }
   .scene-hint { font-size: 11px; }
   .save-warning, .storage-message { font-size: 16px; }
   .ending { display: block; padding: 37px 0 52px; }

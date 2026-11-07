@@ -340,6 +340,104 @@ export const ROUTES_V20 = {
   ]
 };
 
+
+// Rule 22 keeps the original 25 custom stops for replays, but offers just four as
+// optional detours in new voyages. Restricted canon destinations have story gates.
+const CHARTERED_DETOURS_V22 = new Set([
+  "물안개 암초군(임의 지명)", "거품여울 군도(임의 지명)",
+  "해저 산호길(임의 지명)", "검은 번개 여울(임의 지명)"
+]);
+const CANON_ROUTES_V22 = {
+  "이스트 블루 · 로그 타운": [
+    { dest: "리버스 마운틴", dist: "단거리", cost: 10, note: "위대한 항로로 향하는 운하" },
+    { dest: "바라티에", dist: "중거리", cost: 18, note: "이스트 블루의 해상 레스토랑" },
+    { dest: "오렌지 마을", dist: "원거리", cost: 26, note: "버기의 소란이 지나간 항구" }
+  ],
+  "이스트 블루 · 푸샤 마을": [
+    { dest: "셸즈 타운", dist: "단거리", cost: 10, note: "해군 기지가 있는 섬" },
+    { dest: "오렌지 마을", dist: "중거리", cost: 18, note: "오렌지 마을의 부두" },
+    { dest: "이스트 블루 · 로그 타운", dist: "원거리", cost: 28, note: "위대한 항로 입구로 향하는 항구" }
+  ],
+  "셸즈 타운": [
+    { dest: "이스트 블루 · 푸샤 마을", dist: "단거리", cost: 10, note: "루피의 고향이 있는 바다" },
+    { dest: "오렌지 마을", dist: "중거리", cost: 18, note: "이웃 항로의 정박지" },
+    { dest: "시럽 마을", dist: "원거리", cost: 26, note: "해안의 조용한 마을" }
+  ],
+  "오렌지 마을": [
+    { dest: "셸즈 타운", dist: "단거리", cost: 10, note: "해군 기지로 돌아가는 길" },
+    { dest: "시럽 마을", dist: "중거리", cost: 18, note: "해안의 작은 마을" },
+    { dest: "바라티에", dist: "원거리", cost: 26, note: "해상 레스토랑에 기항" }
+  ],
+  "시럽 마을": [
+    { dest: "바라티에", dist: "단거리", cost: 12, note: "식량을 구할 수 있는 바다 식당" },
+    { dest: "아론 파크", dist: "중거리", cost: 20, note: "코코야시 인근 해역" },
+    { dest: "이스트 블루 · 로그 타운", dist: "원거리", cost: 28, note: "리버스 마운틴 출항 기지" }
+  ],
+  "바라티에": [
+    { dest: "아론 파크", dist: "단거리", cost: 12, note: "코코야시 마을 근해" },
+    { dest: "이스트 블루 · 로그 타운", dist: "중거리", cost: 20, note: "위대한 항로 입구의 항구" },
+    { dest: "시럽 마을", dist: "원거리", cost: 26, note: "옛 동쪽 항로로 돌아가기" }
+  ],
+  "아론 파크": [
+    { dest: "이스트 블루 · 로그 타운", dist: "단거리", cost: 12, note: "그랜드 라인 출항 준비" },
+    { dest: "바라티에", dist: "중거리", cost: 18, note: "해상 식당으로 귀항" },
+    { dest: "시럽 마을", dist: "원거리", cost: 26, note: "오래된 동쪽 바닷길" }
+  ],
+  "자야 · 모크 타운": [
+    ...ROUTES_V20["자야 · 모크 타운"].slice(0, 2),
+    { dest: "위대한 항로 상공 · 스카이피아", dist: "특수 항로", cost: 30,
+      note: "노크 업 스트림 · 기술 45, 건강 45 필요", special: "sky" }
+  ],
+  "위대한 항로 상공 · 스카이피아": [
+    { dest: "자야 · 모크 타운", dist: "단거리", cost: 10, note: "구름바다에서 청해로 하강" },
+    { dest: "롱 링 롱 랜드", dist: "중거리", cost: 18, note: "청해 항로로 복귀" }
+  ],
+  "롱 링 롱 랜드": [
+    ...ROUTES_V20["롱 링 롱 랜드"].slice(0, 2),
+    { dest: "스릴러 바크", dist: "특수 항로", cost: 28, note: "마의 삼각지대 안개 속 유령선", special: "fog" }
+  ],
+  "워터 세븐": [
+    ...ROUTES_V20["워터 세븐"].slice(0, 2),
+    { dest: "에니에스 로비", dist: "특수 항로", cost: 28,
+      note: "해상 열차 · 해군 소속 또는 기술 55 필요", special: "justice" },
+    { dest: "스릴러 바크", dist: "특수 항로", cost: 22, note: "마의 삼각지대로 진입", special: "fog" }
+  ],
+  "에니에스 로비": [
+    { dest: "워터 세븐", dist: "단거리", cost: 12, note: "해상 열차로 돌아가는 길" },
+    { dest: "샤본디 제도", dist: "중거리", cost: 22, note: "정부 해역을 벗어나는 바닷길" }
+  ],
+  "스릴러 바크": [
+    { dest: "샤본디 제도", dist: "단거리", cost: 12, note: "마의 삼각지대를 빠져나옴" },
+    { dest: "워터 세븐", dist: "중거리", cost: 18, note: "물의 도시로 되돌아가는 길" },
+    { dest: "롱 링 롱 랜드", dist: "원거리", cost: 28, note: "초원 바다 방향으로 귀항" },
+    { dest: "거품여울 군도(임의 지명)", dist: "원거리", cost: 26, note: "샤본디 인근의 지도 밖 암초" }
+  ],
+  "샤본디 제도": [
+    ...ROUTES_V20["샤본디 제도"].slice(0, 2),
+    { dest: "아마존 릴리 외해", dist: "특수 항로", cost: 30,
+      note: "캄 벨트 횡단 · 기술 55 필요", special: "calm" }
+  ],
+  "아마존 릴리 외해": [
+    { dest: "샤본디 제도", dist: "중거리", cost: 20, note: "캄 벨트를 벗어나 샤본디로 귀항" }
+  ]
+};
+export const ROUTES_V22 = Object.fromEntries(Object.entries(ROUTES_V20).map(([place, options]) => [
+  place, CANON_ROUTES_V22[place] || options.filter(({ dest }) =>
+    !dest.includes("(임의 지명)") || CHARTERED_DETOURS_V22.has(dest))
+]));
+Object.assign(ROUTES_V22, CANON_ROUTES_V22);
+
+export function routeOptionsFor(life, place = life.location) {
+  const key = life.creationVersion >= 22 && place === "위대한 항로 · 알라바스타 나노하나" ? "알라바스타 · 나노하나" : place;
+  return (life.creationVersion >= 22 ? ROUTES_V22 : ROUTES_V20)[key];
+}
+function specialRouteReady(life, route) {
+  if (route.special === "sky") return life.skill >= 45 && life.health >= 45;
+  if (route.special === "justice") return life.path === "marine" || life.skill >= 55;
+  if (route.special === "calm") return life.skill >= 55;
+  return true;
+}
+
 function firstTrust(life, place) {
   let hash = 0;
   for (const char of place) hash = Math.imul(hash ^ char.codePointAt(0), 0x01000193) >>> 0;
@@ -371,7 +469,7 @@ export function sailToNextPort(life) {
   // The Straw Hats depart at their canon beats, not at random side events.
   if (followsCaptain(life) && life.canonCrew === "밀짚모자 일당" && !life.independent) return life.location;
   const cur = life.location;
-  const v20Routes = ROUTES_V20[cur];
+  const v20Routes = routeOptionsFor(life, cur);
   let dest;
   if (v20Routes && v20Routes.length > 0) {
     dest = v20Routes[0].dest;
@@ -386,6 +484,7 @@ export function sailToNextPort(life) {
   }
   if (dest && dest !== cur) {
     moveTo(life, dest);
+    if (life.creationVersion >= 22) life.pendingEncounter = encounterAt(life);
   }
   return life.location;
 }
@@ -429,6 +528,55 @@ export function routeFor(life) {
 }
 
 const ENCOUNTERS = [
+  // Rule 22 arrival scenes belong to player voyages, not the original crew's scripted chapters.
+  { id: "sky_arrival_v22", minVersion: 22, title: "구름바다의 첫 발자국",
+    place: "위대한 항로 상공 · 스카이피아", earliest: 1000, latest: -1000, name: "스카이피아", art: "arcSkypiea",
+    body: "자야에서 노크 업 스트림을 견딘 배가 구름바다에 닿았다. 아래쪽 바다는 보이지 않았다. 하늘길의 주민은 낯선 배를 조심스레 맞이하며 구름으로 만든 길을 알려 주었다.",
+    choices: [
+      { id: "listen", label: "하늘길과 다이얼 사용법을 배운다", risk: "기술 +8 · 지역의 신뢰 +5", personality: { caution: 5 },
+        apply: (state) => { state.skill += 8; state.trust += 5; return "구름길을 밟는 방법과 다이얼의 소리를 배우며 낯선 하늘에 익숙해졌다."; } },
+      { id: "help", label: "구름 길목을 고치는 주민을 돕는다", available: (state) => state.supplies >= 8,
+        risk: "물자 8 필요 · 지역의 신뢰 +10", personality: { empathy: 5 },
+        apply: (state) => { state.supplies -= 8; state.trust += 10; return "정비용 물자를 건네자 주민들은 안전한 하강길도 알려 주었다."; } }
+    ] },
+  { id: "thriller_arrival_v22", minVersion: 22, title: "안개 속 유령선의 그림자",
+    place: "스릴러 바크", earliest: 1000, latest: -1000, name: "스릴러 바크", art: "arcThrillerBark",
+    body: "마의 삼각지대에 들어선 순간 거대한 배 모양의 섬이 안개를 가르며 나타났다. 누군가는 그림자를 조심하라고 속삭였다. 이곳에서 머무는 시간과 빠져나갈 항로를 먼저 확인해야 했다.",
+    choices: [
+      { id: "trace", label: "닻과 안개 속 퇴로부터 기록한다", risk: "기술 +8 · 신중한 항해", personality: { caution: 5 },
+        apply: (state) => { state.skill += 8; return "표류하는 배들의 흔적을 따라 돌아갈 바닷길을 표시했다."; } },
+      { id: "rescue", label: "도움을 청하는 표류선을 살핀다", risk: "지역의 신뢰 +10 · 건강 -5", personality: { empathy: 5 },
+        apply: (state) => { state.trust += 10; state.health -= 5; return "서둘러 표류선을 구조했다. 안개를 헤치느라 몸이 지쳤지만 돌아갈 길을 잃지는 않았다."; } }
+    ] },
+  { id: "enies_arrival_v22", minVersion: 22, title: "사법의 섬, 닫힌 문",
+    place: "에니에스 로비", earliest: 1000, latest: -1000, name: "에니에스 로비", art: "arcEniesLobby",
+    body: "워터 세븐에서 이어지는 해상 열차와 정부 수송로를 지나 사법의 섬에 닿았다. 감시가 삼엄한 구역이다. 허가된 신분이 아니면 쉽게 발을 들일 수 없었다.",
+    choices: [
+      { id: "records", label: "경비 교대와 탈출용 해상 열차를 살핀다", risk: "기술 +8", personality: { caution: 5 },
+        apply: (state) => { state.skill += 8; return "추적당하지 않도록 출입 기록과 운행표를 확인한 뒤 퇴로를 확보했다."; } },
+      { id: "shelter", label: "수송 중인 부상자를 조용히 돕는다", risk: "건강 +5 · 지역의 신뢰 +5", personality: { empathy: 5 },
+        apply: (state) => { state.health += 5; state.trust += 5; return "구호 일손을 도운 뒤 위험한 정부 구역에서 오래 머물지 않았다."; } }
+    ] },
+  { id: "calm_arrival_v22", minVersion: 22, title: "바람 없는 캄 벨트",
+    place: "아마존 릴리 외해", earliest: 1000, latest: -1000, name: "아마존 릴리 근해", art: "deck",
+    body: "바람이 멎은 캄 벨트에서 해왕류의 그림자가 선체 아래로 지나갔다. 여인섬의 해안은 멀리 보였지만 이방인에게 허락된 땅은 아니었다. 이곳에서는 해안에 내리지 않고 퇴로를 찾는 편이 안전했다.",
+    choices: [
+      { id: "avoid", label: "노 젓는 속도를 맞추며 해왕류를 피한다", risk: "기술 +8", personality: { caution: 6 },
+        apply: (state) => { state.skill += 8; return "해왕류가 지나가기를 기다린 뒤 바다의 고요를 거슬러 돌아갈 길을 찾았다."; } },
+      { id: "wait", label: "무리한 상륙을 포기하고 배를 정비한다", risk: "건강 +5 · 물자 -5", personality: { caution: 5 },
+        apply: (state) => { state.health += 5; state.supplies -= 5; return "해안 가까이 다가가지 않고 선체를 수리해 안전한 물길을 기다렸다."; } }
+    ] },
+  { id: "baratie_arrival_v22", minVersion: 22, title: "바라티에의 바다 식탁",
+    place: "바라티에", earliest: 1000, latest: -1000, name: "바라티에", art: "arcBaratie",
+    body: "바다 한가운데 식당 배가 닻을 내리고 있었다. 여러 바다에서 온 선원과 어부들이 같은 식탁에 앉았다. 항해의 피로를 덜기 전에 이곳의 규칙부터 배워야 했다.",
+    choices: [
+      { id: "eat", label: "식량을 나누며 충분히 쉰다", available: (state) => state.supplies >= 10,
+        risk: "물자 10 필요 · 건강 +10", personality: { empathy: 4 },
+        apply: (state) => { state.supplies -= 10; state.health += 10; return "낯선 항해자들의 이야기를 들으며 한 끼를 든든하게 먹었다."; } },
+      { id: "work", label: "주방의 바쁜 일을 돕는다", risk: "기술 +8 · 지역의 신뢰 +5", personality: { loyalty: 4 },
+        apply: (state) => { state.skill += 8; state.trust += 5; return "식탁과 갑판을 치우는 동안 선원들은 안전한 항로 정보를 나누었다."; } }
+    ] },
+
   { id: "dorry_brogy", place: "리틀 가든", earliest: 100, latest: 3, name: "도리와 브로기", canon: "https://one-piece.com/story/alabasta/index.html",
     body: "리틀 가든에서 도리와 브로기의 결투 소리가 들렸다. 둘은 오래된 승부를 이어 가고 있었다. 지나가는 배는 싸움에 끼어들지 않고 해안에 닻을 내렸다.",
     choices: [
@@ -479,7 +627,7 @@ export function encounterAt(life) {
   const latest = (entry) => life.creationVersion >= 17 && entry.latestV17 !== undefined ? entry.latestV17
     : life.creationVersion >= 3 && entry.latestV3 !== undefined ? entry.latestV3 : entry.latest;
   // Rule 20 ties the side encounter to the actual Elbaf arrival beat, not the coarse post-reunion era.
-  return ENCOUNTERS.find((entry) => life.location === entry.place && beforePresent <= entry.earliest && beforePresent >= latest(entry)
+  return ENCOUNTERS.find((entry) => life.location === entry.place && life.creationVersion >= (entry.minVersion || 1) && beforePresent <= entry.earliest && beforePresent >= latest(entry)
     && (entry.id !== "luffy_elbaf" || life.creationVersion < 20 || life.seen.includes("canon_arc_elbaf_0"))
     && !life.seen.includes(`life_meet_${entry.id}`))?.id || null;
 }
@@ -488,7 +636,7 @@ export function encounterScene(life) {
   const encounter = ENCOUNTERS.find((entry) => entry.id === life.pendingEncounter);
   if (!encounter) throw new Error("만남 기록을 찾을 수 없습니다.");
   return { id: `life_meet_${encounter.id}`, age: life.age, act: 2, species: "all", yearly: true, encounter: true,
-    art: encounter.art || "deck", title: `${encounter.name}와의 마주침`, body: encounter.body, canon: encounter.canon, choices: encounter.choices };
+    art: encounter.art || "deck", title: encounter.title || `${encounter.name}와의 마주침`, body: encounter.body, canon: encounter.canon, choices: encounter.choices };
 }
 
 export function isNewWorld(place) {
@@ -561,17 +709,19 @@ export function travelScene(life, age) {
 }
 
 function distanceProportionalTravelScene(life, age) {
-  const routes = ROUTES_V20[life.location] || ROUTES_V20[routeFor(life)[0]] || [
+  const routes = routeOptionsFor(life) || routeOptionsFor(life, routeFor(life)[0]) || [
     { dest: "위스키 피크", dist: "단거리", cost: 10, note: "기록지침 항로" },
     { dest: "리틀 가든", dist: "중거리", cost: 18, note: "중거리 항로" },
-    { dest: "돌소금 여울(임의 지명)", dist: "원거리", cost: 26, note: "원거리 항로" }
+    { dest: life.creationVersion >= 22 ? "알라바스타 · 나노하나" : "돌소금 여울(임의 지명)",
+      dist: "원거리", cost: 26, note: "원거리 항로" }
   ];
   const newWorld = isNewWorld(life.location);
   const candidates = newWorld
     ? ["드레스로자", "그린 비트", "조", "와노국 외해", "엘바프", "스핑크스 섬", "하치노스 근해", "에그헤드 외해", "붉은 이끼 환초(임의 지명)", "거인나무 환초(임의 지명)"]
     : ["쌍둥이 언덕", "위스키 피크", "리틀 가든", "드럼섬", "알라바스타 · 나노하나", "자야 · 모크 타운", "롱 링 롱 랜드", "워터 세븐", "샤본디 제도", "물안개 암초군(임의 지명)", "해류목 군도(임의 지명)"];
   const currentDestNames = routes.map((r) => r.dest);
-  const poseOptions = candidates.filter((place) => place !== life.location && place !== "어인섬" && !currentDestNames.includes(place));
+  const poseOptions = candidates.filter((place) => place !== life.location && place !== "어인섬"
+    && (life.creationVersion < 22 || !place.includes("(임의 지명)")) && !currentDestNames.includes(place));
   const poseDestination = poseOptions[yearRoll(life.seed ^ 0x6d3c, age) % (poseOptions.length || 1)] || (newWorld ? "엘바프" : "워터 세븐");
 
   function visit(state, place, cost) {
@@ -581,6 +731,9 @@ function distanceProportionalTravelScene(life, age) {
     state.pendingEncounter = encounterAt(state);
     if (place.includes("(임의 지명)")) {
       return `${state.birth.name}의 배는 지도에 임의 지명으로 적힌 ${place}에 닻을 내렸다. 해도에는 없던 작은 부두와 거친 암초 너머로 새로운 풍경이 펼쳐졌다.`;
+    }
+    if (state.creationVersion >= 22 && ["위대한 항로 상공 · 스카이피아", "스릴러 바크", "에니에스 로비", "아마존 릴리 외해", "바라티에"].includes(place)) {
+      return `${state.birth.name}은 특별한 항로를 거쳐 ${place}에 도착했다. 곧 이곳에서만 겪을 수 있는 사건이 기다리고 있었다.`;
     }
     return `${state.birth.name}의 배는 ${place}에 닿았다. 낡은 해도에는 없던 부두의 소란이 먼저 들렸다.`;
   }
@@ -593,6 +746,18 @@ function distanceProportionalTravelScene(life, age) {
   const near = routes[0];
   const mid = routes[1] || routes[0];
   const far = routes[2] || routes[1] || routes[0];
+  const detour = life.creationVersion >= 22 ? routes[3] : null;
+  const travelLabel = (route, ordinary) => life.creationVersion >= 22 && route.special
+    ? ({
+      sky: "노크 업 스트림을 타고 구름바다로 오른다",
+      fog: "마의 삼각지대의 안개 속으로 진입한다",
+      justice: "해상 열차와 수송로를 따라 사법의 섬으로 간다",
+      calm: "캄 벨트를 건너 여인섬 근해를 정찰한다"
+    }[route.special] || ordinary) : ordinary;
+  const travelRisk = (route, cost, ordinary) => life.creationVersion >= 22 && route.special
+    ? `물자 ${cost} 필요 · ${route.note}` : ordinary;
+  const canSail = (state, route, cost) => state.supplies >= cost
+    && (state.creationVersion < 22 || specialRouteReady(state, route));
 
   const nearCost = life.location === "샤본디 제도" && near.dest === "어인섬" ? 30 : near.cost;
   const midCost = life.location === "샤본디 제도" && mid.dest === "어인섬" ? 30 : mid.cost;
@@ -611,27 +776,37 @@ function distanceProportionalTravelScene(life, age) {
   const choices = [
     {
       id: "near",
-      label: `[단거리] 기록지침을 따라 ${ro(near.dest)} 간다`,
-      available: (state) => state.supplies >= nearCost,
-      risk: nearRisk,
+      label: travelLabel(near, `[단거리] 기록지침을 따라 ${ro(near.dest)} 간다`),
+      available: (state) => canSail(state, near, nearCost),
+      risk: travelRisk(near, nearCost, nearRisk),
       personality: { caution: 4 },
       apply: (state) => visit(state, near.dest, nearCost)
     },
     {
       id: "mid",
-      label: `[중거리] 바닷길을 넓혀 ${ro(mid.dest)} 간다`,
-      available: (state) => state.supplies >= midCost,
-      risk: midRisk,
+      label: travelLabel(mid, `[중거리] 바닷길을 넓혀 ${ro(mid.dest)} 간다`),
+      available: (state) => canSail(state, mid, midCost),
+      risk: travelRisk(mid, midCost, midRisk),
       personality: { freedom: 4 },
       apply: (state) => visit(state, mid.dest, midCost)
     },
     {
       id: "far",
-      label: `[원거리] 먼 바다를 건너 ${ro(far.dest)} 간다`,
-      available: (state) => state.supplies >= farCost,
-      risk: farRisk,
+      label: travelLabel(far, `[원거리] 먼 바다를 건너 ${ro(far.dest)} 간다`),
+      when: () => life.creationVersion < 22 || routes.length >= 3,
+      available: (state) => canSail(state, far, farCost),
+      risk: travelRisk(far, farCost, farRisk),
       personality: { ambition: 6, freedom: 5 },
       apply: (state) => visit(state, far.dest, farCost)
+    },
+    {
+      id: "detour",
+      when: () => Boolean(detour),
+      label: detour ? travelLabel(detour, `[특수 항로] ${ro(detour.dest)} 간다`) : "",
+      available: (state) => detour && canSail(state, detour, detour.cost),
+      risk: detour ? travelRisk(detour, detour.cost, `물자 ${detour.cost} 필요 · ${detour.note}`) : "",
+      personality: { freedom: 6, caution: 3 },
+      apply: (state) => visit(state, detour.dest, detour.cost)
     },
     {
       id: "convoy",
@@ -643,7 +818,9 @@ function distanceProportionalTravelScene(life, age) {
     {
       id: "pose",
       label: `영구 지침으로 ${ro(life.eternalPose || near.dest)} 간다`,
-      when: (state) => Boolean(state.eternalPose) && state.eternalPose !== state.location && isNewWorld(state.eternalPose) === newWorld,
+      when: (state) => Boolean(state.eternalPose) && state.eternalPose !== state.location
+        && isNewWorld(state.eternalPose) === newWorld
+        && (state.creationVersion < 22 || !["위대한 항로 상공 · 스카이피아", "에니에스 로비", "스릴러 바크", "아마존 릴리 외해"].includes(state.eternalPose)),
       available: (state) => state.supplies >= 15,
       risk: "물자 15 필요 · 가지고 있는 영구 지침 사용",
       personality: { caution: 4 },
@@ -669,7 +846,9 @@ function distanceProportionalTravelScene(life, age) {
     urgent: true,
     art: "deck",
     title: displayTitle,
-    body: `기록지침과 나침반의 바늘이 제각기 다른 물길을 가리켰다. 거리에 따라 채워 넣을 물자와 식량이 달랐고, 지도에 없는 임의 지명의 작은 섬이나 미개척 암초를 경유할 수도 있었다.`,
+    body: life.creationVersion >= 22
+      ? "기록지침과 해도가 여러 항로를 가리켰다. 드문 미개척 암초보다는 알려진 섬을 중심으로 길을 고르고, 하늘길과 정부 구역 같은 특수 항로에는 별도 준비가 필요하다."
+      : `기록지침과 나침반의 바늘이 제각기 다른 물길을 가리켰다. 거리에 따라 채워 넣을 물자와 식량이 달랐고, 지도에 없는 임의 지명의 작은 섬이나 미개척 암초를 경유할 수도 있었다.`,
     choices
   };
 }
