@@ -324,11 +324,34 @@ const CHARACTERS = {
   sabo: { name: "사보", display: "사보", group: "혁명군", captureable: true },
   bigMom: { name: "샬롯 링링", display: "빅 맘", group: "빅 맘 해적단", captureable: true },
   vegapunk: { name: "베가펑크", display: "베가펑크", group: "세계정부" },
-  bonney: { name: "쥬얼리 보니", display: "보니", group: "보니 해적단", captureable: true }
+  bonney: { name: "쥬얼리 보니", display: "보니", group: "보니 해적단", captureable: true },
+  nami: { name: "나미", display: "나미", group: "밀짚모자 일당", captureable: true },
+  buggy: { name: "버기", display: "버기", group: "버기 해적단", captureable: true },
+  kaya: { name: "카야", display: "카야", group: "시럽 마을" },
+  zeff: { name: "제프", display: "제프", group: "바라티에" },
+  arlong: { name: "아론", display: "아론", group: "아론 일당", captureable: true },
+  wyper: { name: "와이퍼", display: "와이퍼", group: "샨디아 전사" },
+  enel: { name: "에넬", display: "에넬", group: "스카이피아", captureable: true },
+  lucci: { name: "롭 루치", display: "루치", group: "CP9", captureable: true },
+  moria: { name: "겟코 모리아", display: "모리아", group: "스릴러 바크", captureable: true },
+  hancock: { name: "보아 핸콕", display: "핸콕", group: "구사 해적단" }
 };
 
 // Each entry is the named person the player can actually meet in that authored island scene.
 const ARC_CONTACTS = {
+  // These indices match the new rule-23 island scenes, so every direct meeting records a bond.
+  departure: ["luffy"],
+  zoro: ["zoro", "zoro"],
+  buggy: ["luffy", "nami"],
+  usopp: ["usopp", "kaya"],
+  baratie: ["sanji", "zoro"],
+  arlong: ["nami", "nami"],
+  skypiea_trial: ["wyper", "enel"],
+  skypiea_bell: ["luffy"],
+  enies_lobby: ["robin", "zoro"],
+  thriller_shadows: ["brook", "moria"],
+  thriller_aftermath: ["zoro"],
+  amazon_lily: ["hancock", "luffy"],
   loguetown: ["luffy", (life) => life.path === "marine" ? "smoker" : "luffy"],
   whiskey: ["zoro"],
   little_garden: ["dorry"],
