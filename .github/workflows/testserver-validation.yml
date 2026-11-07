@@ -29,6 +29,17 @@ jobs:
       - name: Compare 24 rule-30 same-birth choice pairs
         if: always()
         run: CREATION_VERSION=30 node scripts/choice-compare.mjs
+
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Run real mobile and desktop Chrome UI smoke tests
         if: always()
         run: node scripts/browser-smoke.mjs

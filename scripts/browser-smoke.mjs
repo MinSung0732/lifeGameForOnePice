@@ -82,10 +82,12 @@ try {
     await evaluate('document.getElementById("dev-patch-select").value="0_1";document.getElementById("dev-patch-select").dispatchEvent(new Event("change",{bubbles:true}))');
     await until('document.querySelectorAll("#choices button.choice").length>0');
     const size = await evaluate('(()=>{document.querySelector(".dev-patch-bar").style.display="none";const b=[...document.querySelectorAll("#choices button.choice")];const d=document.documentElement;return {viewport:d.clientWidth,scrollWidth:d.scrollWidth,bodyFont:parseFloat(getComputedStyle(document.querySelector("#scene-body")).fontSize),buttons:b.length,enabled:b.filter(x=>!x.disabled).length,minButtonHeight:Math.min(...b.map(x=>x.getBoundingClientRect().height))}})()');
-    assert.ok(size.enabled>0 && size.scrollWidth<=size.viewport+2, device + " game choices overflow or are disabled");
+    console.log("BROWSER_GEOMETRY", JSON.stringify({device,...size}));
+    const debugShot = await send("Page.captureScreenshot", { format: "png" });
+    await writeFile(join(root, "test-results", device + "-choices.png"), Buffer.from(debugShot.data, "base64"));
+    assert.ok(size.enabled>0, device + " game has no enabled choice");
+    assert.ok(size.scrollWidth<=size.viewport+2, device + " horizontal overflow");
     if (device === "mobile") { assert.ok(size.bodyFont>=16, "Mobile body smaller than 16px"); assert.ok(size.minButtonHeight>=44, "Mobile choice target smaller than 44px"); }
-    const picture = await send("Page.captureScreenshot", { format: "png" });
-    await writeFile(join(root, "test-results", device + "-choices.png"), Buffer.from(picture.data, "base64"));
     await evaluate('document.querySelector(".dev-patch-bar").style.display="";document.getElementById("dev-patch-select").value="3_0";document.getElementById("dev-patch-select").dispatchEvent(new Event("change",{bubbles:true}))');
     await until('!document.getElementById("ending").hidden');
     const count = await evaluate('document.querySelectorAll("#ending-timeline li").length');
