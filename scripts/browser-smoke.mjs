@@ -104,6 +104,9 @@ try {
     await until('!document.getElementById("ending").hidden');
     const count = await evaluate('document.querySelectorAll("#ending-timeline li").length');
     assert.ok(count>=1 && count<=5, device + " ending not readable");
+    const goalText = await evaluate('document.getElementById("ending-goal").textContent');
+    assert.ok(goalText.length > 0, device + " personal aim recap must not be blank");
+    assert.ok(!/목표 달성 실패|실패한 인생/.test(goalText), "No automatic moral grading for an unfinished goal");
     const ending = await send("Page.captureScreenshot", { format: "png" });
     await writeFile(join(root, "test-results", device + "-ending.png"), Buffer.from(ending.data, "base64"));
     result.push({ device, width, height, layout: size, memories: count });
