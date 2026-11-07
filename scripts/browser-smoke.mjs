@@ -23,15 +23,20 @@ for (const p of ["google-chrome", "chromium", "chromium-browser"]) {
 }
 assert.ok(exe, "No installed Chrome or Chromium binary");
 const temp = await mkdtemp(join(tmpdir(), "sea-chrome-"));
+console.log("BROWSER_BINARY", exe);
 const browser = spawn(exe, ["--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage",
-  "--remote-allow-origins=*", "--remote-debugging-port=0", "--user-data-dir=" + temp, "about:blank"], { stdio: "ignore" });
+  "--remote-allow-origins=*", "--remote-debugging-port=0", "--user-data-dir=" + temp, "about:blank"], { stdio: ["ignore", "ignore", "pipe"] });
+let stderr = "";
+browser.stderr?.on("data", (chunk) => { stderr = (stderr + chunk.toString()).slice(-4000); });
+browser.on("exit", (code, signal) => console.log("BROWSER_PROCESS_EXIT", code, signal));
 let socket;
 try {
   let port = 0;
-  for (let i = 0; i < 100 && !port; i++) {
+  for (let i = 0; i < 250 && !port && browser.exitCode === null; i++) {
     try { port = Number((await readFile(join(temp, "DevToolsActivePort"), "utf8")).split("\n")[0]); }
     catch { await sleep(100); }
   }
+  if (!port) console.log("BROWSER_STARTUP_DIAGNOSTIC", JSON.stringify({ executable:exe, exitCode:browser.exitCode, stderr }));
   assert.ok(port, "Chrome debugging port unavailable");
   const tabs = await (await fetch("http://127.0.0.1:" + port + "/json/list")).json();
   const page = tabs.find((entry) => entry.type === "page");
