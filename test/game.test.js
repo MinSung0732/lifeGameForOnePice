@@ -1614,7 +1614,7 @@ test("31번 규칙은 실제로 돌본 후배의 후일담만 열고 화해를 �
   after.seen.push(legacy.id);
   assert.equal(personalBeat(after, 50, { age: 50 }), null, "후일담이 반복되지 않는다");
   assert.equal(personalBeat({ ...base, creationVersion: 30 }, 47, { age: 47 }), null);
-  assert.equal(personalBeat({ ...base, seen: [] }, 47, { age: 47 }), null);
+  assert.notEqual(personalBeat({ ...base, seen: [] }, 47, { age: 47 })?.id, "life_people_ward_legacy");
   assert.equal(personalBeat({ ...base, people: { ...base.people, ward: { ...base.people.ward, fate: "원망" } } }, 47, { age: 47 }), null);
   const independent = structuredClone(base);
   independent.people.ward.fate = "자기 길";

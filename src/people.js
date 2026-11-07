@@ -279,7 +279,7 @@ const BEATS = [
     id: "life_people_ward_legacy",
     when: (life, age) => {
       if (life.creationVersion < 31 || !["후계", "자기 길"].includes(life.people.ward?.fate)
-        || !life.seen.includes("life_people_ward_return")) return false;
+        || !life.seen.includes("life_people_ward_meet") || !life.seen.includes("life_people_ward_return")) return false;
       const returned = life.journal.find((entry) => entry.id === "life_people_ward_return");
       return returned && age >= returned.age + span(life, 3, 15);
     },
@@ -288,7 +288,7 @@ const BEATS = [
       const inherited = ward.fate === "후계";
       return { art: "workbench", title: "이어지는 장부의 여백",
         body: inherited
-          ? `${name}에게 맡긴 장부의 새 페이지가 기항선 편으로 도착했다. 네가 가르친 매듭 옆에는 ${name}이 다시 그린 표시가 있었다. 앞으로 어떤 일을 맡을지는 그 사람의 선택이었다.`
+          ? `${name}에게 맡긴 장부의 새 페이지가 기항선 편으로 도착했다. 네가 가르친 매듭 옆에는 ${ig(name)} 다시 그린 표시가 있었다. 앞으로 어떤 일을 맡을지는 그 사람의 선택이었다.`
           : `${name}에게서 다른 항구에서 일하며 겪은 일을 적은 편지가 왔다. 네가 곁에 두지 않기로 했던 결정이 두 사람의 삶을 다른 방향으로 이끌었다.`,
         choices: [
           { id: "write", cost: 5, label: "내가 배운 실수도 적어 보내 준다",
