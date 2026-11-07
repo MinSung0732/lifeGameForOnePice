@@ -35,6 +35,12 @@ jobs:
       - name: Compare 24 rule-31 same-birth choice pairs
         if: always()
         run: CREATION_VERSION=31 node scripts/choice-compare.mjs
+      - name: Audit 1,000 rule-32 lives and personal goals
+        if: always()
+        run: CREATION_VERSION=32 node scripts/life-audit.mjs
+      - name: Compare 24 rule-32 choice-policy pairs
+        if: always()
+        run: CREATION_VERSION=32 node scripts/choice-compare.mjs
 
   browser-smoke:
     runs-on: ubuntu-latest

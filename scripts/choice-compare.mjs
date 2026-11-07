@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { advance, createGame, getScene, replay, saveRecord } from "../src/game.js";
 import { endingMemories } from "../src/ending-memories.js";
+import { personalAimSummary } from "../src/life-aim.js";
 
 const VERSION = Number(process.env.CREATION_VERSION || 29);
 const species = ["인간", "어인", "밍크족", "하늘섬 사람", "거인족"];
@@ -47,6 +48,12 @@ function play(mode, seed, kind, policy) {
   };
   return {
     birth, initial, early, middle, decisions, roles: [...roles], contacts: [...contactNames], relationOutcome,
+    personalAim: life.personalAim ?? null,
+    personalAimReached: life.seen.includes("life_personal_aim"),
+    personalAimSummary: VERSION >= 32 ? personalAimSummary(life) : null,
+    lateAimChoice: life.journal.find((entry) => entry.id === "life_retire_choice")?.choice || null,
+    aimEnding: endingMemories(life).filter((entry) => entry.id === "life_personal_aim" || entry.id === "life_retire_choice")
+      .map((entry) => entry.id + ":" + (entry.choice || "-")),
     path: life.path, role: life.role, ending: endingMemories(life).map((entry) => entry.id + ":" + (entry.choice || "-")),
     journalLength: life.journal.length
   };
@@ -74,13 +81,17 @@ for (let index = 0; index < 24; index++) {
       earlyOverlap: overlap(a.early, b.early), middleOverlap: overlap(a.middle, b.middle),
       sharedChoiceScenes: common, differentSharedChoices: differentChoices,
       finalPathDifferent: a.path !== b.path, finalRoleDifferent: a.role !== b.role,
+      personalAimDifferent: a.personalAim !== b.personalAim || a.personalAimReached !== b.personalAimReached,
+      personalAimSummaryDifferent: a.personalAimSummary !== b.personalAimSummary,
+      lateAimChoiceDifferent: a.lateAimChoice !== b.lateAimChoice,
+      aimEndingDifferent: JSON.stringify(a.aimEnding) !== JSON.stringify(b.aimEnding),
       contactsDifferent: JSON.stringify(a.contacts.sort()) !== JSON.stringify(b.contacts.sort()),
       personalRelationshipDifferent: JSON.stringify(a.relationOutcome) !== JSON.stringify(b.relationOutcome),
       relationEndingDifferent: JSON.stringify(a.ending.filter((entry) => /^life_(people_(mate|ward)|path_civilian_(after|legacy))/.test(entry)))
         !== JSON.stringify(b.ending.filter((entry) => /^life_(people_(mate|ward)|path_civilian_(after|legacy))/.test(entry))),
       endingDifferent: JSON.stringify(a.ending) !== JSON.stringify(b.ending),
-      endA: { path: a.path, role: a.role, memories: a.ending, relationships: a.relationOutcome },
-      endB: { path: b.path, role: b.role, memories: b.ending, relationships: b.relationOutcome }
+      endA: { path: a.path, role: a.role, memories: a.ending, relationships: a.relationOutcome, aim: a.personalAim, late: a.lateAimChoice },
+      endB: { path: b.path, role: b.role, memories: b.ending, relationships: b.relationOutcome, aim: b.personalAim, late: b.lateAimChoice }
     });
   } catch (e) {
     failures.push({ seed, mode, species: kind, error: String(e) });
@@ -95,6 +106,10 @@ const report = {
   meanEarlyOverlap: mean("earlyOverlap"), meanMiddleOverlap: mean("middleOverlap"),
   meanDifferentChoicesOnCommonScenes: mean("differentSharedChoices"),
   finalPathDifferences: pairs.filter((p) => p.finalPathDifferent).length,
+  personalAimDifferences: pairs.filter((p) => p.personalAimDifferent).length,
+  personalAimSummaryDifferences: pairs.filter((p) => p.personalAimSummaryDifferent).length,
+  lateAimChoiceDifferences: pairs.filter((p) => p.lateAimChoiceDifferent).length,
+  aimEndingDifferences: pairs.filter((p) => p.aimEndingDifferent).length,
   finalRoleDifferences: pairs.filter((p) => p.finalRoleDifferent).length,
   contactsDifferences: pairs.filter((p) => p.contactsDifferent).length,
   personalRelationshipDifferences: pairs.filter((p) => p.personalRelationshipDifferent).length,

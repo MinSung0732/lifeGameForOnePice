@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { advance, createGame, getScene, replay, saveRecord } from "../src/game.js";
 import { endingMemories } from "../src/ending-memories.js";
+import { PERSONAL_AIMS } from "../src/life-aim.js";
 
 const VERSION = Number(process.env.CREATION_VERSION || 29);
 const SPECIES = ["인간", "어인", "밍크족", "하늘섬 사람", "거인족"];
 const MODES = ["original", "free"];
 const POLICIES = ["first", "last", "balanced", "helpful"];
 const EVENTS = [
-  "life_first_skill",
+  "life_first_skill", "life_personal_aim", "life_retire_choice", "life_memory",
   "life_loguetown_signal_offer", "life_loguetown_false_order", "life_loguetown_last_signal",
   "life_meet_kureha", "life_meet_crocus",
   "life_encounter_return_kureha", "life_encounter_return_crocus",
@@ -28,6 +29,8 @@ const problems = [];
 const relationChoices = {};
 const relationGaps = { mate: [], ward: [], civilian: [] };
 let relationshipEndingMemories = 0;
+const personalAimChoices = Object.fromEntries([...Object.keys(PERSONAL_AIMS), "undecided", "not_reached"].map((key) => [key, 0]));
+let aimInEnding = 0, aimLinkedToMajorChoice = 0, aimReframedInLateLife = 0, lateDecisions = 0;
 let finished = 0, replayed = 0, chosenCount = 0, repeatedTitles = 0, repeatedIds = 0;
 let switchedCareers = 0, earlyOverlap = 0, earlyCompared = 0, relevantLoguetown = 0;
 
@@ -94,6 +97,22 @@ for (let index = 0; index < 1000; index += 1) {
     const recap = endingMemories(life);
     uniqueEndings.add(recap.map((entry) => entry.id + ":" + (entry.choice || "-")).join("|"));
     if (recap.some((entry) => /^life_people_(mate|ward)_|^life_path_civilian_(after|legacy)/.test(entry.id))) relationshipEndingMemories++;
+    if (VERSION >= 32) {
+      const aimEvent = life.journal.find((entry) => entry.id === "life_personal_aim");
+      const aim = aimEvent ? life.personalAim || "undecided" : "not_reached";
+      assert.ok(Object.hasOwn(personalAimChoices, aim), "Unknown or unsupported selected goal: " + aim);
+      personalAimChoices[aim]++;
+      if (life.personalAim) assert.ok(aimEvent, "No goal without an explicit action");
+      if (recap.some((entry) => entry.id === "life_personal_aim")) aimInEnding++;
+      if (aimEvent && life.journal.some((entry) => entry.age >= aimEvent.age && entry.choice
+        && /^life_(path_(pirate|marine|liberator|civilian)_choice|people_ward_return|path_(marine|civilian)_after|free_rank)$/.test(entry.id)))
+        aimLinkedToMajorChoice++;
+      const retired = life.journal.find((entry) => entry.id === "life_retire_choice" && entry.choice);
+      if (retired) {
+        lateDecisions++;
+        if (retired.choice.includes("처음의 꿈을 다른 뜻으로")) aimReframedInLateLife++;
+      }
+    }
     for (const entry of life.journal.filter((e) => /^(life_people_(mate|ward)|life_path_civilian)/.test(e.id) && e.choice)) {
       const key = entry.id + ":" + entry.choice;
       relationChoices[key] = (relationChoices[key] || 0) + 1;
@@ -126,6 +145,7 @@ const report = {
   openingTenOverlap: earlyCompared ? Number((earlyOverlap / earlyCompared).toFixed(3)) : null,
   distinctEndingMemories: uniqueEndings.size, loguetownHumanBirths: relevantLoguetown,
   eventReach: counts, relationshipEndingMemories,
+  personalAimChoices, aimInEnding, aimLinkedToMajorChoice, lateDecisions, aimReframedInLateLife,
   relationChoiceCounts: relationChoices,
   meanYearsBetweenRelationshipEvents: Object.fromEntries(Object.entries(relationGaps).map(([name, gaps]) =>
     [name, gaps.length ? Number((gaps.reduce((total, gap) => total + gap, 0) / gaps.length).toFixed(1)) : null])),
