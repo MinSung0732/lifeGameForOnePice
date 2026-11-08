@@ -42,6 +42,19 @@ jobs:
         if: always()
         run: CREATION_VERSION=35 node scripts/choice-compare.mjs
 
+  balance-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Baseline 1,000 rule-35 balance lives
+        run: CREATION_VERSION=35 node scripts/balance-audit.mjs
+
   browser-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 6
