@@ -6,15 +6,16 @@
   <meta name="theme-color" content="#f5f1e7">
   <meta name="description" content="원피스 세계의 다섯 출생지에서 한 사람의 삶을 살아 보는 비공식 웹게임 시범판">
   <title>한 사람의 바다</title>
-  <link rel="stylesheet" href="./styles.css?v=20261107-12">
-  <script type="module" src="./src/app.js?v=20261107-14"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261108-11">
+  <script type="module" src="./src/app.js?v=20261108-11"></script>
 </head>
 <body>
   <div class="page-shell">
     <header class="masthead">
       <a class="wordmark" href="./" aria-label="한 사람의 바다 시작 화면">한 사람의 바다</a>
       <span class="edition">다섯 출생 시범판</span>
-      <div class="sound">
+      <button id="mobile-settings-open" class="text-button mobile-settings-open" type="button" aria-expanded="false" aria-controls="sound-settings">설정</button>
+      <div id="sound-settings" class="sound">
         <button id="motion-toggle" class="text-button" type="button" aria-pressed="true">애니메이션 켜기</button>
         <button id="sound-toggle" class="text-button" type="button" aria-pressed="true">♪ 배경음 켜기</button>
         <input id="sound-volume" type="range" min="0" max="1" step="0.05" aria-label="배경음 크기">
@@ -107,6 +108,7 @@
             <div><dt>세계선</dt><dd id="birth-mode"></dd></div>
             <div><dt>출생 시기</dt><dd id="birth-era"></dd></div>
           </dl>
+          <button id="birth-more" class="text-button mobile-birth-more" type="button" aria-expanded="false" aria-controls="birth-stats-grid birth-personality-grid">상세 능력·성격 보기</button>
           <div class="growth-panels open">
             <aside class="stats-panel" aria-labelledby="birth-stats-title">
               <h2 id="birth-stats-title">초기 능력 <small id="birth-stat-note"></small></h2>
@@ -145,7 +147,13 @@
           <div id="age-progress" class="age-track" role="meter" aria-label="원작 현재 시점까지 흐른 세월" aria-valuemin="0" aria-valuemax="66" aria-valuenow="0"><span id="age-fill"></span></div>
         </div>
 
-        <div class="game-status-column" role="region" aria-label="캐릭터와 항로 상태" tabindex="0">
+        <div id="mobile-game-summary" class="mobile-game-summary" aria-label="현재 삶 요약">
+          <span id="mobile-summary-age"></span>
+          <span id="mobile-summary-place"></span>
+          <span id="mobile-summary-vitals"></span>
+          <button id="mobile-life-open" class="text-button mobile-life-open" type="button" aria-haspopup="dialog" aria-controls="mobile-life-dialog">내 삶 보기</button>
+        </div>
+        <div id="game-status-column" class="game-status-column" role="region" aria-label="캐릭터와 항로 상태" tabindex="0">
         <aside class="life-strip" aria-label="현재의 삶과 항해">
           <!-- 좌측: 내 캐릭터 정보 (신상 · 소속 · 직책·힘 · 목표 · 평판) -->
           <div class="life-pane char-pane">
@@ -260,15 +268,15 @@
 
         <button id="growth-toggle" class="text-button growth-toggle" type="button" aria-expanded="false" aria-controls="growth-panels">능력·성격 펼치기</button>
         <div id="growth-panels" class="growth-panels">
-          <aside class="stats-panel" aria-labelledby="stats-title">
+          <aside id="mobile-stats-panel" class="stats-panel" aria-labelledby="stats-title">
             <h2 id="stats-title">능력 <small id="birth-stat-source"></small></h2>
             <div id="stats-grid" class="stats-grid"></div>
           </aside>
-          <aside class="stats-panel personality-panel" aria-labelledby="personality-title">
+          <aside id="mobile-personality-panel" class="stats-panel personality-panel" aria-labelledby="personality-title">
             <div class="personality-heading"><h2 id="personality-title">성격</h2><strong id="personality-summary"></strong></div>
             <div id="personality-grid" class="stats-grid"></div>
           </aside>
-          <section class="relations-panel" aria-labelledby="relations-title">
+          <section id="mobile-relations-panel" class="relations-panel" aria-labelledby="relations-title">
             <div class="relations-heading">
               <h2 id="relations-title">인물과 세력</h2>
               <button id="relations-open" class="text-button" type="button" aria-haspopup="dialog" aria-controls="relations-dialog">상세 보기 ↗</button>
@@ -349,6 +357,17 @@
     </footer>
   </div>
 
+  <dialog id="mobile-life-dialog" class="mobile-life-dialog" aria-labelledby="mobile-life-title">
+    <div class="mobile-life-head">
+      <h2 id="mobile-life-title">내 삶의 기록</h2>
+      <button id="mobile-life-close" class="text-button" type="button">닫기</button>
+    </div>
+    <div class="mobile-life-tabs" role="tablist" aria-label="내 삶 정보">
+      <button type="button" role="tab" data-life-tab="stats" aria-controls="mobile-stats-panel" aria-selected="true">능력</button>
+      <button type="button" role="tab" data-life-tab="personality" aria-controls="mobile-personality-panel" aria-selected="false" tabindex="-1">성격</button>
+      <button type="button" role="tab" data-life-tab="relations" aria-controls="mobile-relations-panel" aria-selected="false" tabindex="-1">인연</button>
+    </div>
+  </dialog>
   <dialog id="journal" class="journal" aria-labelledby="journal-title">
     <div class="journal-head">
       <div><p class="eyebrow">돌아보는 길</p><h2 id="journal-title">생애 일지</h2></div>
