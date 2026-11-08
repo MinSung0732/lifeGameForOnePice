@@ -7,7 +7,7 @@ import { canonGapFor, canonInterludeScene } from "./canon-interludes.js";
 import { childhoodScene } from "./childhood.js";
 import { canonRelationshipEntries, pendingCanonContactScene } from "./canon-relationships.js";
 import { twist } from "./twists.js";
-import { awardPowerAcquisition } from "./power-mastery.js";
+import { awardPowerAcquisition, gainPowerExperience, powerOdds } from "./power-mastery.js";
 
 export const SAVE_VERSION = 1;
 export const MODES = ["original", "free"];
@@ -368,6 +368,11 @@ function nextCanonDue(life) {
 // Rule 3: an ability-gated choice can still be attempted; the target roll grows with how far short each ability falls.
 function diceTarget(choice, life) {
   if (life.creationVersion < 3) return 0;
+  if (life.creationVersion >= 35 && choice.powerCheck) {
+    const check = choice.powerCheck;
+    const synergy = typeof check.synergy === "function" ? check.synergy(life) : check.synergy || 0;
+    return powerOdds(life, check.check, check.kind, check.hakiKinds || [], synergy)?.target || 0;
+  }
   if (choice.diceTarget) {
     return typeof choice.diceTarget === "function" ? choice.diceTarget(life) : choice.diceTarget;
   }
@@ -421,13 +426,17 @@ export function getScene(life) {
         const cost = typeof choice.cost === "function" ? choice.cost(life) : choice.cost || 0;
         const risk = typeof choice.risk === "function" ? choice.risk(life) : choice.risk || "";
         const target = diceTarget(choice, life);
+        const check = life.creationVersion >= 35 ? choice.powerCheck : null;
+        const synergy = typeof check?.synergy === "function" ? check.synergy(life) : check?.synergy || 0;
+        const odds = check ? powerOdds(life, check.check, check.kind, check.hakiKinds || [], synergy) : choice.powerOdds;
         const shown = life.supplies < cost && !risk.includes(`물자 ${cost} 필요`) ? `${risk} · 물자 ${cost} 필요` : risk;
         const diceLabel = choice.diceLabel || "조건 부족";
         return { id: choice.id, label: typeof choice.label === "function" ? choice.label(life) : choice.label,
           risk: target ? `${shown} · ${diceLabel}: 주사위 1~100에서 ${target} 이상이면 성공, 실패하면 ${choice.failRisk || "건강 -15"}` : shown,
           condition: shown, dice: target || null, diceShort: target > 10 || life.creationVersion < 11, failRisk: target ? choice.failRisk || "건강 -15" : null,
           naming: Boolean(choice.naming), disabled: !canChoose(choice, life),
-          ...(choice.powerOdds ? { powerOdds: choice.powerOdds } : {}) };
+          ...(odds ? { powerOdds: { ability: odds.ability, mastery: odds.mastery,
+            chance: odds.chance, target: odds.target } } : {}) };
       });
       if (mapped.length > 0 && mapped.every((choice) => choice.disabled)) {
         mapped.push({
@@ -520,6 +529,9 @@ export function advance(life, action = null) {
   if (next.creationVersion >= 14 && chosen && !target && !card.fate && !chosen.naming) {
     const line = twist(life, next, diceRoll(life, card.id, `${chosen.id}~twist`));
     if (line) outcome = `${outcome || ""} ${line}`.trim();
+  }
+  if (next.creationVersion >= 35 && chosen?.powerCheck && next.lastDice) {
+    gainPowerExperience(next, chosen.powerCheck.kind, chosen.powerCheck.hakiKinds || [], next.lastDice.tier);
   }
   awardPowerAcquisition(life, next, card.id);
   // A career move that later renames the role (a village job, a liaison post) still keeps the carried rank's title.

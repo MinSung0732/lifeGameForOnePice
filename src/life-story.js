@@ -401,15 +401,42 @@ const scenes = [
     { id: "known", label: "익숙한 길을 지킨다", risk: "물자 +10 · 새 물길은 확인하지 않음", apply: (life) => { life.supplies += 10; return "익숙한 길에도 돌봐야 할 사람이 있었다."; } }
   ] },
   { id: "life_power_trial", age: at(45, 240), art: "lifeStorm", title: "갑판 아래의 소리", body: "정박한 배 아래에서 무너지는 소리가 났다. 갇힌 일꾼을 찾으려면 급히 움직여야 했다. 한 사람의 힘만으로 끝낼 일은 아니었다.", choices: [
-    { id: "observe", label: "견문색으로 위치를 찾는다", when: (life) => life.haki.observation > 0, risk: "견문색 사용 · 지역의 신뢰 +10", apply: (life) => { life.trust += 10; return "작은 숨소리가 들리는 쪽을 짚어 동료들에게 알렸다. 일꾼을 꺼낼 길이 열렸다."; } },
-    { id: "armor", label: "무장색으로 무너지는 판자를 버틴다", when: (life) => life.haki.armament > 0, risk: "무장색 사용 · 건강 -10 · 지역의 신뢰 +10", apply: (life) => { life.health -= 10; life.trust += 10; return "버티는 동안 동료들이 일꾼을 꺼냈다. 몸에 피로가 남았다."; } },
-    { id: "fruit", label: (life) => life.creationVersion >= 3 ? "열매의 힘으로 무너지는 판자를 붙잡는다" : "열매의 힘으로 매듭을 조인다", when: (life) => Boolean(life.devilFruit), risk: (life) => {
+    { id: "observe", label: "견문색으로 위치를 찾는다", when: (life) => life.haki.observation > 0,
+      powerCheck: { kind: "haki", hakiKinds: ["observation"], check: { stat: "skill", against: 55 } },
+      diceLabel: "견문색 숙련 판정", failRisk: "건강 -15",
+      fail: (life) => { life.health -= 15; return "기척을 붙잡지 못해 선창으로 내려갔다가 다쳤다. 구조는 동료들이 이어 갔다."; },
+      risk: "견문색 사용 · 지역의 신뢰 +10", apply: (life) => { life.trust += 10; return "작은 숨소리가 들리는 쪽을 짚어 동료들에게 알렸다. 일꾼을 꺼낼 길이 열렸다."; } },
+    { id: "armor", label: "무장색으로 무너지는 판자를 버틴다", when: (life) => life.haki.armament > 0,
+      powerCheck: { kind: "haki", hakiKinds: ["armament"], check: { stat: "health", against: 55 } },
+      diceLabel: "무장색 숙련 판정", failRisk: "건강 -15",
+      fail: (life) => { life.health -= 15; return "판자를 버티려 했으나 무장색이 흔들렸다. 동료들이 대신 버티는 동안 물러났다."; },
+      risk: "무장색 사용 · 건강 -10 · 지역의 신뢰 +10", apply: (life) => { life.health -= 10; life.trust += 10; return "버티는 동안 동료들이 일꾼을 꺼냈다. 몸에 피로가 남았다."; } },
+    { id: "fruit", label: (life) => life.creationVersion >= 3 ? "열매의 힘으로 무너지는 판자를 붙잡는다" : "열매의 힘으로 매듭을 조인다", when: (life) => Boolean(life.devilFruit),
+    powerCheck: { kind: "fruit", check: { stat: "skill", against: 55 }, synergy: (life) => {
+      const tier = fruitSynergy(life.devilFruit, "mishap_ship_leak").tier;
+      return tier === "good" ? 10 : tier === "bad" ? -15 : 0;
+    } },
+    diceLabel: "열매 숙련 판정", failRisk: "건강 -10 · 상성 불리 시 추가 손실",
+    fail: (life) => {
+      const syn = fruitSynergy(life.devilFruit, "mishap_ship_leak");
+      if (syn.tier === "bad") { life.health -= 12; life.supplies -= 8; return `불리한 환경에서 능력이 역효과를 냈다. ${syn.note}`; }
+      life.health -= 10;
+      return "능력을 다루다 힘이 흐트러져 판자를 놓쳤다. 동료들이 대신 구조를 마쳤다.";
+    },
+    risk: (life) => {
       const syn = life.creationVersion >= 20 ? fruitSynergy(life.devilFruit, "mishap_ship_leak") : null;
+      if (life.creationVersion >= 35) return `열매 숙련으로 구조 시도${syn?.tier === "good" ? ` · 상성 유리 (${syn.tag})`
+        : syn?.tier === "bad" ? ` · 상성 불리 (${syn.tag})` : ""}`;
       return syn?.tier === "good" ? `열매 상성 유리 (${syn.tag}) · 열매 숙련 2 또는 물자 40`
         : syn?.tier === "bad" ? `열매 상성 불리 (${syn.tag}) · 선창 내부 역효과 위험`
         : "열매 숙련 2 또는 물자 40이 버팀의 기준 · 매듭이 풀릴 수 있음";
     }, apply: (life) => {
       const syn = life.creationVersion >= 20 ? fruitSynergy(life.devilFruit, "mishap_ship_leak") : null;
+      // The rule-35 die already checked mastery; keep older level/resource conditions untouched.
+      if (life.creationVersion >= 35) {
+        life.trust += 10;
+        return `열매의 힘으로 판자를 붙잡았다. 동료들이 일꾼을 꺼냈다.${syn?.tier === "bad" ? " 불리한 상성을 버티며 가까스로 힘을 제어했다." : syn?.tier === "good" ? ` ${syn.note}` : ""}`;
+      }
       if (syn?.tier === "bad") { life.health -= 12; life.supplies -= 8; return `좁은 선창에서 능력을 펼치다 역효과가 터졌다. ${syn.note}`; }
       if (life.fruitMastery < 2 && life.supplies < 40 && syn?.tier !== "good") { life.health -= 10; return "밧줄이 급히 풀렸다. 동료들이 대신 판자를 받치며 일꾼을 꺼냈다."; }
       life.trust += 10; return life.creationVersion >= 3 ? `열매의 힘이 판자를 붙잡았다. 동료들이 그 아래에서 일꾼을 꺼냈다.${syn?.tier === "good" ? ` ${syn.note}` : ""}` : "조여진 밧줄이 판자를 붙잡았다. 동료들이 그 아래에서 일꾼을 꺼냈다.";
@@ -528,10 +555,20 @@ const scenes = [
           if (life.health <= 0) { life.ending = "death"; life.deathCause = "해왕류와의 충돌"; return "배는 빠져나왔지만 갑판에 남았던 이름 하나는 돌아오지 못했다."; }
           return "해왕류를 지나쳤지만 갑판이 부서졌다. 다음 기항지에서는 치료와 수리가 먼저였다."; },
         apply: (life) => { life.health -= 15; life.skill += 5; life.trust += 10; return "밧줄이 손에서 뜨거워질 때까지 버틴 끝에 배가 그림자 밖으로 벗어났다."; } },
-      { id: "haki", label: "패기로 움직임을 읽고 틈을 찾는다", when: (life) => life.haki.observation > 0 || life.haki.armament > 0,
+      { id: "haki", label: "패기로 움직임을 읽고 틈을 찾는다", when: (life) =>
+        life.creationVersion >= 35 ? life.haki.observation > 0 : life.haki.observation > 0 || life.haki.armament > 0,
+        powerCheck: { kind: "haki", hakiKinds: ["observation"], check: { stat: "skill", against: 60 } },
+        diceLabel: "견문색 숙련 판정", failRisk: "건강 -15",
+        fail: (life) => { life.health -= 15; return "움직임을 읽지 못해 파도에 휩쓸렸다. 동료들이 가까스로 배를 돌렸다."; },
         risk: "견문색 또는 무장색 사용 · 건강 -10", personality: { caution: 5, freedom: 4 },
         apply: (life) => { life.health -= 10; life.skill += 5; return "파도가 뒤집히는 한순간을 읽었다. 동료들이 그 틈에 배를 밀어냈다."; } },
       { id: "fruit", label: "열매의 힘으로 빠져나갈 틈을 만든다", when: (life) => Boolean(life.devilFruit),
+        powerCheck: { kind: "fruit", check: { stat: "skill", against: 60 }, synergy: (life) => {
+          const tier = fruitSynergy(life.devilFruit, "danger_sea_king").tier;
+          return tier === "good" ? 10 : tier === "bad" ? -15 : 0;
+        } },
+        diceLabel: "열매 숙련 판정", failRisk: "건강 -15",
+        fail: (life) => { life.health -= 15; return "낯선 힘이 흩어져 해왕류의 시선을 돌리지 못했다. 동료들이 급히 항로를 바꿨다."; },
         risk: "열매 사용 · 물에 빠지면 도움을 받아야 함", personality: { ambition: 5, freedom: 5 },
         apply: (life) => { life.health -= 10; life.friendBond += 5; return "낯선 힘에 해왕류의 시선이 잠시 옮겨갔다. 동료들이 배를 빼내고 손을 내밀었다."; } }
     ] },

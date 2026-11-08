@@ -2303,6 +2303,42 @@ test("35번: 지정된 Lv2 수련은 숙련도 조건 없이 승급하고 이전
   }
 });
 
+test("35번: 기존 구조 및 해왕류의 열매·패기 선택도 숙련 판정 대상이다", () => {
+  const trial = lifeScenes.find((card) => card.id === "life_power_trial");
+  const king = lifeScenes.find((card) => card.id === "life_sea_king");
+  assert.ok(trial && king);
+  for (const [card, keys] of [[trial, ["observe", "armor", "fruit"]], [king, ["haki", "fruit"]]]) {
+    for (const id of keys) {
+      const choice = card.choices.find((entry) => entry.id === id);
+      assert.ok(choice?.powerCheck, `${card.id}:${id} needs a power-specific skill check`);
+      assert.equal(choice.diceLabel.includes("숙련"), true);
+    }
+  }
+  const veteran = createGame("original", 381, { species: "인간" }, 3, 35);
+  veteran.devilFruit = "이글이글 열매(자연계)";
+  veteran.fruitMastery = 1;
+  veteran.powerProficiency.fruit = 15;
+  veteran.haki.observation = 1;
+  veteran.powerProficiency.haki.observation = 15;
+  assert.equal(king.choices.find((choice) => choice.id === "haki").when(veteran), true);
+  const noObservation = structuredClone(veteran);
+  noObservation.haki.observation = 0;
+  noObservation.haki.armament = 1;
+  assert.equal(king.choices.find((choice) => choice.id === "haki").when(noObservation), false);
+  noObservation.creationVersion = 34;
+  assert.equal(king.choices.find((choice) => choice.id === "haki").when(noObservation), true);
+  const rescueFruit = trial.choices.find((choice) => choice.id === "fruit");
+  const prep = structuredClone(veteran);
+  prep.supplies = 10;
+  const baseline = prep.trust;
+  rescueFruit.apply(prep);
+  assert.equal(prep.trust, baseline + 10, "35번에서 성공한 숙련 판정을 기존 레벨·물자로 다시 가로막지 않는다");
+  prep.creationVersion = 34;
+  prep.trust = baseline;
+  rescueFruit.apply(prep);
+  assert.equal(prep.trust, baseline, "34번 구조 사건의 기존 필요 조건을 유지한다");
+});
+
 test("규칙 15: 열매·패기·비능력자마다 다른 선택지가 붙고, 주사위는 대성공을 따로 가른다", async () => {
   const { withPower } = await import("../src/adventures.js");
   const life = createGame("original", 5, { species: "인간" });
