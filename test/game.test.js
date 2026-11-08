@@ -1051,7 +1051,7 @@ test("현상금은 행동으로 오르고 금액에 따라 추적 주체가 바�
     { age: after.age + index + 1, yearly: true })).find((card) => card?.id.startsWith("life_bounty_hunt_"));
   assert.ok(hunt);
   assert.ok(hunt.choices.some((choice) => choice.id === "escape"));
-  const newLife = createGame("original", 0, { species: "인간" });
+  const newLife = createGame("original", 0, { species: "인간" }, 3, 35);
   newLife.path = "pirate";
   newLife.leftHome = true;
   newLife.bounty = 100_000_000;

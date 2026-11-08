@@ -428,7 +428,7 @@ export function getScene(life) {
       const mapped = active.map((choice) => {
         const cost = typeof choice.cost === "function" ? choice.cost(life) : choice.cost || 0;
         const originalRisk = typeof choice.risk === "function" ? choice.risk(life) : choice.risk || "";
-        const risk = life.creationVersion >= 36 && /(?:기술|유대|신뢰) \\+\\d+/.test(originalRisk)
+        const risk = life.creationVersion >= 36 && /(?:기술|유대|신뢰) \+\d+/.test(originalRisk)
           ? `${originalRisk} · 성장량은 현재 능력치와 판정 결과에 따라 달라짐` : originalRisk;
         const target = diceTarget(choice, life);
         const check = life.creationVersion >= 35 ? choice.powerCheck : null;
