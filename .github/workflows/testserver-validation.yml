@@ -17,18 +17,18 @@ jobs:
         with:
           node-version: '22'
       - run: npm test
-      - name: Audit 1,000 new rule-31 lives and relationship follow-ups
-        if: always()
-        run: CREATION_VERSION=31 node scripts/life-audit.mjs
-      - name: Compare 24 rule-31 same-birth choice pairs
-        if: always()
-        run: CREATION_VERSION=31 node scripts/choice-compare.mjs
-      - name: Audit 1,000 rule-32 lives and personal goals
+      - name: Audit 1,000 baseline rule-32 lives
         if: always()
         run: CREATION_VERSION=32 node scripts/life-audit.mjs
-      - name: Compare 24 rule-32 choice-policy pairs
+      - name: Compare 24 baseline rule-32 choice pairs
         if: always()
         run: CREATION_VERSION=32 node scripts/choice-compare.mjs
+      - name: Audit 1,000 rule-33 balanced lives
+        if: always()
+        run: CREATION_VERSION=33 node scripts/life-audit.mjs
+      - name: Compare 24 rule-33 choice pairs
+        if: always()
+        run: CREATION_VERSION=33 node scripts/choice-compare.mjs
 
   browser-smoke:
     runs-on: ubuntu-latest
