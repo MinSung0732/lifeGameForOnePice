@@ -4,6 +4,25 @@ export function formatBounty(amount) {
   return `${Math.max(0, amount).toLocaleString("ko-KR")} 베리`;
 }
 
+
+// Routine rescues build a reputation gradually; an emperor-level act still has its own reward.
+export function balancedPublicBounty(life) {
+  const amount = life.bounty || 0;
+  const base = amount < 10_000_000 ? 4_000_000
+    : amount < 100_000_000 ? 8_000_000
+      : amount < 300_000_000 ? 15_000_000
+        : amount < 1_000_000_000 ? 20_000_000 : 5_000_000;
+  const alreadyAttempted = (life.journal || []).filter((entry) =>
+    entry.id.startsWith("life_bounty_act_") && entry.choice === "검문선 사이로 배를 빼낸다").length;
+  const leadership = life.independent ? 1.15 : 1;
+  const rep = life.reputation || 0;
+  const notoriety = rep < 0 ? Math.min(1.2, 1 + Math.abs(rep) / 400)
+    : Math.max(0.85, 1 - rep / 1000);
+  const repeat = Math.max(0.5, 1 - alreadyAttempted * 0.15);
+  return Math.min(30_000_000, Math.max(1_000_000,
+    Math.round(base * leadership * notoriety * repeat / 1_000_000) * 1_000_000));
+}
+
 export function pursuerFor(amount) {
   if (amount >= 1_000_000_000) return { name: "대장급 추적 부대", skill: 85, damage: 35 };
   if (amount >= 100_000_000) return { name: "해군 중장이 이끄는 추적대", skill: 70, damage: 25 };
@@ -46,14 +65,19 @@ export function bountyScene(life, age, base) {
       ? 1 + Math.min(1.5, (Math.abs(rep) / 100) * 1.5)
       : Math.max(0.6, 1 - (rep / 100) * 0.4)
     : 1;
-  const increase = Math.round(captain * (life.creationVersion >= 5
-    ? life.bounty >= 100_000_000 ? 350_000_000 : life.bounty >= 10_000_000 ? life.creationVersion >= 11 ? 90_000_000 : 60_000_000 : life.creationVersion >= 11 ? 12_000_000 : 8_000_000
-    : life.bounty >= 100_000_000 ? 250_000_000 : life.bounty >= 10_000_000 ? 25_000_000 : 5_000_000) * repFactor);
+  const increase = life.creationVersion >= 36 ? balancedPublicBounty(life)
+    : Math.round(captain * (life.creationVersion >= 5
+      ? life.bounty >= 100_000_000 ? 350_000_000 : life.bounty >= 10_000_000 ? life.creationVersion >= 11 ? 90_000_000 : 60_000_000 : life.creationVersion >= 11 ? 12_000_000 : 8_000_000
+      : life.bounty >= 100_000_000 ? 250_000_000 : life.bounty >= 10_000_000 ? 25_000_000 : 5_000_000) * repFactor);
   return { ...base, id: `life_bounty_act_${age}`, urgent: true, art: (life) => life?.creationVersion >= 20 ? "harborBountyInspection" : "deck", title: "검문선 앞의 작은 배",
     body: "군함이 작은 배의 명단을 요구했다. 그 배에는 쫓기는 사람이 타고 있었다. 배의 주인은 도움을 청했지만 무엇 때문에 쫓기는지는 말하지 않았다.",
     choices: [
       { id: "intervene", label: "검문선 사이로 배를 빼낸다", bounty: increase,
-        risk: "기술 45가 항로 판단의 기준 · 수배 위험", needs: { skill: 45 }, failRisk: "건강 -15 · 수배 가능",
+        ...(life.creationVersion >= 36 ? { bountyOnFail: 1_000_000 } : {}),
+        risk: life.creationVersion >= 36
+          ? `기술 45가 항로 판단의 기준 · 성공 시 현상금 +${formatBounty(increase)} · 실패 시 목격 수배 +${formatBounty(1_000_000)}`
+          : "기술 45가 항로 판단의 기준 · 수배 위험",
+        needs: { skill: 45 }, failRisk: "건강 -15 · 수배 가능",
         personality: { empathy: 5, freedom: 7 },
         fail: (state) => { state.lastPublicActAge = age; state.health -= 15; if (state.creationVersion >= 20) state.reputation = (state.reputation || 0) - 10; return "검문선의 기척을 늦게 알아챘다. 동료들의 도움으로 배를 빼냈지만 이름이 기록됐다."; },
         apply: (state) => { state.lastPublicActAge = age; state.skill += 5; if (state.creationVersion >= 20) state.reputation = (state.reputation || 0) - 10; return "작은 배가 시야에서 사라졌다. 군함은 이쪽 배의 이름을 적었다."; } },

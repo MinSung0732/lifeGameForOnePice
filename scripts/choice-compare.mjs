@@ -3,7 +3,7 @@ import { advance, createGame, getScene, replay, saveRecord } from "../src/game.j
 import { endingMemories } from "../src/ending-memories.js";
 import { personalAimSummary } from "../src/life-aim.js";
 
-const VERSION = Number(process.env.CREATION_VERSION || 35);
+const VERSION = Number(process.env.CREATION_VERSION || 36);
 const species = ["인간", "어인", "밍크족", "하늘섬 사람", "거인족"];
 const pairs = [];
 const repeatedBodies = new Map();

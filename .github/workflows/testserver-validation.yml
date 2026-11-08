@@ -41,6 +41,12 @@ jobs:
       - name: Compare 24 rule-35 choice pairs
         if: always()
         run: CREATION_VERSION=35 node scripts/choice-compare.mjs
+      - name: Audit 1,000 rule-36 balanced lives
+        if: always()
+        run: CREATION_VERSION=36 node scripts/life-audit.mjs
+      - name: Compare 24 rule-36 choice pairs
+        if: always()
+        run: CREATION_VERSION=36 node scripts/choice-compare.mjs
 
   balance-audit:
     runs-on: ubuntu-latest
@@ -54,6 +60,9 @@ jobs:
           node-version: '22'
       - name: Baseline 1,000 rule-35 balance lives
         run: CREATION_VERSION=35 node scripts/balance-audit.mjs
+      - name: Compare 1,000 rule-36 balance lives
+        if: always()
+        run: CREATION_VERSION=36 node scripts/balance-audit.mjs
 
   browser-smoke:
     runs-on: ubuntu-latest

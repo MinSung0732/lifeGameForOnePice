@@ -8,7 +8,8 @@ import { degreeHz, moodFor } from "../src/music.js";
 import { OLD_ERA } from "../src/canon-old-era.js";
 import { crewVesselKind, encounterAt, encounterScene, eraStart, isNewWorld, presentAge, ROUTES_V20, ROUTES_V22, routeOptionsFor, sailToNextPort, storyBefore, travelScene } from "../src/world.js";
 import { fruitFor } from "../src/fruits.js";
-import { bountyScene, formatBounty, marinePatrolScene, pursuerFor } from "../src/bounty.js";
+import { balancedPublicBounty, bountyScene, formatBounty, marinePatrolScene, pursuerFor } from "../src/bounty.js";
+import { applyBalancedGrowth, growthEfficiency } from "../src/growth-balance.js";
 import { CANON_BEAT_COUNT, canonAge, canonScene } from "../src/canon-events.js";
 import { PRE_CANON_BEAT_COUNT, preCanonCount, preCanonScene } from "../src/canon-before.js";
 import { canonGapFor, canonInterludeScene } from "../src/canon-interludes.js";
@@ -980,6 +981,63 @@ test("자유 모드의 상위 직책 IF는 와노국 이후 원작 장면 사이
   assert.match(getScene(life).body, /원작 기준/);
 });
 
+test("규칙 36: 높은 기술과 유대는 소수점 누적으로 전문화되고 낮은 수치는 정상 성장한다", () => {
+  assert.deepEqual([0, 60, 80, 90, 95, 100].map(growthEfficiency), [1, 0.7, 0.4, 0.2, 0.1, 0]);
+  let before = createGame("original", 314, { species: "인간" }, 3, 36);
+  assert.deepEqual(before.growthCarry, { skill: 0, bond: 0, friendBond: 0, trust: 0 });
+  assert.equal(createGame("original", 314, { species: "인간" }, 3, 35).growthCarry, undefined);
+  before.skill = 97;
+  before.friendBond = 89;
+  let after = structuredClone(before);
+  after.skill += 5; after.friendBond += 10;
+  applyBalancedGrowth(before, after);
+  assert.equal(after.skill, 97);
+  assert.equal(after.growthCarry.skill, 0.5);
+  assert.equal(after.friendBond, 93);
+  const second = structuredClone(after);
+  second.skill += 5;
+  applyBalancedGrowth(after, second);
+  assert.equal(second.skill, 98);
+  assert.equal(second.growthCarry.skill, 0);
+  assert.equal(second.friendBond, 93);
+  const capped = structuredClone(second);
+  capped.skill = 100;
+  const above = structuredClone(capped);
+  above.skill += 10;
+  applyBalancedGrowth(capped, above);
+  assert.equal(above.skill, 100);
+  assert.equal(above.growthCarry.skill, 0);
+  for (const version of [1, 34, 35, 36]) {
+    const original = createGame("original", 314, { species: "인간" }, 3, version);
+    assert.deepEqual(replay(saveRecord(original)), original);
+  }
+});
+
+test("규칙 36: 검문선 현상금은 반복·선장·악명 보정을 받아도 한 번에 3천만 이내", () => {
+  const life = createGame("free", 39, { species: "인간" }, 3, 36);
+  Object.assign(life, { path: "pirate", independent: true, leftHome: true, lastHuntAge: 10000,
+    bounty: 200_000_000, reputation: -100, journal: [] });
+  const first = balancedPublicBounty(life);
+  assert.ok(first > 0 && first <= 30_000_000);
+  const act = Array.from({ length: 50 }, (_, i) => bountyScene(life, i + 20,
+    { age: i + 20, yearly: true })).find((card) => card?.id.startsWith("life_bounty_act_"));
+  assert.ok(act);
+  const choice = act.choices.find((option) => option.id === "intervene");
+  assert.equal(choice.bounty, first);
+  assert.equal(choice.bountyOnFail, 1_000_000);
+  assert.match(choice.risk, /성공 시 현상금/);
+  life.journal = Array.from({ length: 8 }, (_, i) =>
+    ({ id: `life_bounty_act_${20 + i * 3}`, choice: "검문선 사이로 배를 빼낸다" }));
+  assert.ok(balancedPublicBounty(life) < first);
+  life.bounty = 1_500_000_000;
+  assert.ok(balancedPublicBounty(life) <= 6_000_000);
+  const legacy = { ...life, creationVersion: 35, bounty: 100_000_000, journal: [] };
+  const old = Array.from({ length: 50 }, (_, i) => bountyScene(legacy, i + 20,
+    { age: i + 20, yearly: true })).find((card) => card?.id.startsWith("life_bounty_act_"));
+  assert.equal(old.choices.find((option) => option.id === "intervene").bounty, 1_312_500_000);
+  assert.equal(old.choices.find((option) => option.id === "intervene").bountyOnFail, undefined);
+});
+
 test("현상금은 행동으로 오르고 금액에 따라 추적 주체가 바뀐다", () => {
   const before = reach(0, "life_enemy", {}, { species: "인간" }, 4);
   assert.equal(before.path, "pirate");
@@ -1098,7 +1156,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 35);
+  assert.equal(createGame("original", 0).creationVersion, 36);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();

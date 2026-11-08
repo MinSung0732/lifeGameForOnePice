@@ -8,6 +8,7 @@ import { childhoodScene } from "./childhood.js";
 import { canonRelationshipEntries, pendingCanonContactScene } from "./canon-relationships.js";
 import { twist } from "./twists.js";
 import { awardPowerAcquisition, gainPowerExperience, powerOdds } from "./power-mastery.js";
+import { applyBalancedGrowth } from "./growth-balance.js";
 
 export const SAVE_VERSION = 1;
 export const MODES = ["original", "free"];
@@ -242,11 +243,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 35) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 36) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -295,6 +296,8 @@ export function createGame(mode, seed, profile = {}, rules = 3, creationVersion 
     apprenticeBond: 0, trust: rules === 3 ? 40 : 1,
     personality: Object.fromEntries(PERSONALITY.map(({ key }) => [key, 50 + (birthStats?.personality[key] || 0)])),
     devilFruit: null, fruitMastery: 0, haki: { observation: 0, armament: 0, conqueror: 0 },
+    ...(rules === 3 && creationVersion >= 36
+      ? { growthCarry: { skill: 0, bond: 0, friendBond: 0, trust: 0 } } : {}),
     ...(rules === 3 && creationVersion >= 35
       ? { powerProficiency: { fruit: 0, haki: { observation: 0, armament: 0, conqueror: 0 } } } : {}),
     successor: false, independent: false, leftHome: false, continued: false, retired: false, rescued: 0,
@@ -424,7 +427,9 @@ export function getScene(life) {
       const active = (card.choices || []).filter((choice) => !choice.when || choice.when(life));
       const mapped = active.map((choice) => {
         const cost = typeof choice.cost === "function" ? choice.cost(life) : choice.cost || 0;
-        const risk = typeof choice.risk === "function" ? choice.risk(life) : choice.risk || "";
+        const originalRisk = typeof choice.risk === "function" ? choice.risk(life) : choice.risk || "";
+        const risk = life.creationVersion >= 36 && /(?:기술|유대|신뢰) \\+\\d+/.test(originalRisk)
+          ? `${originalRisk} · 성장량은 현재 능력치와 판정 결과에 따라 달라짐` : originalRisk;
         const target = diceTarget(choice, life);
         const check = life.creationVersion >= 35 ? choice.powerCheck : null;
         const synergy = typeof check?.synergy === "function" ? check.synergy(life) : check?.synergy || 0;
@@ -557,7 +562,10 @@ export function advance(life, action = null) {
     if (scaled) outcome = `${outcome || ""} ${factor > 1 ? "성격에 맞는 일이라 평소보다 잘 해냈다." : "마음이 내키지 않아 절반만 해냈다."}`.trim();
   }
   if (next.creationVersion >= 10) {
+    if (next.creationVersion >= 36) applyBalancedGrowth(life, next);
     for (const stat of STATS) {
+      // Health is current recovery and supplies are a spendable resource, not lifelong specialization.
+      if (next.creationVersion >= 36 && ["skill", "bond", "friendBond", "trust"].includes(stat.key)) continue;
       const gain = next[stat.key] - life[stat.key];
       if (gain > 0) next[stat.key] = life[stat.key] + Math.max(1, Math.round(gain * Math.max(0.2, (100 - life[stat.key]) / 70)));
     }
@@ -570,7 +578,11 @@ export function advance(life, action = null) {
     }
   }
   if (next.creationVersion >= 4 && chosen?.bounty) {
-    next.bounty += typeof chosen.bounty === "function" ? chosen.bounty(life) : chosen.bounty;
+    // Before rule 36 a bounty could be granted just for attempting a failed dice choice.
+    const gain = next.creationVersion >= 36 && target && !next.lastDice?.success
+      ? chosen.bountyOnFail || 0
+      : typeof chosen.bounty === "function" ? chosen.bounty(life) : chosen.bounty;
+    next.bounty += typeof gain === "function" ? gain(life) : gain;
   }
   const captainDestination = followCanonCaptain(next, card.id === "life_marineford_news");
   if (captainDestination) outcome = `${outcome || ""} 동료들과 함께 ${captainDestination}에 도착했다.`.trim();

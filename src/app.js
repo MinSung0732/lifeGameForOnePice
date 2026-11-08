@@ -459,7 +459,9 @@ function renderStats(gridId = "stats-grid", sourceId = "birth-stat-source", show
     const max = life.rules === 3 ? stat.max : stat.key === "health" ? 3 : 5;
     const value = Math.max(0, Math.min(max, life[stat.key]));
     const delta = showBirthDelta ? birthStats?.individual[stat.key] || 0 : changeOf(stat.key);
-    appendMeter(grid, statLabel(stat), value, max, `stat-${stat.key}`, delta);
+    const carry = life.creationVersion >= 36 && !showBirthDelta ? life.growthCarry?.[stat.key] || 0 : 0;
+    const label = carry > 0 ? `${statLabel(stat)} · 성장 누적 ${carry.toFixed(2)}` : statLabel(stat);
+    appendMeter(grid, label, value, max, `stat-${stat.key}`, delta);
   }
   if (life.creationVersion >= 35 && gridId === "stats-grid") {
     if (life.devilFruit) appendMeter(grid, `열매 Lv${life.fruitMastery} · 숙련도`,
