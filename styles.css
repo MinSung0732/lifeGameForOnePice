@@ -912,9 +912,9 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
     flex-wrap: nowrap; gap: 6px 12px; padding: 5px 0; }
   .masthead .edition { display: none; }
   .masthead .wordmark { font-size: 21px; min-width: 0; }
-  .masthead #journal-open { margin: 0; grid-column: 2; min-height: 44px; }
+  .masthead #journal-open { margin: 0; grid-column: 2; grid-row: 1; min-height: 44px; }
   .masthead #mobile-settings-open { display: inline-flex; align-items: center; justify-content: center;
-    grid-column: 3; min-height: 44px; margin: 0; padding: 5px; font-size: 13px; }
+    grid-column: 3; grid-row: 1; min-height: 44px; margin: 0; padding: 5px; font-size: 13px; }
   .masthead .sound { position: absolute; z-index: 35; top: calc(100% + 5px); right: 0; display: none;
     order: initial; width: min(320px, calc(100vw - 32px)); flex: initial; flex-wrap: wrap; margin: 0;
     justify-content: flex-start; gap: 10px 14px; padding: 14px; border: 1px solid var(--sea);
