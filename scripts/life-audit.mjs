@@ -4,7 +4,7 @@ import { endingMemories } from "../src/ending-memories.js";
 import { PERSONAL_AIMS } from "../src/life-aim.js";
 import { createObservation } from "../src/observation.js";
 
-const VERSION = Number(process.env.CREATION_VERSION || 29);
+const VERSION = Number(process.env.CREATION_VERSION || 34);
 const SPECIES = ["인간", "어인", "밍크족", "하늘섬 사람", "거인족"];
 const MODES = ["original", "free"];
 const POLICIES = ["first", "last", "balanced", "helpful"];

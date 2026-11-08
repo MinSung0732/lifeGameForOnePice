@@ -29,6 +29,12 @@ jobs:
       - name: Compare 24 rule-33 choice pairs
         if: always()
         run: CREATION_VERSION=33 node scripts/choice-compare.mjs
+      - name: Audit 1,000 rule-34 choice-gap lives
+        if: always()
+        run: CREATION_VERSION=34 node scripts/life-audit.mjs
+      - name: Compare 24 rule-34 choice pairs
+        if: always()
+        run: CREATION_VERSION=34 node scripts/choice-compare.mjs
 
   browser-smoke:
     runs-on: ubuntu-latest

@@ -1871,6 +1871,31 @@ test("33번 원작 막간은 긴 두 장면 간격만 하나 줄여 주요 사�
     canonGapFor(old, "after", 2), "이전 규칙의 간격은 변경되지 않는다");
 });
 
+test("34번 원작 연표의 혁명 소식은 소속을 유지하며 돕는 선택을 열고 33번 저장 규칙을 보존한다", () => {
+  const life = createGame("original", 61, { species: "인간" }, 3, 34);
+  life.birth.yearsBeforeCurrent = 52;
+  Object.assign(life, { age: 29, path: "civilian", injustice: false, trust: 45, supplies: 30 });
+  const scene = yearlyScene(life);
+  assert.equal(scene.id, "life_revolution_choice");
+  const current = scene.choices.filter((choice) => !choice.when || choice.when(life));
+  assert.deepEqual(current.map((choice) => choice.id), ["share_news", "independent"]);
+  const after = structuredClone(life);
+  current[0].apply(after);
+  assert.equal(after.trust, 50);
+  assert.equal(after.path, "civilian");
+  assert.equal(after.supplies, 30);
+  const legacy = { ...life, creationVersion: 33 };
+  assert.deepEqual(yearlyScene(legacy).choices.filter((choice) => !choice.when || choice.when(legacy))
+    .map((choice) => choice.id), ["independent"]);
+  const qualified = { ...life, injustice: true, trust: 75 };
+  assert.deepEqual(yearlyScene(qualified).choices.filter((choice) => !choice.when || choice.when(qualified))
+    .map((choice) => choice.id), ["join", "independent"]);
+  assert.deepEqual(replay(saveRecord(createGame("free", 78, { species: "밍크족" }, 3, 33))),
+    createGame("free", 78, { species: "밍크족" }, 3, 33));
+  const fresh = createGame("original", 29, { species: "인간" }, 3, 34);
+  assert.deepEqual(replay(saveRecord(fresh)), fresh);
+});
+
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {
   const schoolTitles = new Set();
   const trainingTitles = new Set();

@@ -1422,6 +1422,11 @@ function sceneForAge(life) {
     { id: "join", label: "혁명군의 지역 임무에 합류한다", when: (state) => state.creationVersion === 1 || state.path === "liberator" || state.injustice,
       available: (state) => state.path === "liberator" || state.trust >= 70,
       risk: "해방 활동 경력 또는 지역의 신뢰 70 필요", personality: { empathy: 8, freedom: 7 }, apply: (state) => { if (state.path !== "liberator") setCareer(state, "liberator"); state.affiliation = "혁명군"; state.role = "연락원"; state.trust += 10; if (state.creationVersion >= 2) depart(state); return "오래 쌓은 지역 연락망을 바탕으로 혁명군의 일을 맡았다."; } },
+    // Rule 34 gives non-recruits an actual choice during the otherwise observation-heavy Roger-era news run.
+    { id: "share_news", label: "소속은 유지하며 이웃에게 확인한 연락처를 알려 준다",
+      when: (state) => state.creationVersion >= 34 && state.path !== "liberator" && (!state.injustice || state.trust < 70),
+      risk: "소속 유지 · 지역의 신뢰 +5", personality: { empathy: 5, caution: 2 },
+      apply: (state) => { state.trust += 5; return "확인한 연락처만 주변에 전했다. 새 조직에 들어가지는 않고 곁의 사람들이 서로 도움을 구할 길을 남겼다."; } },
     { id: "independent", label: "지금의 소속과 일을 이어 간다", risk: "현재 소속 유지 · 물자 +10", personality: { caution: 5 }, apply: (state) => { state.supplies += 10; return "새 조직의 소식을 들었지만 지금 맡은 사람들 곁에 남았다."; } }
   ] };
   if (age === life.birth.yearsBeforeCurrent - 15) return { ...base, id: "life_tiger_liberation_news", urgent: true, art: "deck", title: "해방의 소식", canon: "https://one-piece.com/comics/o63/index.html",
