@@ -48,6 +48,17 @@ let meaningfulChoices = 0, observationScenes = 0, totalGapYears = 0, gapInterval
 let longestGapYears = 0, longGapLives = 0, runsOfSameCategory = 0, maxCategoryRun = 0;
 let offeredChoices = 0, lockedChoices = 0, diceTrials = 0, diceSuccesses = 0, chosenRisky = 0;
 let timedObservationScenes = 0, canonDailyTimedScenes = 0, observationWaitMs = 0, canonDailyWaitMs = 0;
+const powerSummary = {
+  attempts: 0, wins: 0, great: 0, byAbility: {}, byMastery: {},
+  finalFruit: { count: 0, total: 0, peak: 0, perfect: 0 },
+  finalHaki: Object.fromEntries(["observation", "armament", "conqueror"]
+    .map((name) => [name, { count: 0, total: 0, peak: 0, perfect: 0 }]))
+};
+const recordMastery = (row, value) => {
+  row.count++; row.total += value; row.peak = Math.max(row.peak, value);
+  if (value === 100) row.perfect++;
+};
+
 let genericDailyOffers = 0, genericBothNearCap = 0, genericNoSkillOrFriendGain = 0;
 const median = (values) => {
   if (!values.length) return null;
@@ -164,11 +175,25 @@ for (let index = 0; index < 1000; index += 1) {
         if (recentGapScenes.length < 20) recentGapScenes.push({ age: scene.age, id: scene.id, options: available.length });
       }
       const action = choose(scene, policy, seed, step);
+      const selectedPower = available.find((choice) => choice.id === action)?.powerOdds;
       if (action !== null) { chosenCount += 1; choicesThisLife++; }
       if (action && available.find((choice) => choice.id === action)?.dice) chosenRisky++;
       life = advance(life, action);
       if (genericDaily && life.skill === beforeSkill && life.friendBond === beforeFriend) genericNoSkillOrFriendGain++;
       if (life.lastDice) { diceTrials++; if (life.lastDice.success) diceSuccesses++; }
+      if (selectedPower) {
+        assert.ok(life.lastDice, "A mastery ability must roll a die");
+        assert.equal(life.lastDice.target, selectedPower.target, "Shown chance and actual die must match");
+        const bucket = String(Math.min(90, Math.floor(selectedPower.mastery / 20) * 20));
+        powerSummary.attempts++;
+        if (life.lastDice.success) powerSummary.wins++;
+        if (life.lastDice.tier === "great") powerSummary.great++;
+        const byAbility = powerSummary.byAbility[selectedPower.ability] ||= { attempts: 0, wins: 0 };
+        byAbility.attempts++; if (life.lastDice.success) byAbility.wins++;
+        const byMastery = powerSummary.byMastery[bucket] ||= { attempts: 0, wins: 0, chanceSum: 0 };
+        byMastery.attempts++; byMastery.chanceSum += selectedPower.chance;
+        if (life.lastDice.success) byMastery.wins++;
+      }
       if (life.path) pathHistory.add(life.path);
       bounded(life);
       step += 1;
@@ -178,6 +203,12 @@ for (let index = 0; index < 1000; index += 1) {
     longestGapYears = Math.max(longestGapYears, longestThisLife);
     gapDiagnostics[species].longestGapYears = Math.max(gapDiagnostics[species].longestGapYears, longestThisLife);
     if (longestThisLife >= 10) { longGapLives++; gapDiagnostics[species].livesWithTenYearGaps++; }
+    if (life.creationVersion >= 35) {
+      if (life.devilFruit) recordMastery(powerSummary.finalFruit, life.powerProficiency.fruit);
+      for (const key of ["observation", "armament", "conqueror"]) {
+        if (life.haki[key]) recordMastery(powerSummary.finalHaki[key], life.powerProficiency.haki[key]);
+      }
+    }
     const speciesRow = speciesBalance[species];
     speciesRow.lives++; speciesRow.ages.push(life.age); speciesRow.ageTotal += life.age;
     if (life.age < (species === "거인족" ? 170 : 35)) speciesRow.earlyEndings++;
@@ -263,6 +294,20 @@ const report = {
     genericDailyOffers, genericBothNearCap, genericNoSkillOrFriendGain,
     estimatedObservationMinutesPerLifeAt1x: Number((observationWaitMs / 1000 / 60 / 1000).toFixed(2)),
     estimatedCanonDayMinutesPerLifeAt1x: Number((canonDailyWaitMs / 1000 / 60 / 1000).toFixed(2))
+  },
+  powerMastery: {
+    attempts: powerSummary.attempts, wins: powerSummary.wins, great: powerSummary.great,
+    byAbility: powerSummary.byAbility,
+    byMastery: Object.fromEntries(Object.entries(powerSummary.byMastery).map(([key, row]) => [key, {
+      attempts: row.attempts, wins: row.wins,
+      expectedSuccessRate: Number((row.chanceSum / row.attempts / 100).toFixed(3)),
+      actualSuccessRate: Number((row.wins / row.attempts).toFixed(3))
+    }])),
+    finalFruit: powerSummary.finalFruit.count ? { count: powerSummary.finalFruit.count,
+      average: Number((powerSummary.finalFruit.total / powerSummary.finalFruit.count).toFixed(1)),
+      peak: powerSummary.finalFruit.peak, perfect: powerSummary.finalFruit.perfect } : null,
+    finalHaki: Object.fromEntries(Object.entries(powerSummary.finalHaki).map(([key, row]) => [key, row.count
+      ? { count: row.count, average: Number((row.total / row.count).toFixed(1)), peak: row.peak, perfect: row.perfect } : null]))
   },
   gapDiagnostics,
   speciesBalance: Object.fromEntries(Object.entries(speciesBalance).map(([name, row]) => [name, {
