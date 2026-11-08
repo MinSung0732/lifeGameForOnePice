@@ -92,6 +92,7 @@ try {
       assert.equal(await evaluate('document.getElementById("birth-more").getAttribute("aria-expanded")'), "false");
       assert.equal(await evaluate('getComputedStyle(document.getElementById("birth-personality-grid")).display'), "grid");
       assert.equal(await evaluate('getComputedStyle(document.querySelector("#birth .personality-panel")).display'), "none");
+      assert.equal(await evaluate('[...document.querySelectorAll("#birth-stats-grid > .stat")].filter(el=>el.getClientRects().length).length'), 3);
       await evaluate('document.getElementById("birth-more").click()');
       assert.notEqual(await evaluate('getComputedStyle(document.querySelector("#birth .personality-panel")).display'), "none");
       await evaluate('document.getElementById("birth-more").click()');
@@ -159,6 +160,7 @@ try {
       assert.ok(size.bodyFont>=16, "Mobile body smaller than 16px");
       assert.ok(size.minButtonHeight>=44, "Mobile choice target smaller than 44px");
       assert.ok(chapter.mobileStatus, "Status should be in mobile dialog");
+      assert.ok(chapter.headerHeight<=70, "Mobile header must occupy one row");
       assert.ok(chapter.title.bottom<=chapter.art.top+2, "Chapter heading must precede illustration");
       assert.ok(chapter.art.bottom<=chapter.body.top+2, "Art must precede chapter body");
       assert.ok(chapter.body.bottom<=chapter.choices.top+2, "Body must precede choices");

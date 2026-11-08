@@ -1815,11 +1815,19 @@ function syncMobileLayout() {
   if (mobileLayout.matches) {
     if (mobileStatus.parentElement !== mobileDialog) mobileDialog.append(mobileStatus);
     byId("growth-panels").classList.add("open");
+    for (const [key, panel] of Object.entries(tabPanels)) {
+      panel.setAttribute("role", "tabpanel");
+      panel.setAttribute("aria-labelledby", `mobile-tab-${key}`);
+    }
     selectMobileLifeTab(currentLifeTab);
   } else {
     if (mobileDialog.open) mobileDialog.close();
     if (mobileStatus.parentElement !== originalGame) originalGame.insertBefore(mobileStatus, originalScene);
-    for (const panel of Object.values(tabPanels)) panel.hidden = false;
+    for (const panel of Object.values(tabPanels)) {
+      panel.hidden = false;
+      panel.removeAttribute("role");
+      panel.removeAttribute("aria-labelledby");
+    }
     document.querySelector(".masthead").classList.remove("settings-open");
     byId("mobile-settings-open").setAttribute("aria-expanded", "false");
   }
