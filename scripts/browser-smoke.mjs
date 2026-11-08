@@ -100,11 +100,15 @@ try {
     // Use native Chrome keyboard input, not untrusted DOM KeyboardEvent dispatches.
     if (device === "desktop") {
       for (const [key, code, vk] of [["Enter", "Enter", 13], [" ", "Space", 32]]) {
+        await send("Page.bringToFront");
+        await evaluate('window.__keyboardLog=[];document.addEventListener("keydown",event=>window.__keyboardLog.push({kind:"down",key:event.key,target:event.target.tagName}),{once:true,capture:true});document.addEventListener("click",event=>window.__keyboardLog.push({kind:"click",target:event.target.tagName}),{once:true,capture:true})');
         await evaluate('document.querySelector("#choices button.choice:not(:disabled)").focus()');
         assert.equal(await evaluate('document.activeElement.classList.contains("choice")'), true);
         const before = await evaluate('document.getElementById("scene-chapter").textContent');
-        await send("Input.dispatchKeyEvent", { type: "keyDown", key, code, windowsVirtualKeyCode: vk });
-        await send("Input.dispatchKeyEvent", { type: "keyUp", key, code, windowsVirtualKeyCode: vk });
+        await send("Input.dispatchKeyEvent", { type: "keyDown", key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk, text: key === "Enter" ? "\r" : " " });
+        await send("Input.dispatchKeyEvent", { type: "keyUp", key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
+        await sleep(300);
+        console.log("KEYBOARD_INPUT", JSON.stringify({device,key,detail:await evaluate('({keys:window.__keyboardLog,chapter:document.getElementById("scene-chapter").textContent,focus:document.activeElement?.tagName})')}));
         await until('document.getElementById("scene-chapter").textContent !== ' + JSON.stringify(before));
         await evaluate('document.querySelector(".dev-patch-bar").style.display="";document.getElementById("dev-patch-select").value="0_1";document.getElementById("dev-patch-select").dispatchEvent(new Event("change",{bubbles:true}))');
         await until('document.querySelectorAll("#choices button.choice:not(:disabled)").length>0');
