@@ -97,6 +97,19 @@ try {
     console.log("BROWSER_GEOMETRY", JSON.stringify({device,...size,overflows}));
     const debugShot = await send("Page.captureScreenshot", { format: "png" });
     await writeFile(join(root, "test-results", device + "-choices.png"), Buffer.from(debugShot.data, "base64"));
+    // Use native Chrome keyboard input, not untrusted DOM KeyboardEvent dispatches.
+    if (device === "desktop") {
+      for (const [key, code, vk] of [["Enter", "Enter", 13], [" ", "Space", 32]]) {
+        await evaluate('document.querySelector("#choices button.choice:not(:disabled)").focus()');
+        assert.equal(await evaluate('document.activeElement.classList.contains("choice")'), true);
+        const before = await evaluate('document.getElementById("scene-chapter").textContent');
+        await send("Input.dispatchKeyEvent", { type: "keyDown", key, code, windowsVirtualKeyCode: vk });
+        await send("Input.dispatchKeyEvent", { type: "keyUp", key, code, windowsVirtualKeyCode: vk });
+        await until('document.getElementById("scene-chapter").textContent !== ' + JSON.stringify(before));
+        await evaluate('document.querySelector(".dev-patch-bar").style.display="";document.getElementById("dev-patch-select").value="0_1";document.getElementById("dev-patch-select").dispatchEvent(new Event("change",{bubbles:true}))');
+        await until('document.querySelectorAll("#choices button.choice:not(:disabled)").length>0');
+      }
+    }
     assert.ok(size.enabled>0, device + " game has no enabled choice");
     assert.ok(size.scrollWidth<=size.viewport+2, device + " horizontal overflow");
     if (device === "mobile") { assert.ok(size.bodyFont>=16, "Mobile body smaller than 16px"); assert.ok(size.minButtonHeight>=44, "Mobile choice target smaller than 44px"); }

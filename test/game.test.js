@@ -1867,6 +1867,20 @@ test("33번 규칙은 선택 없는 원작 일상만 짧게 관찰하고 옛 저
   assert.equal(tickObservation(shortened, 1100, 1, true).elapsed, 1000);
 });
 
+
+test("33번 개선 이후에도 25~32번 저장 기록은 자신의 원래 규칙으로 재생된다", () => {
+  for (let version = 25; version <= 32; version += 1) {
+    let life = createGame("original", 100 + version, { species: "어인" }, 3, version);
+    for (let step = 0; step < 36 && !life.finished; step += 1) {
+      const scene = getScene(life);
+      const enabled = scene.choices.find((choice) => !choice.disabled);
+      life = advance(life, enabled?.id ?? null);
+    }
+    assert.equal(life.creationVersion, version);
+    assert.deepStrictEqual(replay(saveRecord(life)), life, "Old rule " + version + " replay changed");
+  }
+});
+
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {
   const schoolTitles = new Set();
   const trainingTitles = new Set();
