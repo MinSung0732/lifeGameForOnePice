@@ -1097,7 +1097,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 32);
+  assert.equal(createGame("original", 0).creationVersion, 33);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -1826,6 +1826,29 @@ test("32번 소속별 책임 장면은 실제 선택한 개인 목표만 언급�
   assert.ok(event.body.length <= 300);
   assert.doesNotMatch(affiliationChapter({ ...life, creationVersion: 31 }, 36, {}, 12).body, /스스로 길을 선택하는 자유/);
   assert.doesNotMatch(affiliationChapter({ ...life, personalAim: null }, 36, {}, 12).body, /처음 골랐던/);
+});
+
+
+test("33번 엔딩은 실제 관계·진로 기억을 개인 목표와 균형 있게 남기고 규칙 32는 보호한다", () => {
+  const entries = [
+    { id: "life_home", age: 6, title: "고향", choice: "가족의 일을 돕는다" },
+    { id: "life_career", age: 20, title: "처음 나간 바다", choice: "해군에 들어간다" },
+    { id: "life_personal_aim", age: 23, title: "바라던 삶", choice: "사람을 돕고 싶다" },
+    { id: "life_path_marine_choice", age: 34, title: "수배서 확인", choice: "진위를 확인한다" },
+    { id: "life_people_mate_reunion", age: 62, title: "다시 받은 소식", choice: "그날의 일을 기록한다" },
+    { id: "life_last_year", age: 75, title: "마지막 날", choice: null }
+  ];
+  const version32 = endingMemories({ journal: entries, creationVersion: 32 });
+  const version33 = endingMemories({ journal: entries, creationVersion: 33 });
+  assert.ok(version32.some((entry) => entry.id === "life_personal_aim"));
+  assert.ok(version33.some((entry) => entry.id === "life_people_mate_reunion"));
+  assert.ok(version33.some((entry) => entry.id === "life_career"));
+  assert.equal(version33.at(-1), entries.at(-1));
+  assert.ok(version33.length >= 3 && version33.length <= 5);
+  assert.ok(version33.every((entry) => entries.includes(entry)));
+  assert.deepEqual(endingMemories({ journal: entries, creationVersion: 32 }), version32);
+  const replayed = createGame("free", 78, { species: "밍크족" }, 3, 33);
+  assert.deepEqual(replay(saveRecord(replayed)), replayed);
 });
 
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {

@@ -29,6 +29,14 @@ export function endingMemories(life) {
   }
   const final = journal.at(-1);
   pick(final);
+  if (life.creationVersion >= 33) {
+    // The ending already has a separate personal-aim summary. Keep journal slots for
+    // actual relationships, career decisions and their consequences instead of
+    // requiring a second copy of the aim at the expense of lived events.
+    const chosen = selected.filter((entry) => entry !== final).slice(0, 4);
+    if (final) chosen.push(final);
+    return chosen.sort((a, b) => journal.indexOf(a) - journal.indexOf(b));
+  }
   if (life.creationVersion >= 32) {
     const remembered = [];
     const add = (entry) => { if (entry && entry !== final && !remembered.includes(entry)) remembered.push(entry); };
