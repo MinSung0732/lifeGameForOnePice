@@ -3,11 +3,13 @@
 export const SPECIALIZATIONS = ["skill", "bond", "friendBond", "trust"];
 
 export function growthEfficiency(score) {
-  if (score < 60) return 1;
-  if (score < 80) return 0.7;
-  if (score < 90) return 0.4;
-  if (score < 95) return 0.2;
-  return score < 100 ? 0.1 : 0;
+  if (score >= 100) return 0;
+  // Rule 35 already slowed growth by remaining potential. Keep that curve;
+  // the first rule-36 audit showed replacing it with flat rates inflated maxed stats.
+  const oldRate = Math.max(0.2, (100 - score) / 70);
+  const specialization = score < 60 ? 1 : score < 80 ? 0.85
+    : score < 90 ? 0.65 : score < 95 ? 0.4 : 0.3;
+  return Math.round(oldRate * specialization * 10000) / 10000;
 }
 
 export function applyBalancedGrowth(before, after) {

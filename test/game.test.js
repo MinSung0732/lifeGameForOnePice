@@ -982,24 +982,29 @@ test("자유 모드의 상위 직책 IF는 와노국 이후 원작 장면 사이
 });
 
 test("규칙 36: 높은 기술과 유대는 소수점 누적으로 전문화되고 낮은 수치는 정상 성장한다", () => {
-  assert.deepEqual([0, 60, 80, 90, 95, 100].map(growthEfficiency), [1, 0.7, 0.4, 0.2, 0.1, 0]);
+  assert.equal(growthEfficiency(100), 0);
+  assert.ok(growthEfficiency(30) > growthEfficiency(60));
+  assert.ok(growthEfficiency(60) > growthEfficiency(80));
+  assert.ok(growthEfficiency(80) > growthEfficiency(90));
+  assert.ok(growthEfficiency(90) > growthEfficiency(95));
+  assert.ok(growthEfficiency(95) < 0.1);
   let before = createGame("original", 314, { species: "인간" }, 3, 36);
   assert.deepEqual(before.growthCarry, { skill: 0, bond: 0, friendBond: 0, trust: 0 });
   assert.equal(createGame("original", 314, { species: "인간" }, 3, 35).growthCarry, undefined);
   before.skill = 97;
   before.friendBond = 89;
   let after = structuredClone(before);
-  after.skill += 5; after.friendBond += 10;
+  after.skill += 10; after.friendBond += 10;
   applyBalancedGrowth(before, after);
   assert.equal(after.skill, 97);
-  assert.equal(after.growthCarry.skill, 0.5);
-  assert.equal(after.friendBond, 93);
+  assert.equal(after.growthCarry.skill, 0.6);
+  assert.equal(after.friendBond, 90);
   const second = structuredClone(after);
-  second.skill += 5;
+  second.skill += 10;
   applyBalancedGrowth(after, second);
   assert.equal(second.skill, 98);
-  assert.equal(second.growthCarry.skill, 0);
-  assert.equal(second.friendBond, 93);
+  assert.equal(second.growthCarry.skill, 0.2);
+  assert.equal(second.friendBond, 90);
   const capped = structuredClone(second);
   capped.skill = 100;
   const above = structuredClone(capped);
