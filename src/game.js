@@ -598,6 +598,17 @@ export function advance(life, action = null) {
       if (next.personality[key] !== life.personality[key]) changes.push({ key: `personality.${key}`, delta: next.personality[key] - life.personality[key] });
     }
   }
+  if (next.creationVersion >= 35) {
+    for (const [key, beforeValue, afterValue] of [
+      ["fruit", life.powerProficiency.fruit, next.powerProficiency.fruit],
+      ...["observation", "armament", "conqueror"].map((key) =>
+        [`haki.${key}`, life.powerProficiency.haki[key], next.powerProficiency.haki[key]])
+    ]) {
+      if (afterValue !== beforeValue) changes.push({
+        key: `powerProficiency.${key}`, delta: afterValue - beforeValue
+      });
+    }
+  }
   next.age = view.age;
   next.lastOutcome = result;
   next.lastChanges = changes;

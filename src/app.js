@@ -362,6 +362,13 @@ function renderTimeline() {
 }
 
 function statLabel(stat) {
+  const proficiencyLabels = {
+    "powerProficiency.fruit": "열매 숙련도",
+    "powerProficiency.haki.observation": "견문색 숙련도",
+    "powerProficiency.haki.armament": "무장색 숙련도",
+    "powerProficiency.haki.conqueror": "패왕색 숙련도"
+  };
+  if (proficiencyLabels[stat.key]) return proficiencyLabels[stat.key];
   if (stat.key === "bounty") return "현상금";
   if (stat.key === "reputation") return (life?.reputation || 0) >= 0 ? "명성" : "악명";
   if (stat.key.startsWith("personality.")) return PERSONALITY.find((entry) => entry.key === stat.key.slice(12))?.label || stat.key;
@@ -456,10 +463,11 @@ function renderStats(gridId = "stats-grid", sourceId = "birth-stat-source", show
   }
   if (life.creationVersion >= 35 && gridId === "stats-grid") {
     if (life.devilFruit) appendMeter(grid, `열매 Lv${life.fruitMastery} · 숙련도`,
-      life.powerProficiency.fruit, 100, "power-fruit");
+      life.powerProficiency.fruit, 100, "power-fruit", changeOf("powerProficiency.fruit"));
     for (const [key, label] of [["observation", "견문색"], ["armament", "무장색"], ["conqueror", "패왕색"]]) {
       if (life.haki[key]) appendMeter(grid, `${label} Lv${life.haki[key]} · 숙련도`,
-        life.powerProficiency.haki[key], 100, `power-${key}`);
+        life.powerProficiency.haki[key], 100, `power-${key}`,
+        changeOf(`powerProficiency.haki.${key}`));
     }
   }
 }
@@ -909,7 +917,9 @@ function initMotion(toggle) {
 function changeTarget(key) {
   const target = key === "bounty" ? byId("life-power")
     : key === "reputation" ? byId("life-reputation")
-    : document.querySelector(key.startsWith("personality.") ? `#personality-grid .trait-${key.slice(12)}` : `#stats-grid .stat-${key}`);
+    : key.startsWith("powerProficiency.")
+      ? document.querySelector(`#stats-grid .power-${key.replace("powerProficiency.", "").replace("haki.", "")}`)
+      : document.querySelector(key.startsWith("personality.") ? `#personality-grid .trait-${key.slice(12)}` : `#stats-grid .stat-${key}`);
   // On phones the panels may be folded; particles then fly into the toggle instead.
   const fallback = byId("growth-toggle");
   return target && target.getClientRects().length ? target : fallback && fallback.getClientRects().length ? fallback : byId("scene-result");
