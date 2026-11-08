@@ -1853,40 +1853,22 @@ test("33번 엔딩은 실제 관계·진로 기억을 개인 목표와 균형 �
 
 
 
-test("33번 반복 원작 일상은 상한에 가까운 능력 대신 실제 도움이 되는 선택을 제공한다", () => {
-  const high = createGame("original", 521, { species: "인간" }, 3, 33);
-  Object.assign(high, { age: 42, skill: 100, friendBond: 100, trust: 40, supplies: 25,
-    health: 60, canonGapRemaining: 1, location: "위스키 피크" });
-  let daily;
-  for (let index = 0; index < 250; index += 1) {
-    const scene = canonInterludeScene({ ...high, canonDailyIndex: index });
-    if (scene?.choices?.some((choice) => choice.id === "listen")
-      && scene.choices.some((choice) => choice.id === "prepare")) {
-      daily = { ...scene, index }; break;
+test("33번 원작 막간은 긴 두 장면 간격만 하나 줄여 주요 사건 순서를 보존한다", () => {
+  const old = createGame("original", 521, { species: "인간" }, 3, 32);
+  const fresh = { ...old, creationVersion: 33 };
+  let reduced = 0;
+  for (const phase of ["before", "after"]) {
+    for (let step = 0; step < 70; step++) {
+      const earlier = canonGapFor(old, phase, step);
+      const newer = canonGapFor(fresh, phase, step);
+      assert.ok(newer <= earlier);
+      assert.equal(newer, earlier === 2 ? 1 : earlier);
+      if (newer < earlier) reduced++;
     }
   }
-  assert.ok(daily, "반복 선택 유형은 실제 원작 막간 생성기를 통해 도달해야 한다");
-  const trusted = daily.choices.find((choice) => choice.id === "listen");
-  const supplied = daily.choices.find((choice) => choice.id === "prepare");
-  assert.match(trusted.risk, /지역 신뢰 \+5/);
-  assert.match(supplied.risk, /물자 \+5/);
-  const a = structuredClone(high);
-  trusted.apply(a);
-  assert.equal(a.trust, 45);
-  assert.equal(a.friendBond, 100);
-  const b = structuredClone(high);
-  supplied.apply(b);
-  assert.equal(b.supplies, 30);
-  assert.equal(b.skill, 100);
-  const old = canonInterludeScene({ ...high, creationVersion: 32, canonDailyIndex: daily.index });
-  assert.equal(old.choices.find((choice) => choice.id === "listen").risk, "친구와의 유대 +5");
-  assert.equal(old.choices.find((choice) => choice.id === "prepare").risk, "기술 +5");
-  const untrained = canonInterludeScene({ ...high, skill: 25, friendBond: 25, canonDailyIndex: daily.index });
-  assert.equal(untrained.choices.find((choice) => choice.id === "listen").risk, "친구와의 유대 +5");
-  assert.equal(untrained.choices.find((choice) => choice.id === "prepare").risk, "기술 +5");
-  const resting = canonInterludeScene({ ...high, supplies: 100, trust: 100, canonDailyIndex: daily.index });
-  assert.equal(resting.choices.find((choice) => choice.id === "listen").risk, "건강 +5");
-  assert.equal(resting.choices.find((choice) => choice.id === "prepare").risk, "건강 +5");
+  assert.ok(reduced > 0);
+  assert.equal(canonGapFor({ ...old, creationVersion: 31 }, "after", 2),
+    canonGapFor(old, "after", 2), "이전 규칙의 간격은 변경되지 않는다");
 });
 
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {
