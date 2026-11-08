@@ -33,6 +33,29 @@ const personalAimChoices = Object.fromEntries([...Object.keys(PERSONAL_AIMS), "u
 let aimInEnding = 0, aimLinkedToMajorChoice = 0, aimReframedInLateLife = 0, lateDecisions = 0;
 let finished = 0, replayed = 0, chosenCount = 0, repeatedTitles = 0, repeatedIds = 0;
 let switchedCareers = 0, earlyOverlap = 0, earlyCompared = 0, relevantLoguetown = 0;
+const bands = ["childhood", "young", "middle", "late"];
+const sceneBands = Object.fromEntries(bands.map((band) => [band, { choices: 0, observation: 0, years: 0 }]));
+const sceneKinds = { voyage: 0, everyday: 0, relationship: 0, affiliation: 0, canon: 0, other: 0 };
+const speciesBalance = Object.fromEntries(SPECIES.map((name) => [name, { lives: 0, ageTotal: 0, ages: [], earlyEndings: 0, choices: 0, locked: 0, offered: 0, suppliesEndTotal: 0, healthEndTotal: 0, endingReasons: {} }]));
+const affiliationBalance = {};
+let meaningfulChoices = 0, observationScenes = 0, totalGapYears = 0, gapIntervals = 0;
+let longestGapYears = 0, longGapLives = 0, runsOfSameCategory = 0, maxCategoryRun = 0;
+let offeredChoices = 0, lockedChoices = 0, diceTrials = 0, diceSuccesses = 0, chosenRisky = 0;
+const median = (values) => {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b), middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+};
+const category = (scene) => scene.id.startsWith("life_voyage_") ? "voyage"
+  : /life_(people_|encounter_return_|meet_|friend_reunion)/.test(scene.id) ? "relationship"
+    : /^life_path_|^life_rank_|^life_recruit_/.test(scene.id) ? "affiliation"
+      : scene.canonDaily || scene.canon ? "canon"
+        : /^life_(year_|years_|training|practice|routine)/.test(scene.id) ? "everyday" : "other";
+const bandFor = (life, age) => {
+  const giant = life.birth.species === "거인족";
+  return giant ? age < 112 ? "childhood" : age < 171 ? "young" : age < 282 ? "middle" : "late"
+    : age < 19 ? "childhood" : age < 35 ? "young" : age < 60 ? "middle" : "late";
+};
 
 function choose(scene, policy, seed, step) {
   const available = scene.choices.filter((choice) => !choice.disabled);
@@ -70,6 +93,8 @@ for (let index = 0; index < 1000; index += 1) {
     if (life.birth.species === "인간" && life.birth.home === "이스트 블루 · 로그 타운") relevantLoguetown += 1;
     const pathHistory = new Set();
     const firstTen = [];
+    let lastDecisionAge = 0, longestThisLife = 0, prevKind = null, kindRun = 0, choicesThisLife = 0;
+    let offeredThisLife = 0, lockedThisLife = 0;
     while (!life.finished && step < 450) {
       const scene = getScene(life);
       assert.ok(scene, "unfinished life must have a scene");
@@ -79,13 +104,52 @@ for (let index = 0; index < 1000; index += 1) {
       if (life.journal.slice(-10).some((entry) => entry.title === scene.title)) repeatedTitles += 1;
       if (firstTen.length < 10) firstTen.push(scene.id + ":" + scene.title);
       if (counts[scene.id] !== undefined) counts[scene.id] += 1;
+      const band = bandFor(life, scene.age), kind = category(scene);
+      const available = scene.choices.filter((choice) => !choice.disabled);
+      sceneKinds[kind]++;
+      if (kind === prevKind) kindRun += 1;
+      else { prevKind = kind; kindRun = 1; }
+      maxCategoryRun = Math.max(maxCategoryRun, kindRun);
+      if (kindRun === 3) runsOfSameCategory++;
+      for (const choice of scene.choices) {
+        if (choice.id === "fallback_skip") continue;
+        offeredChoices++; offeredThisLife++;
+        if (choice.disabled) { lockedChoices++; lockedThisLife++; }
+      }
+      const meaningful = available.length >= 2 && new Set(available.map((choice) => choice.risk)).size > 1;
+      if (meaningful) {
+        meaningfulChoices++;
+        sceneBands[band].choices++;
+        const years = Math.max(0, scene.age - lastDecisionAge);
+        totalGapYears += years; gapIntervals++;
+        longestThisLife = Math.max(longestThisLife, years);
+        lastDecisionAge = scene.age;
+      } else {
+        observationScenes++; sceneBands[band].observation++;
+        sceneBands[band].years += Math.max(0, scene.age - life.age);
+      }
       const action = choose(scene, policy, seed, step);
-      if (action !== null) chosenCount += 1;
+      if (action !== null) { chosenCount += 1; choicesThisLife++; }
+      if (action && available.find((choice) => choice.id === action)?.dice) chosenRisky++;
       life = advance(life, action);
+      if (life.lastDice) { diceTrials++; if (life.lastDice.success) diceSuccesses++; }
       if (life.path) pathHistory.add(life.path);
       bounded(life);
       step += 1;
     }
+    longestThisLife = Math.max(longestThisLife, life.age - lastDecisionAge);
+    longestGapYears = Math.max(longestGapYears, longestThisLife);
+    if (longestThisLife >= 10) longGapLives++;
+    const speciesRow = speciesBalance[species];
+    speciesRow.lives++; speciesRow.ages.push(life.age); speciesRow.ageTotal += life.age;
+    if (life.age < (species === "거인족" ? 170 : 35)) speciesRow.earlyEndings++;
+    speciesRow.choices += choicesThisLife; speciesRow.locked += lockedThisLife;
+    speciesRow.offered += offeredThisLife; speciesRow.suppliesEndTotal += life.supplies;
+    speciesRow.healthEndTotal += life.health;
+    const endingReason = life.ending || "unknown";
+    speciesRow.endingReasons[endingReason] = (speciesRow.endingReasons[endingReason] || 0) + 1;
+    const pathRow = affiliationBalance[life.path || "none"] ||= { lives: 0, choices: 0, healthEndTotal: 0, suppliesEndTotal: 0 };
+    pathRow.lives++; pathRow.choices += choicesThisLife; pathRow.healthEndTotal += life.health; pathRow.suppliesEndTotal += life.supplies;
     assert.ok(life.finished, "step limit reached without a completed life");
     finished += 1;
     assert.equal(getScene(life), null, "completed life must have no new scene");
@@ -149,6 +213,29 @@ const report = {
   relationChoiceCounts: relationChoices,
   meanYearsBetweenRelationshipEvents: Object.fromEntries(Object.entries(relationGaps).map(([name, gaps]) =>
     [name, gaps.length ? Number((gaps.reduce((total, gap) => total + gap, 0) / gaps.length).toFixed(1)) : null])),
+  flow: {
+    meaningfulChoices, observationScenes,
+    sceneBands, sceneKinds,
+    averageGapYearsBetweenMeaningfulDecisions: gapIntervals ? Number((totalGapYears / gapIntervals).toFixed(2)) : null,
+    longestGapYears, livesWithTenYearGaps: longGapLives,
+    runsOfThreeSameCategory: runsOfSameCategory, maxCategoryRun,
+    offeredChoices, lockedChoices, lockedChoiceRate: offeredChoices ? Number((lockedChoices / offeredChoices).toFixed(4)) : null,
+    chosenRisky, diceTrials, diceSuccesses
+  },
+  speciesBalance: Object.fromEntries(Object.entries(speciesBalance).map(([name, row]) => [name, {
+    lives: row.lives, meanEndAge: row.lives ? Number((row.ageTotal / row.lives).toFixed(1)) : null,
+    medianEndAge: median(row.ages), earlyEndings: row.earlyEndings,
+    meanChoices: row.lives ? Number((row.choices / row.lives).toFixed(1)) : null,
+    lockedChoiceRate: row.offered ? Number((row.locked / row.offered).toFixed(4)) : null,
+    meanEndHealth: row.lives ? Number((row.healthEndTotal / row.lives).toFixed(1)) : null,
+    meanEndSupplies: row.lives ? Number((row.suppliesEndTotal / row.lives).toFixed(1)) : null,
+    reasons: row.endingReasons
+  }])),
+  affiliationBalance: Object.fromEntries(Object.entries(affiliationBalance).map(([name, row]) => [name, {
+    lives: row.lives, meanChoices: Number((row.choices / row.lives).toFixed(1)),
+    meanEndHealth: Number((row.healthEndTotal / row.lives).toFixed(1)),
+    meanEndSupplies: Number((row.suppliesEndTotal / row.lives).toFixed(1))
+  }])),
   failures: problems
 };
 console.log("AUDIT_REPORT_START");
