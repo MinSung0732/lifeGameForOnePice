@@ -1,5 +1,9 @@
-export function createObservation(scene, now) {
-  const duration = Math.max(10000, Math.min(22000, scene.body.length * 110));
+export function createObservation(scene, now, creationVersion = 1) {
+  // Rule 33: brief, optional canon-day observations need less idle waiting; choices and major events do not advance faster.
+  const briefCanonDay = creationVersion >= 33 && scene.canonDaily && !scene.choices?.length && !scene.manual;
+  const duration = briefCanonDay
+    ? Math.max(9000, Math.min(18000, scene.body.length * 100))
+    : Math.max(10000, Math.min(22000, scene.body.length * 110));
   return { sceneId: scene.id, duration, elapsed: 0, lastTick: now, running: true };
 }
 

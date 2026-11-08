@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { advance, createGame, getScene, replay, saveRecord } from "../src/game.js";
 import { endingMemories } from "../src/ending-memories.js";
 import { PERSONAL_AIMS } from "../src/life-aim.js";
+import { createObservation } from "../src/observation.js";
 
 const VERSION = Number(process.env.CREATION_VERSION || 29);
 const SPECIES = ["인간", "어인", "밍크족", "하늘섬 사람", "거인족"];
@@ -41,6 +42,7 @@ const affiliationBalance = {};
 let meaningfulChoices = 0, observationScenes = 0, totalGapYears = 0, gapIntervals = 0;
 let longestGapYears = 0, longGapLives = 0, runsOfSameCategory = 0, maxCategoryRun = 0;
 let offeredChoices = 0, lockedChoices = 0, diceTrials = 0, diceSuccesses = 0, chosenRisky = 0;
+let timedObservationScenes = 0, canonDailyTimedScenes = 0, observationWaitMs = 0, canonDailyWaitMs = 0;
 const median = (values) => {
   if (!values.length) return null;
   const sorted = [...values].sort((a, b) => a - b), middle = Math.floor(sorted.length / 2);
@@ -115,6 +117,11 @@ for (let index = 0; index < 1000; index += 1) {
         if (choice.id === "fallback_skip") continue;
         offeredChoices++; offeredThisLife++;
         if (choice.disabled) { lockedChoices++; lockedThisLife++; }
+      }
+      if (!scene.choices.length && !scene.manual) {
+        const waiting = createObservation(scene, 0, VERSION).duration;
+        timedObservationScenes++; observationWaitMs += waiting;
+        if (scene.canonDaily) { canonDailyTimedScenes++; canonDailyWaitMs += waiting; }
       }
       const meaningful = available.length >= 2 && new Set(available.map((choice) => choice.risk)).size > 1;
       if (meaningful) {
@@ -220,7 +227,10 @@ const report = {
     longestGapYears, livesWithTenYearGaps: longGapLives,
     runsOfThreeSameCategory: runsOfSameCategory, maxCategoryRun,
     offeredChoices, lockedChoices, lockedChoiceRate: offeredChoices ? Number((lockedChoices / offeredChoices).toFixed(4)) : null,
-    chosenRisky, diceTrials, diceSuccesses
+    chosenRisky, diceTrials, diceSuccesses,
+    timedObservationScenes, canonDailyTimedScenes,
+    estimatedObservationMinutesPerLifeAt1x: Number((observationWaitMs / 1000 / 60 / 1000).toFixed(2)),
+    estimatedCanonDayMinutesPerLifeAt1x: Number((canonDailyWaitMs / 1000 / 60 / 1000).toFixed(2))
   },
   speciesBalance: Object.fromEntries(Object.entries(speciesBalance).map(([name, row]) => [name, {
     lives: row.lives, meanEndAge: row.lives ? Number((row.ageTotal / row.lives).toFixed(1)) : null,
