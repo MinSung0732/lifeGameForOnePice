@@ -577,6 +577,14 @@ export function advance(life, action = null) {
       next.health -= rate * years;
     }
   }
+  if (next.creationVersion >= 36) {
+    // The meter also shows the exact fractional carry when this event earned no whole point.
+    const quietGrowth = [["skill", "기술"], ["bond", "양육자 유대"],
+      ["friendBond", "친구 유대"], ["trust", "지역 신뢰"]]
+      .filter(([key]) => next[key] === life[key] && next.growthCarry[key] > life.growthCarry[key])
+      .map(([, label]) => label);
+    if (quietGrowth.length) outcome = `${outcome || ""} ${quietGrowth.join("·")} 성장이 조금씩 누적됐다.`.trim();
+  }
   if (next.creationVersion >= 4 && chosen?.bounty) {
     // Before rule 36 a bounty could be granted just for attempting a failed dice choice.
     const gain = next.creationVersion >= 36 && target && !next.lastDice?.success

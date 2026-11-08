@@ -981,6 +981,18 @@ test("자유 모드의 상위 직책 IF는 와노국 이후 원작 장면 사이
   assert.match(getScene(life).body, /원작 기준/);
 });
 
+test("출생 규칙 1~36은 선택 기록 12단계까지 각자 저장 재생된다", () => {
+  for (let version = 1; version <= 36; version++) {
+    let life = createGame("original", 72, { species: "인간" }, 3, version);
+    for (let step = 0; step < 12 && !life.finished; step++) {
+      const scene = getScene(life);
+      assert.ok(scene, `version ${version} scene ${step}`);
+      life = advance(life, scene.choices.find((choice) => !choice.disabled)?.id ?? null);
+    }
+    assert.deepEqual(replay(saveRecord(life)), life, `version ${version} saves and replays`);
+  }
+});
+
 test("규칙 36: 높은 기술과 유대는 소수점 누적으로 전문화되고 낮은 수치는 정상 성장한다", () => {
   assert.equal(growthEfficiency(100), 0);
   assert.ok(growthEfficiency(30) > growthEfficiency(60));

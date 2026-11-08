@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { advance, createGame, getScene, STATS, replay, saveRecord } from "../src/game.js";
+import { balancedPublicBounty } from "../src/bounty.js";
 
 const version = Number(process.env.CREATION_VERSION || 35);
 const species = ["인간", "어인", "밍크족", "하늘섬 사람", "거인족"];
@@ -13,7 +14,8 @@ const ages = Object.fromEntries(marks.map((age) => [age, { samples: 0, total: em
 const ending = { count: 0, total: emptyStats(), reached90: emptyStats(), reached100: emptyStats(),
   three90: 0, five90: 0, six100: 0, bothSkillTrust90: 0 };
 const bounty = { final: [], finalOutlaws: [], byThreshold: {}, incrementsByEvent: {}, topEvents: [], milestoneAges: {}, byPolicy: {} };
-const overall = { finished: 0, replayed: 0, endings: {}, byPolicy: {} };
+const overall = { finished: 0, replayed: 0, endings: {}, byPolicy: {}, byCareer: {},
+  majorIF: { emperor: 0, admiral: 0 } };
 const bump = (object, key) => { object[key] = (object[key] || 0) + 1; };
 const median = (values) => {
   if (!values.length) return null;
@@ -57,6 +59,17 @@ for (let index = 0; index < 1000; index++) {
         }
       }
       const gain = life.bounty - before.bounty;
+      if (version >= 36) {
+        for (const key of ["skill", "bond", "friendBond", "trust"]) {
+          assert.ok(Number.isFinite(life.growthCarry[key]) && life.growthCarry[key] >= 0
+            && life.growthCarry[key] < 1, "invalid fractional growth for " + key);
+        }
+        if (scene.id.startsWith("life_bounty_act_") && chosen === "intervene") {
+          assert.ok(life.lastDice, "the public intervention must make a roll");
+          assert.equal(gain, life.lastDice.success ? balancedPublicBounty(before) : 1_000_000,
+            "actual bounty and announced successful/failed intervention reward must agree");
+        }
+      }
       if (gain > 0) {
         const id = scene.id.replace(/_(\d+)$/, "");
         const row = bounty.incrementsByEvent[id] ||= { count: 0, total: 0, max: 0, successes: 0, failures: 0 };
@@ -83,6 +96,13 @@ for (let index = 0; index < 1000; index++) {
     assert.deepEqual(replay(saveRecord(life)), life, "replay mismatch");
     overall.finished++; overall.replayed++;
     bump(overall.endings, life.ending || "unknown");
+    const career = overall.byCareer[life.path || "none"] ||= { count: 0, rank2: 0, rank3: 0, rank4: 0 };
+    career.count++;
+    if (life.rankTier >= 2) career.rank2++;
+    if (life.rankTier >= 3) career.rank3++;
+    if (life.rankTier >= 4) career.rank4++;
+    if (life.worldBranch === "emperor") overall.majorIF.emperor++;
+    if (life.worldBranch === "admiral") overall.majorIF.admiral++;
     const byPolicy = overall.byPolicy[policy] ||= { lives: 0, present: 0, ages: [], maxStat90: 0 };
     byPolicy.lives++;
     if (life.ending === "present") byPolicy.present++;
@@ -110,6 +130,7 @@ for (let index = 0; index < 1000; index++) {
 const summary = {
   version, finished: overall.finished, replayed: overall.replayed, failures,
   endingReasons: overall.endings,
+  byCareer: overall.byCareer, majorIF: overall.majorIF,
   ageSnapshots: Object.fromEntries(Object.entries(ages).map(([age, row]) =>
     [age, { samples: row.samples, average: Object.fromEntries(keys.map((key) =>
       [key, row.samples ? Number((row.total[key] / row.samples).toFixed(1)) : null])) }])),
