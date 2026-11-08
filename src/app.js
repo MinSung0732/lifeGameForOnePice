@@ -109,7 +109,7 @@ function scheduleObservation() {
   }
   const now = performance.now();
   if (!observation || observation.sceneId !== scene.id) observation = createObservation(scene, now);
-  const running = !paused && !document.hidden && !byId("journal").open && !byId("relations-dialog").open;
+  const running = !paused && !document.hidden && !byId("journal").open && !byId("relations-dialog").open && !byId("mobile-life-dialog").open;
   observation = tickObservation(observation, now, speed, running);
   const percent = Math.round(observation.elapsed / observation.duration * 100);
   const seconds = Math.ceil((observation.duration - observation.elapsed) / (1000 * speed));
@@ -122,6 +122,7 @@ function scheduleObservation() {
 }
 
 function showSection(section) {
+  if (section !== "game" && byId("mobile-life-dialog").open) byId("mobile-life-dialog").close();
   const shell = document.querySelector(".page-shell");
   shell.classList.toggle("intro-screen", section === "intro" || section === "birth");
   shell.classList.toggle("game-screen", section === "game");
@@ -151,6 +152,9 @@ function renderBirth() {
   byId("birth-era").textContent = `원작 현재 ${presentAge(life)}년 전 출생 (루피 출항 시 ${eraStart(life)}세)`;
   renderStats("birth-stats-grid", "birth-stat-note", true);
   renderPersonality("birth-personality-grid", "birth-personality-summary", true);
+  byId("birth").classList.remove("birth-details-open");
+  byId("birth-more").setAttribute("aria-expanded", "false");
+  byId("birth-more").textContent = "상세 능력·성격 보기";
   byId("birth-title").focus();
 }
 
@@ -739,6 +743,9 @@ function renderGame(focusTitle = false, statsUpdated = false, arrivedPlace = "")
   byId("scene-chapter").textContent = `${life.journal.length + 1}번째 장면 · ${scene.timeLabel || passage}`;
   byId("scene-title").textContent = scene.title;
   byId("scene-body").textContent = scene.body;
+  byId("mobile-summary-age").textContent = `${scene.age}세`;
+  byId("mobile-summary-place").textContent = life.location;
+  byId("mobile-summary-vitals").textContent = `건강 ${life.health} · 물자 ${life.supplies}`;
   if (focusTitle) byId("scene-layout").querySelector(".scene-copy").scrollTop = 0;
   updateSceneImage(byId("scene-image"), scene.art?.src || ART.deck.src, scene.art?.alt || "");
   byId("route-trail").textContent = (life.travelHistory || [life.birth.home]).join(" → ");
@@ -1780,6 +1787,91 @@ function selectedProfile() {
   }
   return profile;
 }
+
+// Move the original status DOM into a native modal only on phones; PCs keep their existing layout.
+const mobileLayout = window.matchMedia("(max-width: 767px)");
+const mobileStatus = byId("game-status-column");
+const mobileDialog = byId("mobile-life-dialog");
+const originalGame = byId("game");
+const originalScene = byId("scene-layout");
+const tabPanels = {
+  stats: byId("mobile-stats-panel"),
+  personality: byId("mobile-personality-panel"),
+  relations: byId("mobile-relations-panel")
+};
+let currentLifeTab = "stats";
+const mobileTabs = [...document.querySelectorAll("[data-life-tab]")];
+function selectMobileLifeTab(tab, focus = false) {
+  currentLifeTab = tab;
+  for (const button of mobileTabs) {
+    const selected = button.dataset.lifeTab === tab;
+    button.setAttribute("aria-selected", String(selected));
+    button.tabIndex = selected ? 0 : -1;
+    if (selected && focus) button.focus();
+  }
+  for (const [key, panel] of Object.entries(tabPanels)) panel.hidden = mobileLayout.matches && key !== tab;
+}
+function syncMobileLayout() {
+  if (mobileLayout.matches) {
+    if (mobileStatus.parentElement !== mobileDialog) mobileDialog.append(mobileStatus);
+    byId("growth-panels").classList.add("open");
+    selectMobileLifeTab(currentLifeTab);
+  } else {
+    if (mobileDialog.open) mobileDialog.close();
+    if (mobileStatus.parentElement !== originalGame) originalGame.insertBefore(mobileStatus, originalScene);
+    for (const panel of Object.values(tabPanels)) panel.hidden = false;
+    document.querySelector(".masthead").classList.remove("settings-open");
+    byId("mobile-settings-open").setAttribute("aria-expanded", "false");
+  }
+}
+mobileLayout.addEventListener("change", syncMobileLayout);
+syncMobileLayout();
+byId("mobile-life-open").addEventListener("click", () => {
+  selectMobileLifeTab("stats");
+  mobileDialog.showModal();
+  scheduleObservation();
+});
+byId("mobile-life-close").addEventListener("click", () => mobileDialog.close());
+mobileDialog.addEventListener("close", scheduleObservation);
+mobileDialog.addEventListener("click", (event) => {
+  const bounds = mobileDialog.getBoundingClientRect();
+  if (event.target === mobileDialog && (event.clientY < bounds.top || event.clientX < bounds.left || event.clientX > bounds.right)) mobileDialog.close();
+});
+for (const button of mobileTabs) {
+  button.addEventListener("click", () => selectMobileLifeTab(button.dataset.lifeTab));
+  button.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const tabs = mobileTabs.map((item) => item.dataset.lifeTab);
+    const index = tabs.indexOf(button.dataset.lifeTab);
+    const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1
+      : (index + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length;
+    selectMobileLifeTab(tabs[next], true);
+  });
+}
+byId("birth-more").addEventListener("click", () => {
+  const expanded = byId("birth").classList.toggle("birth-details-open");
+  byId("birth-more").setAttribute("aria-expanded", String(expanded));
+  byId("birth-more").textContent = expanded ? "상세 능력·성격 접기" : "상세 능력·성격 보기";
+});
+const mobileSettings = byId("mobile-settings-open");
+mobileSettings.addEventListener("click", () => {
+  const expanded = document.querySelector(".masthead").classList.toggle("settings-open");
+  mobileSettings.setAttribute("aria-expanded", String(expanded));
+});
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".masthead")) {
+    document.querySelector(".masthead").classList.remove("settings-open");
+    mobileSettings.setAttribute("aria-expanded", "false");
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && document.querySelector(".masthead").classList.contains("settings-open")) {
+    document.querySelector(".masthead").classList.remove("settings-open");
+    mobileSettings.setAttribute("aria-expanded", "false");
+    mobileSettings.focus();
+  }
+});
 
 byId("relations-open").addEventListener("click", openRelationshipsDialog);
 byId("relations-search").addEventListener("input", renderFilteredRelationships);
