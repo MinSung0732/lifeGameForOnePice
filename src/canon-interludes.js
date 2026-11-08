@@ -342,14 +342,35 @@ export function canonInterludeScene(life) {
   while (recent.includes(pool[index].title)) index = (index + 1) % pool.length;
   const moment = pool[index];
   const decision = !moment.choices && yearRoll(life.seed ^ 0x4629fb10, life.canonDailyIndex) % (v11 ? 3 : 7) === 0;
+  // Rule 33: repeated small tasks should not keep rewarding a nearly capped skill or bond.
+  const sharedWork = life.creationVersion >= 33 && life.friendBond >= 95;
+  const sharedRest = sharedWork && life.trust >= 95;
+  const wellTrained = life.creationVersion >= 33 && life.skill >= 95;
+  const equipmentRest = wellTrained && life.supplies >= 95;
   return { id: `life_canon_daily_${life.canonDailyIndex}`, age: life.age, act: 3, species: "all",
     yearly: true, urgent: true, canonDaily: true, art: moment.art, title: moment.title,
     timeLabel: `${time} · ${life.location}`, body: moment.body,
     ...(moment.choices ? { choices: moment.choices } : {}),
     ...(decision ? { choices: [
-      { id: "listen", label: "곁의 사람과 오늘 일을 함께 정한다", risk: "친구와의 유대 +5", personality: { empathy: 3, loyalty: 3 },
-        apply: (state) => { state.friendBond += 5; return "서로 듣지 못했던 사정을 나누고 내일의 순서를 정했다."; } },
-      { id: "prepare", label: "다음 일을 위한 도구를 먼저 챙긴다", risk: "기술 +5", personality: { caution: 3 },
-        apply: (state) => { state.skill += 5; return "도구를 손보니 다음 날의 첫 일이 조금 수월해졌다."; } }
+      { id: "listen",
+        label: sharedRest ? "함께 일을 마치고 잠시 쉬며 몸을 돌본다"
+          : sharedWork ? "기항지 사람들과 오늘의 배움을 나눈다" : "곁의 사람과 오늘 일을 함께 정한다",
+        risk: sharedRest ? "건강 +5" : sharedWork ? "지역 신뢰 +5" : "친구와의 유대 +5",
+        personality: { empathy: 3, loyalty: 3 },
+        apply: (state) => {
+          if (sharedRest) { state.health += 5; return "오늘의 일을 마치고 몸을 돌보며 다음 날의 피로를 덜었다."; }
+          if (sharedWork) { state.trust += 5; return "새로 배운 일을 이웃과 나누며 기항지의 신뢰를 쌓았다."; }
+          state.friendBond += 5; return "서로 듣지 못했던 사정을 나누고 내일의 순서를 정했다.";
+        } },
+      { id: "prepare",
+        label: equipmentRest ? "쓰던 도구를 정리하고 몸을 회복한다"
+          : wellTrained ? "남은 자재를 정리해 다음 작업의 물자를 확보한다" : "다음 일을 위한 도구를 먼저 챙긴다",
+        risk: equipmentRest ? "건강 +5" : wellTrained ? "물자 +5" : "기술 +5",
+        personality: { caution: 3 },
+        apply: (state) => {
+          if (equipmentRest) { state.health += 5; return "장비를 손보고 휴식을 취해 다음 일을 준비했다."; }
+          if (wellTrained) { state.supplies += 5; return "흩어진 자재를 회수해 다음 작업의 물자를 정리했다."; }
+          state.skill += 5; return "도구를 손보니 다음 날의 첫 일이 조금 수월해졌다.";
+        } }
     ] } : {}) };
 }
