@@ -68,12 +68,34 @@ try {
   await mkdir(join(root, "test-results"), { recursive: true });
   const url = "http://127.0.0.1:" + server.address().port;
   const result = [];
-  for (const [device, width, height] of [["mobile", 390, 844], ["desktop", 1280, 800]]) {
-    await send("Emulation.setDeviceMetricsOverride", { width, height, mobile: device === "mobile", deviceScaleFactor: 1 });
+  for (const [device, width, height] of [
+    ["mobile-short", 360, 640], ["mobile-narrow", 360, 800],
+    ["mobile", 390, 844], ["mobile-wide", 430, 932],
+    ["desktop", 1280, 800], ["desktop-wide", 1440, 900]
+  ]) {
+    await send("Emulation.setDeviceMetricsOverride", { width, height, mobile: device.startsWith("mobile"), deviceScaleFactor: 1 });
     await send("Page.navigate", { url: url + "/?device=" + device });
     await until('document.readyState === "complete" && !!document.getElementById("dev-patch-select")');
+    if (device.startsWith("mobile")) {
+      assert.equal(await evaluate('getComputedStyle(document.getElementById("sound-settings")).display'), "none");
+      await evaluate('document.getElementById("mobile-settings-open").click()');
+      assert.equal(await evaluate('document.getElementById("mobile-settings-open").getAttribute("aria-expanded")'), "true");
+      assert.notEqual(await evaluate('getComputedStyle(document.getElementById("sound-settings")).display'), "none");
+      await evaluate('document.getElementById("mobile-settings-open").click()');
+    } else {
+      assert.equal(await evaluate('document.getElementById("mobile-settings-open").offsetHeight'), 0);
+      assert.notEqual(await evaluate('getComputedStyle(document.getElementById("sound-settings")).display'), "none");
+    }
     await evaluate('document.getElementById("start").click()');
     await until('!document.getElementById("birth").hidden');
+    if (device.startsWith("mobile")) {
+      assert.equal(await evaluate('document.getElementById("birth-more").getAttribute("aria-expanded")'), "false");
+      assert.equal(await evaluate('getComputedStyle(document.getElementById("birth-personality-grid")).display'), "grid");
+      assert.equal(await evaluate('getComputedStyle(document.querySelector("#birth .personality-panel")).display'), "none");
+      await evaluate('document.getElementById("birth-more").click()');
+      assert.notEqual(await evaluate('getComputedStyle(document.querySelector("#birth .personality-panel")).display'), "none");
+      await evaluate('document.getElementById("birth-more").click()');
+    }
     await evaluate('document.getElementById("birth-confirm").click()');
     await until('!document.getElementById("game").hidden && document.getElementById("scene-title").textContent.length>0');
     await evaluate('document.getElementById("pause").click()');
@@ -84,17 +106,34 @@ try {
     await evaluate('document.getElementById("journal-open").click()');
     assert.equal(await evaluate('document.getElementById("journal").open'), true);
     await evaluate('document.getElementById("journal-close").click()');
-    await evaluate('document.getElementById("relations-open").click()');
-    assert.equal(await evaluate('document.getElementById("relations-dialog").open'), true,
-      device + " relationship dialog should open");
-    await evaluate('document.getElementById("relations-close").click()');
+    if (device.startsWith("mobile")) {
+      assert.equal(await evaluate('document.getElementById("game-status-column").parentElement.id'), "mobile-life-dialog");
+      await evaluate('document.getElementById("mobile-life-open").click()');
+      assert.equal(await evaluate('document.getElementById("mobile-life-dialog").open'), true);
+      await evaluate('document.querySelector("[data-life-tab=personality]").click()');
+      assert.equal(await evaluate('document.getElementById("mobile-personality-panel").hidden'), false);
+      assert.equal(await evaluate('document.getElementById("mobile-stats-panel").hidden'), true);
+      await evaluate('document.querySelector("[data-life-tab=relations]").click()');
+      assert.equal(await evaluate('document.getElementById("mobile-relations-panel").hidden'), false);
+      await evaluate('document.getElementById("relations-open").click()');
+      assert.equal(await evaluate('document.getElementById("relations-dialog").open'), true);
+      await evaluate('document.getElementById("relations-close").click()');
+      await evaluate('document.getElementById("mobile-life-close").click()');
+      assert.equal(await evaluate('document.getElementById("mobile-life-dialog").open'), false);
+    } else {
+      assert.equal(await evaluate('document.getElementById("game-status-column").parentElement.id'), "game");
+      await evaluate('document.getElementById("relations-open").click()');
+      assert.equal(await evaluate('document.getElementById("relations-dialog").open'), true);
+      await evaluate('document.getElementById("relations-close").click()');
+    }
     assert.equal(await evaluate('document.getElementById("relations-dialog").open'), false,
       device + " relationship dialog should close");
     await evaluate('document.getElementById("dev-patch-select").value="0_1";document.getElementById("dev-patch-select").dispatchEvent(new Event("change",{bubbles:true}))');
     await until('document.querySelectorAll("#choices button.choice").length>0');
     const size = await evaluate('(()=>{document.querySelector(".dev-patch-bar").style.display="none";const b=[...document.querySelectorAll("#choices button.choice")];const d=document.documentElement;return {viewport:d.clientWidth,scrollWidth:d.scrollWidth,bodyFont:parseFloat(getComputedStyle(document.querySelector("#scene-body")).fontSize),buttons:b.length,enabled:b.filter(x=>!x.disabled).length,minButtonHeight:Math.min(...b.map(x=>x.getBoundingClientRect().height))}})()');
     const overflows = await evaluate('(()=>{const max=document.documentElement.clientWidth;return [...document.querySelectorAll("*")].map(el=>({el,r:el.getBoundingClientRect()})).filter(x=>x.r.right>max+2 && x.r.width>0).slice(0,22).map(x=>({tag:x.el.tagName,id:x.el.id,cls:typeof x.el.className==="string"?x.el.className.slice(0,90):"",left:Math.round(x.r.left),right:Math.round(x.r.right),width:Math.round(x.r.width),scrollWidth:x.el.scrollWidth,cssOverflow:getComputedStyle(x.el).overflowX}))})()');
-    console.log("BROWSER_GEOMETRY", JSON.stringify({device,...size,overflows}));
+    const chapter = await evaluate('(()=>{const rect=(id)=>{const r=document.getElementById(id).getBoundingClientRect();return {top:Math.round(r.top),bottom:Math.round(r.bottom),height:Math.round(r.height)}};return {title:rect("scene-title"),art:rect("scene-art"),body:rect("scene-body"),choices:rect("choices"),mobileStatus:!!document.querySelector("#mobile-life-dialog #game-status-column"),headerHeight:Math.round(document.querySelector(".masthead").getBoundingClientRect().height)}})()');
+    console.log("BROWSER_GEOMETRY", JSON.stringify({device,...size,chapter,overflows}));
     const debugShot = await send("Page.captureScreenshot", { format: "png" });
     await writeFile(join(root, "test-results", device + "-choices.png"), Buffer.from(debugShot.data, "base64"));
     // Use native Chrome keyboard input, not untrusted DOM KeyboardEvent dispatches.
@@ -116,7 +155,17 @@ try {
     }
     assert.ok(size.enabled>0, device + " game has no enabled choice");
     assert.ok(size.scrollWidth<=size.viewport+2, device + " horizontal overflow");
-    if (device === "mobile") { assert.ok(size.bodyFont>=16, "Mobile body smaller than 16px"); assert.ok(size.minButtonHeight>=44, "Mobile choice target smaller than 44px"); }
+    if (device.startsWith("mobile")) {
+      assert.ok(size.bodyFont>=16, "Mobile body smaller than 16px");
+      assert.ok(size.minButtonHeight>=44, "Mobile choice target smaller than 44px");
+      assert.ok(chapter.mobileStatus, "Status should be in mobile dialog");
+      assert.ok(chapter.title.bottom<=chapter.art.top+2, "Chapter heading must precede illustration");
+      assert.ok(chapter.art.bottom<=chapter.body.top+2, "Art must precede chapter body");
+      assert.ok(chapter.body.bottom<=chapter.choices.top+2, "Body must precede choices");
+      assert.ok(chapter.art.height>=90, "Mobile art should not collapse to a thumbnail");
+      assert.ok(chapter.title.top<height, "Chapter heading should appear in first viewport");
+      assert.equal(overflows.length, 0, device+" horizontal clipping");
+    } else assert.equal(chapter.mobileStatus, false, "PC status must stay in original game column");
     await evaluate('document.querySelector(".dev-patch-bar").style.display="";document.getElementById("dev-patch-select").value="3_0";document.getElementById("dev-patch-select").dispatchEvent(new Event("change",{bubbles:true}))');
     await until('!document.getElementById("ending").hidden');
     const count = await evaluate('document.querySelectorAll("#ending-timeline li").length');
