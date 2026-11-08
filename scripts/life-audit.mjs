@@ -29,6 +29,11 @@ const lastTenBySpecies = new Map();
 const problems = [];
 const relationChoices = {};
 const relationGaps = { mate: [], ward: [], civilian: [] };
+// Diagnose whether a 10-year gap contains no choices or only choices excluded by the meaning heuristic.
+const gapDiagnostics = Object.fromEntries(SPECIES.map((name) => [name, {
+  livesWithTenYearGaps: 0, intervalsWithTenYearGaps: 0, intervalsWithPlayableChoices: 0,
+  longestGapYears: 0, examples: []
+}]));
 let relationshipEndingMemories = 0;
 const personalAimChoices = Object.fromEntries([...Object.keys(PERSONAL_AIMS), "undecided", "not_reached"].map((key) => [key, 0]));
 let aimInEnding = 0, aimLinkedToMajorChoice = 0, aimReframedInLateLife = 0, lateDecisions = 0;
@@ -97,6 +102,18 @@ for (let index = 0; index < 1000; index += 1) {
     const pathHistory = new Set();
     const firstTen = [];
     let lastDecisionAge = 0, longestThisLife = 0, prevKind = null, kindRun = 0, choicesThisLife = 0;
+    let recentGapScenes = [];
+    const recordLongGap = (endAge, nextScene, terminal = false) => {
+      const years = Math.max(0, endAge - lastDecisionAge);
+      if (years < 10) return;
+      const row = gapDiagnostics[species];
+      row.intervalsWithTenYearGaps++;
+      if (recentGapScenes.some((entry) => entry.options > 0)) row.intervalsWithPlayableChoices++;
+      if (row.examples.length < 4) row.examples.push({
+        seed, mode, policy, fromAge: lastDecisionAge, toAge: endAge, years,
+        nextScene, terminal, precedingScenes: recentGapScenes.slice(-8)
+      });
+    };
     let offeredThisLife = 0, lockedThisLife = 0;
     while (!life.finished && step < 450) {
       const scene = getScene(life);
@@ -136,12 +153,15 @@ for (let index = 0; index < 1000; index += 1) {
         meaningfulChoices++;
         sceneBands[band].choices++;
         const years = Math.max(0, scene.age - lastDecisionAge);
+        recordLongGap(scene.age, scene.id);
         totalGapYears += years; gapIntervals++;
         longestThisLife = Math.max(longestThisLife, years);
         lastDecisionAge = scene.age;
+        recentGapScenes = [];
       } else {
         observationScenes++; sceneBands[band].observation++;
         sceneBands[band].years += Math.max(0, scene.age - life.age);
+        if (recentGapScenes.length < 20) recentGapScenes.push({ age: scene.age, id: scene.id, options: available.length });
       }
       const action = choose(scene, policy, seed, step);
       if (action !== null) { chosenCount += 1; choicesThisLife++; }
@@ -153,9 +173,11 @@ for (let index = 0; index < 1000; index += 1) {
       bounded(life);
       step += 1;
     }
+    recordLongGap(life.age, "life-ended", true);
     longestThisLife = Math.max(longestThisLife, life.age - lastDecisionAge);
     longestGapYears = Math.max(longestGapYears, longestThisLife);
-    if (longestThisLife >= 10) longGapLives++;
+    gapDiagnostics[species].longestGapYears = Math.max(gapDiagnostics[species].longestGapYears, longestThisLife);
+    if (longestThisLife >= 10) { longGapLives++; gapDiagnostics[species].livesWithTenYearGaps++; }
     const speciesRow = speciesBalance[species];
     speciesRow.lives++; speciesRow.ages.push(life.age); speciesRow.ageTotal += life.age;
     if (life.age < (species === "거인족" ? 170 : 35)) speciesRow.earlyEndings++;
@@ -242,6 +264,7 @@ const report = {
     estimatedObservationMinutesPerLifeAt1x: Number((observationWaitMs / 1000 / 60 / 1000).toFixed(2)),
     estimatedCanonDayMinutesPerLifeAt1x: Number((canonDailyWaitMs / 1000 / 60 / 1000).toFixed(2))
   },
+  gapDiagnostics,
   speciesBalance: Object.fromEntries(Object.entries(speciesBalance).map(([name, row]) => [name, {
     lives: row.lives, meanEndAge: row.lives ? Number((row.ageTotal / row.lives).toFixed(1)) : null,
     medianEndAge: median(row.ages), earlyEndings: row.earlyEndings,
