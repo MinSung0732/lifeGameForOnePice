@@ -567,7 +567,7 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
 .relations-list strong { color: var(--ink); font-size: 15px; }
 .relations-list small { color: var(--muted); font-size: 12px; text-align: right; }
 .relations-list .relations-empty { color: var(--muted); font-size: 13px; }
-@media (max-width: 700px) {
+@media (max-width: 767px) {
   /* Keep the overview visible when ability and personality meters are folded. */
   .growth-panels { display: grid; }
   .growth-panels:not(.open) > .stats-panel { display: none; }
@@ -817,7 +817,7 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
   .scene-body { font-size: 17px; }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 767px) {
   .page-shell { padding: 0 16px; }
   .masthead { min-height: 67px; gap: 8px 12px; flex-wrap: wrap; padding: 10px 0; }
   /* Keep the journal beside the title and the three audio controls together below it. */
@@ -903,6 +903,103 @@ h1, h2 { color: var(--ink); font-family: "Batang", "Noto Serif KR", serif; }
   .footer { flex-direction: column; gap: 3px; font-size: 11px; }
   .journal { padding: 20px 17px; }
   .journal-head { top: -20px; margin: -20px -17px 18px; padding: 12px 17px 0; }
+}
+
+/* Mobile chapter-first layout. Existing desktop styling is untouched. */
+.mobile-settings-open, .mobile-birth-more, .mobile-game-summary { display: none; }
+@media (max-width: 767px) {
+  .masthead { min-height: 54px; display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
+    flex-wrap: nowrap; gap: 6px 12px; padding: 5px 0; }
+  .masthead .edition { display: none; }
+  .masthead .wordmark { font-size: 21px; min-width: 0; }
+  .masthead #journal-open { margin: 0; grid-column: 2; min-height: 44px; }
+  .masthead #mobile-settings-open { display: inline-flex; align-items: center; justify-content: center;
+    grid-column: 3; min-height: 44px; margin: 0; padding: 5px; font-size: 13px; }
+  .masthead .sound { position: absolute; z-index: 35; top: calc(100% + 5px); right: 0; display: none;
+    order: initial; width: min(320px, calc(100vw - 32px)); flex: initial; flex-wrap: wrap; margin: 0;
+    justify-content: flex-start; gap: 10px 14px; padding: 14px; border: 1px solid var(--sea);
+    background: var(--paper); box-shadow: 0 8px 24px #203a3b33; }
+  .masthead.settings-open .sound { display: flex; }
+  .masthead .sound .text-button { min-height: 44px; }
+  .masthead .sound input { width: 100%; min-height: 30px; }
+  .intro { padding-top: 9px; }
+  .intro-hero h1 { font-size: 25px; margin-bottom: 6px; }
+  .intro .lead { font-size: 14px; line-height: 1.5; }
+  .scope-note { margin: 6px 0 9px; font-size: 12px; }
+  .mode-option span { min-height: 44px; display: grid; place-items: center; }
+  .profile-row select, .profile-row input { min-height: 44px; font-size: 14px; }
+  .intro-actions button { min-height: 48px; }
+  .birth .ending-facts { margin-bottom: 8px; }
+  .birth .ending-facts div { padding: 5px 0; }
+  .birth-art img { max-height: 160px; }
+  .birth .growth-panels { margin-bottom: 4px; }
+  .mobile-birth-more { display: block; width: 100%; min-height: 44px; text-align: left; padding: 8px 0; }
+  .birth:not(.birth-details-open) #birth-stats-grid > .stat:nth-child(n + 4),
+  .birth:not(.birth-details-open) .personality-panel,
+  .birth:not(.birth-details-open) #birth-stat-note { display: none; }
+  .birth .stats-grid { gap: 5px; }
+  .birth .stat-head, .birth .stat-head strong { font-size: 12px; }
+  .birth .stat-track { height: 5px; }
+  .game { display: flex; flex-direction: column; padding-top: 8px; }
+  .game .age-timeline { order: 0; margin-bottom: 3px; }
+  .game .age-timeline-labels { grid-template-columns: 1fr auto; }
+  .game .age-timeline-labels span:first-child { display: none; }
+  .game .age-timeline-labels span:last-child { text-align: right; }
+  .game .age-track { height: 4px; margin-top: 4px; }
+  .game .game-topline { order: 1; margin: 0 0 5px; gap: 0; }
+  .game .game-topline .eyebrow, .game .playback label { display: none; }
+  .game .playback { font-size: 12px; }
+  .game .playback select { min-height: 44px; font-size: 13px; }
+  .game .playback .text-button { min-height: 44px; font-size: 13px; }
+  .mobile-game-summary { order: 2; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
+    gap: 2px 8px; padding: 5px 0 8px; margin-bottom: 7px; border-bottom: 1px solid var(--line); }
+  #mobile-summary-age { grid-column: 1; font-weight: 800; color: var(--sea); }
+  #mobile-summary-place { grid-column: 2; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; font-size: 12px; color: var(--muted); }
+  #mobile-summary-vitals { grid-column: 1 / 3; font-size: 12px; color: var(--muted); }
+  .mobile-life-open { grid-column: 3; grid-row: 1 / 3; min-height: 44px; padding: 7px 5px; font-size: 13px; }
+  .game > #game-status-column { display: none; }
+  .game .scene-layout { order: 3; display: flex; flex-direction: column; gap: 7px; overflow: visible; }
+  .game .scene-copy { display: contents; }
+  .game #scene-chapter { order: 0; font-size: 12px; }
+  .game #scene-title { order: 1; margin: 0 0 2px; padding: 0; font-size: 25px; line-height: 1.35; }
+  .game .scene-art { order: 2; width: 100%; }
+  .game .scene-art img, .game.has-choices .scene-art img, .game.many-choices .scene-art img {
+    width: 100%; height: auto; max-height: 230px; object-fit: contain;
+  }
+  .game .scene-body { order: 3; margin: 3px 0 2px; font-size: 16px; line-height: 1.6; }
+  .game .observation-timeline { order: 4; width: 100%; }
+  .game .choices { order: 4; width: 100%; }
+  .game .scene-result { order: 5; margin: 4px 0; }
+  .game .scene-hint { order: 6; margin: 4px 0 12px; }
+  .game .choices .choice { min-height: 48px; padding: 11px 9px; gap: 8px; }
+  .game .choices .choice strong { font-size: 15px; }
+  .game .choices .choice small { font-size: 12px; }
+  .game.many-choices .choice-dice { flex-basis: 100%; }
+  .mobile-life-dialog { position: fixed; inset: auto 0 0; width: min(520px, 100%);
+    max-width: 100%; height: min(88dvh, 820px); max-height: 88dvh; margin: 0 auto;
+    padding: 14px 16px max(16px, env(safe-area-inset-bottom)); border: 1px solid var(--sea);
+    border-radius: 16px 16px 0 0; background: var(--paper); color: var(--body); overflow: hidden; }
+  .mobile-life-dialog[open] { display: flex; flex-direction: column; }
+  .mobile-life-dialog::backdrop { background: rgba(16, 30, 32, .64); }
+  .mobile-life-head { display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--line); gap: 10px; flex: 0 0 auto; }
+  .mobile-life-head h2 { margin: 0; font-size: 23px; }
+  .mobile-life-head .text-button { min-height: 44px; }
+  .mobile-life-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;
+    margin: 8px 0; border-bottom: 1px solid var(--line); flex: 0 0 auto; }
+  .mobile-life-tabs button { border: 0; border-bottom: 3px solid transparent; min-height: 44px;
+    padding: 7px; background: transparent; color: var(--muted); }
+  .mobile-life-tabs button[aria-selected="true"] { border-bottom-color: var(--sea); color: var(--sea); font-weight: 800; }
+  .mobile-life-dialog #game-status-column { display: block; overflow-y: auto; min-height: 0; flex: 1 1 auto;
+    padding: 4px 2px 12px; overscroll-behavior: contain; }
+  .mobile-life-dialog .life-strip { padding: 5px 0; margin: 0 0 9px; }
+  .mobile-life-dialog .char-cell strong { font-size: 12px; }
+  .mobile-life-dialog .growth-toggle { display: none; }
+  .mobile-life-dialog .growth-panels { display: grid; grid-template-columns: 1fr; gap: 9px; }
+  .mobile-life-dialog .stats-panel { padding: 8px 0; }
+  .mobile-life-dialog .stat-head, .mobile-life-dialog .stat-head strong { font-size: 12px; }
+  .mobile-life-dialog .stat-track { height: 6px; }
 }
 
 html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="off"] *::after {
