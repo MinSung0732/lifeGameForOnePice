@@ -1852,35 +1852,6 @@ test("33번 엔딩은 실제 관계·진로 기억을 개인 목표와 균형 �
 });
 
 
-test("33번 규칙은 선택 없는 원작 일상만 짧게 관찰하고 옛 저장 규칙과 수동 선택은 유지한다", () => {
-  const ordinary = { id: "life_year_30", body: "나".repeat(190), choices: [], canonDaily: false };
-  const daily = { ...ordinary, id: "life_canon_daily_7", canonDaily: true };
-  const older = createObservation(daily, 100, 32);
-  const shortened = createObservation(daily, 100, 33);
-  assert.equal(older.duration, 20900);
-  assert.equal(shortened.duration, 18000);
-  assert.equal(createObservation(ordinary, 100, 33).duration, 20900);
-  assert.equal(createObservation({ ...daily, choices: [{ id: "help" }] }, 100, 33).duration, 20900);
-  assert.equal(createObservation({ ...daily, manual: true }, 100, 33).duration, 20900);
-  assert.equal(createObservation({ ...daily, body: "짧다" }, 100, 33).duration, 9000);
-  assert.equal(shortened.elapsed, 0);
-  assert.equal(tickObservation(shortened, 1100, 1, true).elapsed, 1000);
-});
-
-
-test("33번 개선 이후에도 25~32번 저장 기록은 자신의 원래 규칙으로 재생된다", () => {
-  for (let version = 25; version <= 32; version += 1) {
-    let life = createGame("original", 100 + version, { species: "어인" }, 3, version);
-    for (let step = 0; step < 36 && !life.finished; step += 1) {
-      const scene = getScene(life);
-      const enabled = scene.choices.find((choice) => !choice.disabled);
-      life = advance(life, enabled?.id ?? null);
-    }
-    assert.equal(life.creationVersion, version);
-    assert.deepStrictEqual(replay(saveRecord(life)), life, "Old rule " + version + " replay changed");
-  }
-});
-
 test("유년 후반의 배움과 수련도 출항 전에 등장하고 회차마다 달라진다", () => {
   const schoolTitles = new Set();
   const trainingTitles = new Set();

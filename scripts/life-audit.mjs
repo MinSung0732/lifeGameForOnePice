@@ -43,6 +43,7 @@ let meaningfulChoices = 0, observationScenes = 0, totalGapYears = 0, gapInterval
 let longestGapYears = 0, longGapLives = 0, runsOfSameCategory = 0, maxCategoryRun = 0;
 let offeredChoices = 0, lockedChoices = 0, diceTrials = 0, diceSuccesses = 0, chosenRisky = 0;
 let timedObservationScenes = 0, canonDailyTimedScenes = 0, observationWaitMs = 0, canonDailyWaitMs = 0;
+let genericDailyOffers = 0, genericBothNearCap = 0, genericNoSkillOrFriendGain = 0;
 const median = (values) => {
   if (!values.length) return null;
   const sorted = [...values].sort((a, b) => a - b), middle = Math.floor(sorted.length / 2);
@@ -107,6 +108,13 @@ for (let index = 0; index < 1000; index += 1) {
       if (firstTen.length < 10) firstTen.push(scene.id + ":" + scene.title);
       if (counts[scene.id] !== undefined) counts[scene.id] += 1;
       const band = bandFor(life, scene.age), kind = category(scene);
+      const genericDaily = scene.canonDaily && scene.choices.some((choice) => choice.id === "listen")
+        && scene.choices.some((choice) => choice.id === "prepare");
+      if (genericDaily) {
+        genericDailyOffers++;
+        if (life.skill >= 99 && life.friendBond >= 99) genericBothNearCap++;
+      }
+      const beforeSkill = life.skill, beforeFriend = life.friendBond;
       const available = scene.choices.filter((choice) => !choice.disabled);
       sceneKinds[kind]++;
       if (kind === prevKind) kindRun += 1;
@@ -119,7 +127,7 @@ for (let index = 0; index < 1000; index += 1) {
         if (choice.disabled) { lockedChoices++; lockedThisLife++; }
       }
       if (!scene.choices.length && !scene.manual) {
-        const waiting = createObservation(scene, 0, VERSION).duration;
+        const waiting = createObservation(scene, 0).duration;
         timedObservationScenes++; observationWaitMs += waiting;
         if (scene.canonDaily) { canonDailyTimedScenes++; canonDailyWaitMs += waiting; }
       }
@@ -139,6 +147,7 @@ for (let index = 0; index < 1000; index += 1) {
       if (action !== null) { chosenCount += 1; choicesThisLife++; }
       if (action && available.find((choice) => choice.id === action)?.dice) chosenRisky++;
       life = advance(life, action);
+      if (genericDaily && life.skill === beforeSkill && life.friendBond === beforeFriend) genericNoSkillOrFriendGain++;
       if (life.lastDice) { diceTrials++; if (life.lastDice.success) diceSuccesses++; }
       if (life.path) pathHistory.add(life.path);
       bounded(life);
@@ -229,6 +238,7 @@ const report = {
     offeredChoices, lockedChoices, lockedChoiceRate: offeredChoices ? Number((lockedChoices / offeredChoices).toFixed(4)) : null,
     chosenRisky, diceTrials, diceSuccesses,
     timedObservationScenes, canonDailyTimedScenes,
+    genericDailyOffers, genericBothNearCap, genericNoSkillOrFriendGain,
     estimatedObservationMinutesPerLifeAt1x: Number((observationWaitMs / 1000 / 60 / 1000).toFixed(2)),
     estimatedCanonDayMinutesPerLifeAt1x: Number((canonDailyWaitMs / 1000 / 60 / 1000).toFixed(2))
   },

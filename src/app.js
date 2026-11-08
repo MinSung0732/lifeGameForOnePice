@@ -108,7 +108,7 @@ function scheduleObservation() {
     return;
   }
   const now = performance.now();
-  if (!observation || observation.sceneId !== scene.id) observation = createObservation(scene, now, life.creationVersion);
+  if (!observation || observation.sceneId !== scene.id) observation = createObservation(scene, now);
   const running = !paused && !document.hidden && !byId("journal").open && !byId("relations-dialog").open;
   observation = tickObservation(observation, now, speed, running);
   const percent = Math.round(observation.elapsed / observation.duration * 100);
