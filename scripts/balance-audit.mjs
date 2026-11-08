@@ -14,7 +14,6 @@ const ending = { count: 0, total: emptyStats(), reached90: emptyStats(), reached
   three90: 0, five90: 0, six100: 0, bothSkillTrust90: 0 };
 const bounty = { final: [], finalOutlaws: [], byThreshold: {}, incrementsByEvent: {}, topEvents: [], milestoneAges: {}, byPolicy: {} };
 const overall = { finished: 0, replayed: 0, endings: {}, byPolicy: {} };
-const lifeMeans = {};
 const bump = (object, key) => { object[key] = (object[key] || 0) + 1; };
 const median = (values) => {
   if (!values.length) return null;
@@ -29,7 +28,7 @@ const choose = (scene, policy, seed, step) => {
   if (policy === "last") return options.at(-1).id;
   if (policy === "balanced") return options[(seed + step) % options.length].id;
   if (policy === "helpful") {
-    return (options.find((choice) => /구조|도움|구호|신뢰 \\+|유대 \\+|피난|고친다|치료/.test(choice.label + " " + choice.risk))
+    return (options.find((choice) => /구조|도움|구호|신뢰 \+|유대 \+|피난|고친다|치료/.test(choice.label + " " + choice.risk))
       || options[(seed + step) % options.length]).id;
   }
   return options[0].id;
@@ -59,7 +58,7 @@ for (let index = 0; index < 1000; index++) {
       }
       const gain = life.bounty - before.bounty;
       if (gain > 0) {
-        const id = scene.id.replace(/_(\\d+)$/, "");
+        const id = scene.id.replace(/_(\d+)$/, "");
         const row = bounty.incrementsByEvent[id] ||= { count: 0, total: 0, max: 0, successes: 0, failures: 0 };
         row.count++; row.total += gain; row.max = Math.max(row.max, gain);
         if (life.lastDice) {
