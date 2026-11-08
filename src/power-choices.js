@@ -29,7 +29,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 갑판 건너편의 고기 덩이를 단숨에 낚아챘다. 동료들은 항의하다가 결국 박수를 쳤고, 고기는 다 함께 나눠 먹었다.", effects: { health: 8, friendBond: 12 } },
         good: { text: "{power} 고기 끝자락을 겨우 붙잡았다. 절반은 빼앗겼지만 남은 것만으로도 배가 불렀다.", effects: { health: 5 } },
         bad: { text: "능력을 쓰려다 힘 조절을 잘못해 고기가 통째로 바다에 빠졌다. 밤새 모두의 원망 섞인 눈길을 받았다.", effects: { friendBond: -12, health: -3 } } } },
-    haki: { label: "[패기] 기척을 읽고 빈틈을 노린다", hint: "모두의 손이 빠름", check: { stat: "skill", against: 50 }, personality: { caution: 3, ambition: 4 },
+    haki: { kind: "observation", label: "[패기] 기척을 읽고 빈틈을 노린다", hint: "모두의 손이 빠름", check: { stat: "skill", against: 50 }, personality: { caution: 3, ambition: 4 },
       outcomes: {
         great: { text: "견문색으로 모두의 손이 움직일 순간을 읽었다. 단 한 번의 빈틈에 고기를 집어 들자 갑판 전체가 탄성을 질렀다.", effects: { health: 8, friendBond: 10 } },
         good: { text: "기척은 읽었지만 손이 반 박자 늦었다. 그래도 뼈에 붙은 살점을 넉넉히 뜯어 먹었다.", effects: { health: 4, friendBond: 2 } },
@@ -41,7 +41,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 항구 한가운데서 근사한 자세를 잡았다. 몰래 찍힌 사진이 신문에 실리자 수배서보다 그쪽이 더 유명해졌다.", effects: { trust: 10, friendBond: 8 } },
         good: { text: "{power} 자세를 잡았지만 셔터가 한 박자 늦었다. 그래도 재채기 사진보다는 훨씬 나았다.", effects: { friendBond: 5 } },
         bad: { text: "힘을 과시하다 항구 상점의 간판을 부숴 버렸다. 수리비를 물어 주고 나니 남은 것은 또 한 장의 우스운 사진뿐이었다.", effects: { supplies: -12, trust: -4 } } } },
-    haki: { label: "[패기] 기척을 숨기고 사진사를 찾는다", hint: "범인을 만날지도", check: { stat: "skill", against: 45 }, personality: { caution: 3, freedom: 4 },
+    haki: { kind: "observation", label: "[패기] 기척을 숨기고 사진사를 찾는다", hint: "범인을 만날지도", check: { stat: "skill", against: 45 }, personality: { caution: 3, freedom: 4 },
       outcomes: {
         great: { text: "견문색으로 사진사의 기척을 쫓아 해군 지부 뒤편 창고를 찾아냈다. 원본을 바꿔 치우고 나오는 길에 사진사와 악수까지 나눴다.", effects: { skill: 10, friendBond: 8 } },
         good: { text: "사진사를 찾아냈지만 원본은 이미 본부로 보내진 뒤였다. 대신 사진사가 미안하다며 말린 생선 한 꾸러미를 쥐여 주었다.", effects: { supplies: 5 } },
@@ -53,7 +53,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 상대의 눈을 피해 잔을 바닥 틈으로 흘려보냈다. 터줏대감이 먼저 쓰러지자 술집 주인이 판돈을 통째로 건넸다.", effects: { supplies: 15, trust: 5 } },
         good: { text: "{power} 몇 잔은 몰래 비웠지만 나머지는 정직하게 마셨다. 무승부로 끝나 술값은 반씩 냈다.", effects: { supplies: 4 } },
         bad: { text: "능력을 쓰다 잔을 엎어 터줏대감의 머리에 술을 쏟았다. 술값에 수리비까지 물고 술집에서 쫓겨났다.", effects: { supplies: -12, trust: -5 } } } },
-    haki: { label: "[패기] 패기로 상대의 기세를 꺾는다", hint: "기세 싸움", check: { stat: "health", against: 50 }, personality: { ambition: 6 },
+    haki: { kind: "conqueror", label: "[패기] 패기로 상대의 기세를 꺾는다", hint: "기세 싸움", check: { stat: "health", against: 50 }, personality: { ambition: 6 },
       outcomes: {
         great: { text: "무장색으로 몸을 다잡고 잔을 비울 때마다 상대의 눈을 똑바로 쏘아보았다. 기세에 눌린 터줏대감이 잔을 내려놓고 항복했다.", effects: { supplies: 14, trust: 6 } },
         good: { text: "기세로는 이겼지만 술로는 비겼다. 터줏대감이 어깨를 두드리며 다음에 다시 겨루자고 했다.", effects: { trust: 5 } },
@@ -65,7 +65,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 돛대 꼭대기에 올라 수평선을 살폈다. 멀리 낯선 섬과 해류의 흐름이 한눈에 들어와 지름길까지 찾아냈다.", effects: { skill: 10, supplies: 8 } },
         good: { text: "{power} 돛대 위에 올랐지만 안개가 짙었다. 섬의 방향만 겨우 짐작해 하루를 더 돌아 항로로 돌아왔다.", effects: { skill: 5 } },
         bad: { text: "돛대 위에서 균형을 잃고 바다로 떨어졌다. 힘이 빠진 몸이 가라앉는 사이 동료가 뛰어들어 끌어올렸지만 식량 상자도 함께 떠내려갔다.", effects: { health: -8, supplies: -8 } } } },
-    haki: { label: "[패기] 견문색으로 바다의 기척을 읽는다", hint: "막연한 감각", check: { stat: "skill", against: 50 }, personality: { caution: 4 },
+    haki: { kind: "observation", label: "[패기] 견문색으로 바다의 기척을 읽는다", hint: "막연한 감각", check: { stat: "skill", against: 50 }, personality: { caution: 4 },
       outcomes: {
         great: { text: "눈을 감고 바다 너머의 기척을 더듬었다. 먼 섬의 갈매기 떼와 사람들의 숨결이 느껴져 곧장 그쪽으로 뱃머리를 돌렸다.", effects: { skill: 12, supplies: 6 } },
         good: { text: "희미한 기척 하나를 따라갔더니 작은 어촌이 나왔다. 길을 묻고 물을 채워 다시 떠났다.", effects: { supplies: 5 } },
@@ -77,7 +77,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 담장 너머 석쇠 위의 고기를 하나씩 집어 왔다. 해병들은 고기가 사라질 때마다 서로를 의심했다.", effects: { supplies: 15, friendBond: 6 } },
         good: { text: "{power} 고기 몇 점을 겨우 챙겼다. 동료들과 한 입씩 나누니 허기는 조금 가셨다.", effects: { supplies: 5 } },
         bad: { text: "능력을 쓰다 해루석 철망에 닿아 온몸의 힘이 쭉 빠졌다. 철망에 매달린 채 해병들에게 들켜 겨우 도망쳤다.", effects: { health: -12, supplies: -4 } } } },
-    haki: { label: "[패기] 순찰의 기척을 피해 숨어든다", hint: "발소리를 읽음", check: { stat: "skill", against: 50 }, personality: { caution: 3, freedom: 4 },
+    haki: { kind: "observation", label: "[패기] 순찰의 기척을 피해 숨어든다", hint: "발소리를 읽음", check: { stat: "skill", against: 50 }, personality: { caution: 3, freedom: 4 },
       outcomes: {
         great: { text: "견문색으로 순찰병의 발소리를 미리 읽고 빈 복도만 골라 걸었다. 주방에서 고기 한 바구니를 들고 나올 때까지 아무도 마주치지 않았다.", effects: { supplies: 14, skill: 6 } },
         good: { text: "순찰은 피했지만 주방장의 기척은 놓쳤다. 고기 대신 감자 한 자루를 들고 나왔다.", effects: { supplies: 5 } },
@@ -94,7 +94,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 골목 끝으로 달아나던 장사꾼의 발목을 붙잡았다. 진짜 보물이 묻힌 곳을 털어놓게 하자 낡은 상자 하나가 나왔다.", effects: { supplies: 15, trust: 6 } },
         good: { text: "{power} 장사꾼을 붙잡았지만 진짜 보물은 없었다. 대신 그동안 받아 챙긴 돈을 사람들에게 돌려주게 했다.", effects: { trust: 6 } },
         bad: { text: "능력을 휘두르다 골목의 과일 수레를 엎었다. 장사꾼은 소란을 틈타 사라졌고 과일값은 고스란히 떠안았다.", effects: { supplies: -12, trust: -4 } } } },
-    haki: { label: "[패기] 거짓말의 기척을 읽는다", hint: "속마음이 보일지도", check: { stat: "skill", against: 45 }, personality: { caution: 4 },
+    haki: { kind: "observation", label: "[패기] 거짓말의 기척을 읽는다", hint: "속마음이 보일지도", check: { stat: "skill", against: 45 }, personality: { caution: 4 },
       outcomes: {
         great: { text: "견문색으로 장사꾼의 속마음을 더듬자 품속에 감춘 진짜 지도가 느껴졌다. 가짜 지도와 바꿔 들고 나와 정말로 금화를 찾아냈다.", effects: { supplies: 16, skill: 4 } },
         good: { text: "거짓말이라는 것만은 확실히 읽었다. 지도를 사지 않고 돌아서자 장사꾼이 아쉬운 듯 혀를 찼다.", effects: { skill: 5 } },
@@ -106,7 +106,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 낚싯줄째 괴물을 수면 위로 끌어 올렸다. 갑판에 떨어진 생선은 배 길이만 했고 동료들은 한 달 내내 생선 요리를 먹었다.", effects: { supplies: 18, friendBond: 5 } },
         good: { text: "{power} 한동안 버텼지만 줄이 끊어지며 꼬리 한 토막만 남았다. 그래도 저녁 식탁은 넉넉했다.", effects: { supplies: 6 } },
         bad: { text: "괴물이 줄을 홱 당기자 몸이 바다로 끌려 들어갔다. 힘이 빠진 채 가라앉다 동료의 갈고리에 겨우 걸려 올라왔다.", effects: { health: -14, supplies: -4 } } } },
-    haki: { label: "[패기] 검게 물든 주먹을 내리꽂는다", hint: "한 방이면 될지도", check: { stat: "health", against: 50 }, personality: { ambition: 6 },
+    haki: { kind: "armament", label: "[패기] 검게 물든 주먹을 내리꽂는다", hint: "한 방이면 될지도", check: { stat: "health", against: 50 }, personality: { ambition: 6 },
       outcomes: {
         great: { text: "무장색으로 검게 물든 주먹을 수면 위로 솟은 괴물의 머리에 내리꽂았다. 괴물은 기절한 채 떠올랐고 배에는 고기가 넘쳐 났다.", effects: { supplies: 16, skill: 5 } },
         good: { text: "주먹은 빗맞았지만 괴물은 겁을 먹고 낚싯바늘을 뱉었다. 바늘에 걸려 있던 작은 물고기들로 저녁을 차렸다.", effects: { supplies: 5 } },
@@ -123,7 +123,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 해병들의 시선을 엉뚱한 곳으로 돌려놓고 정문을 지나갔다. 항구 시장에서 넉넉히 장을 보고 돌아올 때까지 아무도 몰랐다.", effects: { supplies: 14, skill: 6 } },
         good: { text: "{power} 정문은 지났지만 뒤늦게 수상하다는 외침이 들렸다. 장은 반만 보고 서둘러 배로 돌아왔다.", effects: { supplies: 5 } },
         bad: { text: "능력을 쓰는 순간 해병 하나가 수배서와 얼굴을 번갈아 보았다. 해루석 그물을 피해 달아나느라 온몸이 긁혔다.", effects: { health: -12, supplies: -5 } } } },
-    haki: { label: "[패기] 견문색으로 감시의 빈틈을 읽는다", hint: "교대 시간을 노림", check: { stat: "skill", against: 50 }, personality: { caution: 5 },
+    haki: { kind: "observation", label: "[패기] 견문색으로 감시의 빈틈을 읽는다", hint: "교대 시간을 노림", check: { stat: "skill", against: 50 }, personality: { caution: 5 },
       outcomes: {
         great: { text: "해병들의 기척이 흐트러지는 교대 시간을 정확히 읽었다. 가짜 수염도 없이 정문을 지나 시장을 한 바퀴 돌고 나왔다.", effects: { supplies: 14, skill: 6 } },
         good: { text: "빈틈은 읽었지만 너무 짧았다. 필요한 물건 몇 가지만 사서 곧장 돌아왔다.", effects: { supplies: 5 } },
@@ -140,7 +140,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 행상인의 상자를 하나씩 열어 진짜와 가짜를 가려냈다. 숨겨 둔 진짜 날씨 조개가 드러나자 행상인이 손을 들고 헐값에 넘겼다.", effects: { skill: 10, supplies: 8 } },
         good: { text: "{power} 물건을 시험하자 대부분 가짜로 드러났다. 행상인은 사과의 뜻으로 말린 과일 한 봉지를 내밀었다.", effects: { supplies: 5 } },
         bad: { text: "능력을 쓰다 행상인의 상자를 통째로 부숴 버렸다. 깨진 병값을 다 물어 주고 앵무새에게 욕까지 들었다.", effects: { supplies: -14, trust: -3 } } } },
-    haki: { label: "[패기] 앵무새의 속마음을 듣는다", hint: "말이 통할지도", check: { stat: "skill", against: 45 }, personality: { empathy: 5 },
+    haki: { kind: "observation", label: "[패기] 앵무새의 속마음을 듣는다", hint: "말이 통할지도", check: { stat: "skill", against: 45 }, personality: { empathy: 5 },
       outcomes: {
         great: { text: "앵무새의 기척에 귀를 기울이자 겁에 질린 마음이 느껴졌다. 앵무새를 풀어 주자 행상인이 감동해 상자 속 가장 좋은 물건을 내주었다.", effects: { supplies: 12, friendBond: 6 } },
         good: { text: "앵무새가 정말 말을 할 줄 안다는 것만은 확인했다. 헐값에 사 온 앵무새는 동료들의 이름을 금세 외웠다.", effects: { friendBond: 5 } },
@@ -152,7 +152,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 날아오르려던 갈매기를 공중에서 붙잡았다. 부리 끝의 크림과 날개 밑의 케이크 조각이 증거가 되어 기지에 웃음이 퍼졌다.", effects: { trust: 12, skill: 6 } },
         good: { text: "{power} 갈매기의 깃털 몇 가닥만 붙잡았다. 증거로는 모자랐지만 상관은 노력을 인정했다.", effects: { trust: 5 } },
         bad: { text: "능력을 휘두르다 상관의 책상을 뒤엎었다. 케이크 대신 기밀 서류가 바닥에 흩어져 벌로 화장실 청소를 맡았다.", effects: { trust: -12, health: -4 } } } },
-    haki: { label: "[패기] 견문색으로 범인의 기척을 쫓는다", hint: "누군가 숨기고 있음", check: { stat: "skill", against: 45 }, personality: { caution: 4, loyalty: 3 },
+    haki: { kind: "observation", label: "[패기] 견문색으로 범인의 기척을 쫓는다", hint: "누군가 숨기고 있음", check: { stat: "skill", against: 45 }, personality: { caution: 4, loyalty: 3 },
       outcomes: {
         great: { text: "기지 안의 기척을 하나씩 더듬었다. 유난히 들뜬 기척을 따라가니 케이크를 숨긴 부관이 상관의 깜짝 파티를 준비하고 있었다.", effects: { trust: 12, friendBond: 6 } },
         good: { text: "수상한 기척은 찾았지만 정작 케이크는 이미 반쯤 사라진 뒤였다. 남은 조각만 상관에게 돌려주었다.", effects: { trust: 5 } },
@@ -164,7 +164,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 상대에게만 보이는 신호를 보냈다. 암호를 소리 내지 않고도 접선이 끝나 연락망에서 칭찬이 쏟아졌다.", effects: { trust: 12, skill: 6 } },
         good: { text: "{power} 신호를 보냈지만 상대가 한참 뒤에야 알아들었다. 어색한 침묵 끝에 접선은 무사히 끝났다.", effects: { trust: 5 } },
         bad: { text: "능력을 쓰는 모습을 항구 사람들이 전부 보고 말았다. 접선은커녕 구경꾼이 몰려들어 약속 장소를 옮겨야 했다.", effects: { trust: -12, supplies: -4 } } } },
-    haki: { label: "[패기] 견문색으로 접선 상대를 찾는다", hint: "말이 필요 없을지도", check: { stat: "skill", against: 45 }, personality: { caution: 5, loyalty: 3 },
+    haki: { kind: "observation", label: "[패기] 견문색으로 접선 상대를 찾는다", hint: "말이 필요 없을지도", check: { stat: "skill", against: 45 }, personality: { caution: 5, loyalty: 3 },
       outcomes: {
         great: { text: "인파 속에서 긴장한 기척 하나를 찾아냈다. 다가가 눈빛만 주고받자 상대가 고개를 끄덕였고 암호 없이도 접선이 끝났다.", effects: { trust: 12, skill: 6 } },
         good: { text: "상대를 찾긴 했지만 결국 암호는 말해야 했다. 둘 다 귀가 빨개진 채 서류를 주고받았다.", effects: { trust: 5 } },
@@ -176,7 +176,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 심판의 눈을 피해 그릇을 비워 나갔다. 거한이 얼이 빠진 사이 그릇 탑이 하늘에 닿았고 마을 입구에 이름이 걸렸다.", effects: { trust: 14, health: 4 } },
         good: { text: "{power} 몇 그릇은 몰래 비웠지만 나머지는 정직하게 먹었다. 아슬아슬하게 비겨 거한과 우승을 나눴다.", effects: { trust: 5 } },
         bad: { text: "능력을 쓰다 심판에게 들켜 실격당했다. 마을 사람들은 고향의 명예를 더럽혔다며 한동안 눈을 흘겼다.", effects: { trust: -14, health: -2 } } } },
-    haki: { label: "[패기] 패기로 거한의 기를 꺾는다", hint: "먹기 전의 기세", check: { stat: "health", against: 50 }, personality: { ambition: 6, loyalty: 3 },
+    haki: { kind: "conqueror", label: "[패기] 패기로 거한의 기를 꺾는다", hint: "먹기 전의 기세", check: { stat: "health", against: 50 }, personality: { ambition: 6, loyalty: 3 },
       outcomes: {
         great: { text: "첫 숟가락을 들기 전 패기를 실어 거한을 똑바로 바라보았다. 기가 꺾인 거한은 숟가락을 떨어뜨렸고 마을 전체가 환호했다.", effects: { trust: 14, friendBond: 6 } },
         good: { text: "기세 싸움은 팽팽했다. 그릇 수도 비슷해 결국 둘이 나란히 시상대에 올랐다.", effects: { trust: 5 } },
@@ -188,7 +188,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 지나가던 해왕류 한 마리를 갑판 위로 끌어 올렸다. 친구는 세상에서 제일 큰 고기라며 눈물을 글썽였고 둘은 밤새 고기를 구웠다.", effects: { friendBond: 14, supplies: 6 } },
         good: { text: "{power} 제법 큰 물고기를 잡아 왔다. 세상에서 제일 크지는 않았지만 친구는 꿈의 첫걸음이라며 웃었다.", effects: { friendBond: 5 } },
         bad: { text: "능력을 쓰다 갑판 끝에서 미끄러져 바다로 떨어졌다. 힘이 빠진 몸을 친구가 건져 올렸지만 꿈 이야기는 잔소리로 바뀌었다.", effects: { health: -10, friendBond: -5 } } } },
-    haki: { label: "[패기] 견문색으로 큰 고기를 찾아 준다", hint: "바다 밑의 기척", check: { stat: "skill", against: 45 }, personality: { empathy: 4, loyalty: 3 },
+    haki: { kind: "observation", label: "[패기] 견문색으로 큰 고기를 찾아 준다", hint: "바다 밑의 기척", check: { stat: "skill", against: 45 }, personality: { empathy: 4, loyalty: 3 },
       outcomes: {
         great: { text: "바다 밑의 기척을 더듬어 가장 큰 그림자를 찾아냈다. 둘이 함께 낚싯줄을 당겨 올린 고기는 갑판을 가득 채웠다.", effects: { friendBond: 14, supplies: 6 } },
         good: { text: "기척 하나를 따라 낚싯대를 드리웠다. 크지는 않았지만 둘이 나눠 먹기에는 충분했다.", effects: { friendBond: 5 } },
@@ -200,7 +200,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 마지막 힘을 짜내 부두 기둥을 붙잡았다. 물 밖으로 올라서자 아이들이 이것도 묘기냐며 손뼉을 쳤다.", effects: { trust: 12, skill: 6 } },
         good: { text: "{power} 부두 끝을 겨우 붙잡았다. 아이들이 줄을 던져 주어 간신히 기어 올라왔다.", effects: { trust: 5 } },
         bad: { text: "물속에서는 능력이 말을 듣지 않았다. 바닥까지 가라앉았다가 지나가던 어부의 그물에 걸려 올라왔다.", effects: { health: -15, trust: -3 } } } },
-    haki: { label: "[패기] 기척으로 가장 가까운 손을 찾는다", hint: "숨이 남았을 때", check: { stat: "skill", against: 50 }, personality: { caution: 4 },
+    haki: { kind: "observation", label: "[패기] 기척으로 가장 가까운 손을 찾는다", hint: "숨이 남았을 때", check: { stat: "skill", against: 50 }, personality: { caution: 4 },
       outcomes: {
         great: { text: "가라앉는 와중에도 기척을 더듬어 다가오는 어부의 손을 정확히 붙잡았다. 끌어올려진 뒤 아이들에게 바다 앞에서는 겸손하라고 일러 주었다.", effects: { trust: 12, skill: 6 } },
         good: { text: "기척은 읽었지만 손이 닿지 않았다. 한참 물을 먹은 뒤에야 동료에게 건져졌다.", effects: { trust: 5 } },
@@ -212,7 +212,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 손이 닿지 않는 곳까지 샅샅이 뒤졌다. 간식을 전부 찾아내자 동료들은 반칙이라면서도 당직을 대신 서 주었다.", effects: { friendBond: 12, health: 6 } },
         good: { text: "{power} 간식 몇 개를 찾았지만 마지막 하나는 끝내 못 찾았다. 당직은 반만 면제되었다.", effects: { friendBond: 5 } },
         bad: { text: "능력을 쓰다 화약통을 쓰러뜨렸다. 간식은커녕 갑판 청소와 밤 당직을 한꺼번에 떠안았다.", effects: { health: -8, friendBond: -6 } } } },
-    haki: { label: "[패기] 두 가지 패기를 함께 끌어올린다", hint: "온 힘을 다함", check: { stat: "skill", against: 55 }, personality: { ambition: 6 },
+    haki: { kind: "observation+armament", label: "[패기] 두 가지 패기를 함께 끌어올린다", hint: "온 힘을 다함", check: { stat: "skill", against: 55 }, personality: { ambition: 6 },
       outcomes: {
         great: { text: "견문색과 무장색을 한꺼번에 끌어올리자 배 안의 기척이 손바닥처럼 펼쳐졌다. 간식을 전부 맞히고 동료들의 다음 장난까지 미리 말해 주었다.", effects: { friendBond: 12, skill: 8 } },
         good: { text: "간식 대부분을 찾아냈다. 마지막 하나는 요리사가 이미 먹어 치운 뒤였다.", effects: { friendBond: 5 } },
@@ -225,7 +225,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 해왕류의 턱을 붙잡아 그대로 바다에 내리꽂았다. 떠오른 거대한 몸뚱이는 한 달 치 식량이 되었고 항구마다 소문이 퍼졌다.", effects: { supplies: 14, trust: 8 } },
         good: { text: "{power} 해왕류의 아가리를 비껴 냈다. 해왕류는 비늘 몇 장을 남기고 깊은 바다로 사라졌다.", effects: { skill: 5 } },
         bad: { text: "능력이 닿기 전에 해왕류의 꼬리가 갑판을 쳤다. 바다에 떨어진 몸에서 힘이 빠져나갔고 동료들이 밧줄로 겨우 끌어올렸다.", effects: { health: -18 } } } },
-    haki: { label: "[패기] 패기로 해왕류에 맞선다", hint: "기세가 통할지도", check: { stat: "skill", against: 60 }, personality: { ambition: 6, caution: -3 },
+    haki: { kind: "armament", label: "[패기] 패기로 해왕류에 맞선다", hint: "기세가 통할지도", check: { stat: "skill", against: 60 }, personality: { ambition: 6, caution: -3 },
       outcomes: {
         great: { text: "무장색으로 검게 물든 주먹이 해왕류의 미간에 꽂혔다. 거대한 몸이 천천히 가라앉자 동료들이 뱃머리로 몰려와 함성을 질렀다.", effects: { supplies: 12, trust: 8 } },
         good: { text: "견문색으로 아가리가 닫히는 순간을 읽고 뱃머리를 돌렸다. 해왕류는 허공을 물고 물러났다.", effects: { skill: 5 } },
@@ -242,7 +242,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 찢어지려던 돛과 휩쓸리던 동료를 한꺼번에 붙들었다. 폭풍이 지나간 새벽, 갑판 위에서 빠진 사람은 아무도 없었다.", effects: { friendBond: 12, skill: 8 } },
         good: { text: "{power} 돛은 놓쳤지만 동료 하나를 붙잡아 배 안으로 끌어들였다. 배는 기우뚱한 채 폭풍을 빠져나왔다.", effects: { friendBond: 5 } },
         bad: { text: "거대한 파도가 갑판을 덮쳤다. 바닷물을 뒤집어쓰자 능력은커녕 몸을 가눌 힘도 사라져 돛대에 묶인 채 밤을 버텼다.", effects: { health: -16, supplies: -4 } } } },
-    haki: { label: "[패기] 견문색으로 파도의 길을 읽는다", hint: "한순간의 판단", check: { stat: "skill", against: 55 }, personality: { caution: 4, loyalty: 4 },
+    haki: { kind: "observation", label: "[패기] 견문색으로 파도의 길을 읽는다", hint: "한순간의 판단", check: { stat: "skill", against: 55 }, personality: { caution: 4, loyalty: 4 },
       outcomes: {
         great: { text: "다가오는 파도의 기척을 하나씩 읽어 키를 꺾었다. 배는 폭풍의 틈새로 미끄러지듯 빠져나갔다.", effects: { skill: 12, supplies: 8 } },
         good: { text: "몇 번의 큰 파도는 피했지만 마지막 파도에 짐 몇 개를 잃었다. 그래도 모두 살아남았다.", effects: { skill: 5 } },
@@ -259,7 +259,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 골목 끝으로 달아나던 범인의 앞을 막아섰다. 품속의 해독제를 빼앗아 마시자 감각이 돌아왔고, 범인은 자경단에 넘겨졌다.", effects: { trust: 12, health: 6 } },
         good: { text: "{power} 범인을 붙잡았지만 해독제는 반 병뿐이었다. 사흘을 앓은 끝에 겨우 일어났다.", effects: { health: 4 } },
         bad: { text: "능력을 쓰자 독이 더 빨리 퍼졌다. 범인을 놓친 채 길바닥에 쓰러져 동료들에게 업혀 갔다.", effects: { health: -18 } } } },
-    haki: { label: "[패기] 견문색으로 범인의 기척을 쫓는다", hint: "시간이 없음", check: { stat: "skill", against: 55 }, personality: { caution: 3, ambition: 4 },
+    haki: { kind: "observation", label: "[패기] 견문색으로 범인의 기척을 쫓는다", hint: "시간이 없음", check: { stat: "skill", against: 55 }, personality: { caution: 3, ambition: 4 },
       outcomes: {
         great: { text: "흐려지는 의식 속에서도 범인의 기척을 붙잡았다. 숨어 있던 창고에서 해독제를 받아 내고 범인의 배후까지 알아냈다.", effects: { trust: 10, skill: 8 } },
         good: { text: "범인의 기척을 쫓아 해독제의 이름만 알아냈다. 의원이 같은 약을 구해 와 열흘 만에 일어났다.", effects: { health: 4 } },
@@ -276,7 +276,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 포위망의 가장 두꺼운 곳을 정면으로 무너뜨렸다. 갈라진 틈으로 동료들이 모두 빠져나갔고 다음 날 신문에 탈출 장면이 크게 실렸다.", effects: { trust: 10, friendBond: 10 } },
         good: { text: "{power} 작은 틈을 내고 빠져나왔다. 쫓기는 동안 상처를 입었지만 바다까지는 닿았다.", effects: { friendBond: 5 } },
         bad: { text: "해루석 그물이 날아와 몸을 감쌌다. 힘이 쭉 빠진 채 끌려가다 동료들이 그물을 끊어 겨우 빼냈다.", effects: { health: -14, supplies: -6 } } } },
-    haki: { label: "[패기] 패기로 추격대를 압도한다", hint: "기세로 가르는 길", check: { stat: "skill", against: 65 }, personality: { ambition: 8, freedom: 5 },
+    haki: { kind: "conqueror", label: "[패기] 패기로 추격대를 압도한다", hint: "기세로 가르는 길", check: { stat: "skill", against: 65 }, personality: { ambition: 8, freedom: 5 },
       outcomes: {
         great: { text: "무장색을 두른 주먹으로 포탄을 쳐 내며 앞으로 나아갔다. 견문색으로 읽은 빈틈을 따라 동료들과 함께 바다로 빠져나왔다.", effects: { trust: 10, friendBond: 10 } },
         good: { text: "포탄 몇 발은 막아 냈지만 결국 숲으로 물러섰다. 밤이 깊어서야 느슨해진 포위의 틈으로 빠져나왔다.", effects: { skill: 5 } },
@@ -293,7 +293,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 검객의 마지막 일격을 정면으로 받아 냈다. 검이 튕겨 나가자 검객은 무릎을 꿇고 오랜만에 진짜 강자를 만났다며 웃었다.", effects: { trust: 14, skill: 8 } },
         good: { text: "{power} 몇 합을 버텼고 승부는 나지 않았다. 검객은 다음에 다시 오겠다며 검을 거뒀다.", effects: { skill: 5 } },
         bad: { text: "검객의 검에는 해루석이 박혀 있었다. 칼날이 스치는 순간 힘이 빠졌고 깊은 상처를 안고 쓰러졌다.", effects: { health: -18 } } } },
-    haki: { label: "[패기] 무장색으로 칼날을 맞받는다", hint: "패기와 패기", check: { stat: "skill", against: 65 }, personality: { ambition: 8, caution: -4 },
+    haki: { kind: "armament", label: "[패기] 무장색으로 칼날을 맞받는다", hint: "패기와 패기", check: { stat: "skill", against: 65 }, personality: { ambition: 8, caution: -4 },
       outcomes: {
         great: { text: "무장색을 두른 팔로 칼날을 맞받고 견문색으로 다음 일격을 읽었다. 검이 부러지자 부두의 구경꾼들이 숨을 삼켰다.", effects: { trust: 14, skill: 8 } },
         good: { text: "패기와 검이 부딪칠 때마다 불꽃이 튀었다. 해가 질 때까지 승부가 나지 않아 둘은 이름을 주고받고 헤어졌다.", effects: { skill: 5 } },
@@ -305,7 +305,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 무기를 든 선원들을 한꺼번에 제압했다. 칼 한 자루 휘두르지 않고 끝난 반란에 선원들은 선장을 다시 보았다.", effects: { trust: 10, friendBond: 10 } },
         good: { text: "{power} 주동자 몇을 붙잡았다. 반란은 흩어졌지만 갑판의 공기는 한동안 무거웠다.", effects: { trust: 5 } },
         bad: { text: "누군가 등 뒤에서 몸을 밀었다. 바다에 떨어지자 힘이 빠졌고, 남은 충직한 선원들이 뛰어들어 건져 냈다.", effects: { health: -14, friendBond: -5 } } } },
-    haki: { label: "[패기] 패기를 터뜨려 반란을 잠재운다", hint: "기세로 누름", check: { stat: "skill", against: 60 }, personality: { ambition: 7, loyalty: 3 },
+    haki: { kind: "conqueror", label: "[패기] 패기를 터뜨려 반란을 잠재운다", hint: "기세로 누름", check: { stat: "skill", against: 60 }, personality: { ambition: 7, loyalty: 3 },
       outcomes: {
         great: { text: "온몸의 패기를 갑판 위에 터뜨렸다. 무기를 든 손들이 하나둘 떨렸고 선원들은 칼을 내려놓고 다시 고개를 숙였다.", effects: { trust: 12, friendBond: 8 } },
         good: { text: "기세에 눌린 선원 절반이 물러섰다. 남은 주동자만 붙잡아 다음 항구에 내려 주었다.", effects: { trust: 5 } },
@@ -322,7 +322,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 쓰러진 사람들을 빠짐없이 의원 앞까지 옮겼다. 손이 모자라던 의원이 숨을 돌렸고 열병은 보름 만에 물러갔다.", effects: { trust: 16, friendBond: 4 } },
         good: { text: "{power} 환자 몇을 옮기고 약을 날랐다. 열병은 오래갔지만 항구 사람들은 지친 얼굴로 뛰어다니던 모습을 잊지 않았다.", effects: { trust: 6 } },
         bad: { text: "능력을 쉬지 않고 쓰다 몸이 먼저 무너졌다. 열병이 옮아 환자 옆 침상에 나란히 누웠다.", effects: { health: -18 } } } },
-    haki: { label: "[패기] 견문색으로 위급한 환자를 찾는다", hint: "기척이 약한 쪽", check: { stat: "skill", against: 55 }, personality: { empathy: 8, caution: 2 },
+    haki: { kind: "observation", label: "[패기] 견문색으로 위급한 환자를 찾는다", hint: "기척이 약한 쪽", check: { stat: "skill", against: 55 }, personality: { empathy: 8, caution: 2 },
       outcomes: {
         great: { text: "문이 닫힌 집들 사이에서 꺼져 가는 기척들을 찾아냈다. 가장 위급한 사람부터 의원에게 데려가 아무도 잃지 않았다.", effects: { trust: 16, skill: 4 } },
         good: { text: "기척이 약한 집 몇 곳을 찾아 의원에게 알렸다. 모두를 구하지는 못했지만 여럿이 살아났다.", effects: { trust: 6 } },
@@ -334,7 +334,7 @@ export const POWER_CHOICES = {
         great: { text: "{power} 정문으로 몰려드는 해적들을 한꺼번에 막아섰다. 해적단은 새벽이 오기 전에 물러났고 본부에서 이름을 물어 왔다.", effects: { trust: 14, skill: 6 } },
         good: { text: "{power} 정문은 지켰지만 창고 하나가 불탔다. 기지는 겨우 살아남았다.", effects: { trust: 5 } },
         bad: { text: "해적 선장이 해루석 사슬을 휘둘렀다. 사슬에 감기자 힘이 빠졌고 병사들이 끌어내 주었다.", effects: { health: -16, trust: -2 } } } },
-    haki: { label: "[패기] 견문색으로 기습의 흐름을 읽는다", hint: "다음 공격을 읽음", check: { stat: "skill", against: 60 }, personality: { loyalty: 6, caution: 3 },
+    haki: { kind: "observation", label: "[패기] 견문색으로 기습의 흐름을 읽는다", hint: "다음 공격을 읽음", check: { stat: "skill", against: 60 }, personality: { loyalty: 6, caution: 3 },
       outcomes: {
         great: { text: "해적들이 다음에 노릴 곳을 하나씩 짚어 병사들을 보냈다. 기습은 번번이 막혔고 해적단은 빈손으로 물러났다.", effects: { trust: 14, skill: 6 } },
         good: { text: "몇 번의 기습은 읽어 냈지만 마지막 한 번을 놓쳤다. 기지는 지켰지만 부상자가 늘었다.", effects: { trust: 5 } },

@@ -7,6 +7,7 @@ import { canonGapFor, canonInterludeScene } from "./canon-interludes.js";
 import { childhoodScene } from "./childhood.js";
 import { canonRelationshipEntries, pendingCanonContactScene } from "./canon-relationships.js";
 import { twist } from "./twists.js";
+import { awardPowerAcquisition } from "./power-mastery.js";
 
 export const SAVE_VERSION = 1;
 export const MODES = ["original", "free"];
@@ -241,11 +242,11 @@ function normalizeProfile(profile, homes, genders) {
   return chosen;
 }
 
-export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 34) {
+export function createGame(mode, seed, profile = {}, rules = 3, creationVersion = 35) {
   if (!MODES.includes(mode)) throw new Error("알 수 없는 모드입니다.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("잘못된 시드입니다.");
   if (![1, 2, 3].includes(rules)) throw new Error("알 수 없는 이야기 규칙입니다.");
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35].includes(creationVersion)) throw new Error("알 수 없는 출생 규칙입니다.");
   const homes = rules === 3 ? PROFILE_OPTIONS.homes : LEGACY_HOMES;
   const genders = rules === 3 ? PROFILE_OPTIONS.genders : LEGACY_GENDERS;
   const chosen = normalizeProfile(profile, homes, genders);
@@ -294,6 +295,8 @@ export function createGame(mode, seed, profile = {}, rules = 3, creationVersion 
     apprenticeBond: 0, trust: rules === 3 ? 40 : 1,
     personality: Object.fromEntries(PERSONALITY.map(({ key }) => [key, 50 + (birthStats?.personality[key] || 0)])),
     devilFruit: null, fruitMastery: 0, haki: { observation: 0, armament: 0, conqueror: 0 },
+    ...(rules === 3 && creationVersion >= 35
+      ? { powerProficiency: { fruit: 0, haki: { observation: 0, armament: 0, conqueror: 0 } } } : {}),
     successor: false, independent: false, leftHome: false, continued: false, retired: false, rescued: 0,
     homebound: false, canonCrew: null, rankTier: 0, careerStartAge: null, lastRankOfferAge: -100,
     lastMarineOfferAge: -100, lastPirateOfferAge: -100, lastCivilianOfferAge: -100,
@@ -423,7 +426,8 @@ export function getScene(life) {
         return { id: choice.id, label: typeof choice.label === "function" ? choice.label(life) : choice.label,
           risk: target ? `${shown} · ${diceLabel}: 주사위 1~100에서 ${target} 이상이면 성공, 실패하면 ${choice.failRisk || "건강 -15"}` : shown,
           condition: shown, dice: target || null, diceShort: target > 10 || life.creationVersion < 11, failRisk: target ? choice.failRisk || "건강 -15" : null,
-          naming: Boolean(choice.naming), disabled: !canChoose(choice, life) };
+          naming: Boolean(choice.naming), disabled: !canChoose(choice, life),
+          ...(choice.powerOdds ? { powerOdds: choice.powerOdds } : {}) };
       });
       if (mapped.length > 0 && mapped.every((choice) => choice.disabled)) {
         mapped.push({
@@ -517,6 +521,7 @@ export function advance(life, action = null) {
     const line = twist(life, next, diceRoll(life, card.id, `${chosen.id}~twist`));
     if (line) outcome = `${outcome || ""} ${line}`.trim();
   }
+  awardPowerAcquisition(life, next, card.id);
   // A career move that later renames the role (a village job, a liaison post) still keeps the carried rank's title.
   if (next.carriedRank && (next.homebound || next.canonCrew && (next.mode === "original" || next.creationVersion >= 21))) {
     next.rankTier = 0;

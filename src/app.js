@@ -454,6 +454,14 @@ function renderStats(gridId = "stats-grid", sourceId = "birth-stat-source", show
     const delta = showBirthDelta ? birthStats?.individual[stat.key] || 0 : changeOf(stat.key);
     appendMeter(grid, statLabel(stat), value, max, `stat-${stat.key}`, delta);
   }
+  if (life.creationVersion >= 35 && gridId === "stats-grid") {
+    if (life.devilFruit) appendMeter(grid, `열매 Lv${life.fruitMastery} · 숙련도`,
+      life.powerProficiency.fruit, 100, "power-fruit");
+    for (const [key, label] of [["observation", "견문색"], ["armament", "무장색"], ["conqueror", "패왕색"]]) {
+      if (life.haki[key]) appendMeter(grid, `${label} Lv${life.haki[key]} · 숙련도`,
+        life.powerProficiency.haki[key], 100, `power-${key}`);
+    }
+  }
 }
 
 function renderPersonality(gridId = "personality-grid", summaryId = "personality-summary", showBirthDelta = false) {
@@ -769,6 +777,9 @@ function renderGame(focusTitle = false, statsUpdated = false, arrivedPlace = "")
     renderLifeStrip();
     renderStats();
     renderPersonality();
+  } else if (life.creationVersion >= 35) {
+    // A completed change animation can leave new power meters out of date.
+    renderStats();
   }
   renderAgeTimeline(scene);
 
@@ -789,6 +800,13 @@ function renderGame(focusTitle = false, statsUpdated = false, arrivedPlace = "")
       const risk = document.createElement("small");
       risk.textContent = condition;
       copy.append(risk);
+    }
+    if (choice.powerOdds) {
+      const hint = document.createElement("small");
+      hint.className = "power-odds";
+      const { ability, mastery, chance, target } = choice.powerOdds;
+      hint.textContent = `${ability} 숙련도 ${mastery}/100 · 성공 확률 ${chance}% (주사위 ${target} 이상)`;
+      copy.append(hint);
     }
     const arrow = document.createElement("span");
     arrow.className = "choice-arrow";

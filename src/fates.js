@@ -45,10 +45,12 @@ function nextChapter(life, fate) {
 
 // Rolls a three-tier check: roll(1..100) + (stat + bonus - against) >= 80 is a great success, >= 40 a success.
 // Rule 15 widens the swing, so a great success pays half again and a failure hurts half again.
-export function rollTier(state, salt, choice, bonus = 0) {
+export function rollTier(state, salt, choice, bonus = 0, masteryRoll = false) {
   const roll = yearRoll(state.seed ^ hash(salt), state.age) % 100 + 1;
   const edge = state[choice.check.stat] + bonus - choice.check.against;
-  const tier = roll + edge >= 80 ? "great" : roll + edge >= 40 ? "good" : "bad";
+  const tier = masteryRoll
+    ? roll >= Math.max(90, 80 - edge) ? "great" : roll + edge >= 40 ? "good" : "bad"
+    : roll + edge >= 80 ? "great" : roll + edge >= 40 ? "good" : "bad";
   const outcome = choice.outcomes[tier];
   const swing = state.creationVersion >= 15 ? 1.5 : 1;
   for (const [key, change] of Object.entries(outcome.effects || {})) {

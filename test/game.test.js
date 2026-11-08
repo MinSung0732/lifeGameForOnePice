@@ -26,7 +26,8 @@ import { attachCanonContact, canonEraFor, canonPowerAt, canonRelationshipLine, c
 import { FATES } from "../src/fates.js";
 import { peopleSummary, personalBeat } from "../src/people.js";
 import { crewFor, relationshipGroups } from "../src/crew.js";
-import { DUTIES } from "../src/adventures.js";
+import { DUTIES, withPower } from "../src/adventures.js";
+import { awardPowerAcquisition, gainPowerExperience, powerOdds } from "../src/power-mastery.js";
 import { routeChartFor, routeMapLabel } from "../src/route-map.js";
 import { LOCAL_ARCS_V23, localCanonRipple } from "../src/canon-local-events.js";
 import { arcScene } from "../src/canon-arcs.js";
@@ -1097,7 +1098,7 @@ test("새 출생 규칙은 개인 사건의 순서와 마지막 날을 달리하
 });
 
 test("새 생애의 유년기 사건과 그림은 회차마다 달라지고 선택의 여파를 이어 간다", () => {
-  assert.equal(createGame("original", 0).creationVersion, 34);
+  assert.equal(createGame("original", 0).creationVersion, 35);
   const childhoodIds = new Set(["life_home", "life_friend", "life_first_skill", "life_child_crisis"]);
   const paths = new Set();
   const crises = new Set();
@@ -2204,6 +2205,102 @@ test("규칙 15: 소속을 옮기면 직급에 비례해 강등되고, 이름난
   assert.ok(!crewFor(whitebeard).some((member) => member.name === "포트거스 D. 에이스"), "에이스는 아직 흰 수염 해적단에 없다");
   const marine = { ...era, path: "marine", affiliation: "해군", rankTier: 4, leftHome: true };
   assert.ok(crewFor(marine).some((member) => member.name === "센고쿠"));
+});
+
+test("35번: 열매와 패기 숙련도는 15:85 가중치로 각자 성공 기준을 바꾼다", () => {
+  const life = createGame("original", 178, { species: "인간" }, 3, 35);
+  assert.deepEqual(life.powerProficiency, { fruit: 0, haki: { observation: 0, armament: 0, conqueror: 0 } });
+  assert.equal(createGame("original", 178, { species: "인간" }, 3, 34).powerProficiency, undefined);
+  life.skill = 60;
+  life.devilFruit = "이글이글 열매(자연계)";
+  life.fruitMastery = 1;
+  life.powerProficiency.fruit = 15;
+  const check = { stat: "skill", against: 55 };
+  const rookie = powerOdds(life, check, "fruit");
+  assert.equal(rookie.target, 73);
+  assert.equal(rookie.chance, 28);
+  life.powerProficiency.fruit = 85;
+  const veteran = powerOdds(life, check, "fruit");
+  assert.ok(veteran.target < rookie.target);
+  assert.equal(veteran.chance, 87);
+  life.fruitMastery = 2;
+  assert.ok(powerOdds(life, check, "fruit").chance >= veteran.chance);
+  life.powerProficiency.fruit = 15;
+
+  life.haki = { observation: 1, armament: 1, conqueror: 0 };
+  life.powerProficiency.haki.observation = 80;
+  life.powerProficiency.haki.armament = 20;
+  const see = powerOdds(life, check, "haki", ["observation"]);
+  const strike = powerOdds(life, check, "haki", ["armament"]);
+  const combined = powerOdds(life, check, "haki", ["observation", "armament"]);
+  assert.ok(see.chance > combined.chance && combined.chance > strike.chance);
+  assert.equal(combined.mastery, 50);
+  assert.ok(withPower(life, "mishap_drinking", []).every((choice) => choice.id !== "power_haki"),
+    "패왕색이 없는 사람은 기세로 상대를 꺾지 못한다");
+  assert.ok(withPower(life, "mishap_haki_bet", []).some((choice) => choice.id === "power_haki"),
+    "두 패기를 습득한 사람에게 복합 선택을 제공한다");
+  assert.ok(withPower({ ...life, haki: { ...life.haki, armament: 0 } }, "mishap_haki_bet", [])
+    .every((choice) => choice.id !== "power_haki"));
+
+  const old = createGame("original", 178, { species: "인간" }, 3, 34);
+  old.devilFruit = life.devilFruit; old.fruitMastery = 1;
+  assert.equal(withPower(old, "mishap_drinking", []).find((choice) => choice.id === "power_fruit")?.powerOdds, undefined);
+  assert.deepEqual(replay(saveRecord(createGame("original", 178, { species: "인간" }, 3, 34))),
+    createGame("original", 178, { species: "인간" }, 3, 34));
+});
+
+test("35번: 실제 능력 사용은 성공·실패 모두 숙련도를 올리고 이전 규칙은 그대로 둔다", () => {
+  const life = createGame("free", 272, { species: "인간" }, 3, 35);
+  life.devilFruit = "꽃꽃 열매(초인계)";
+  life.fruitMastery = 1;
+  life.powerProficiency.fruit = 15;
+  const choice = withPower(life, "mishap_feast", []).find((item) => item.id === "power_fruit");
+  assert.equal(choice.powerOdds.ability, "열매");
+  assert.equal(choice.powerOdds.chance, 101 - choice.powerOdds.target);
+  const next = structuredClone(life);
+  const result = choice.apply(next);
+  assert.match(result, /주사위 \d+/);
+  const expected = { bad: 3, good: 6, great: 8 }[next.lastDice.tier];
+  assert.equal(next.powerProficiency.fruit, 15 + expected);
+  assert.equal(next.lastDice.success, next.lastDice.roll >= choice.powerOdds.target);
+  assert.equal(choice.powerOdds.mastery, 15);
+  gainPowerExperience(next, "fruit", [], "great");
+  assert.equal(next.powerProficiency.fruit, 23 + expected);
+  next.powerProficiency.fruit = 99;
+  gainPowerExperience(next, "fruit", [], "great");
+  assert.equal(next.powerProficiency.fruit, 100);
+  const v34 = createGame("free", 272, { species: "인간" }, 3, 34);
+  const snapshot = structuredClone(v34);
+  gainPowerExperience(v34, "fruit", [], "great");
+  assert.deepEqual(v34, snapshot);
+});
+
+test("35번: 지정된 Lv2 수련은 숙련도 조건 없이 승급하고 이전 버전 저장 기록을 유지한다", () => {
+  const base = createGame("original", 89, { species: "인간" }, 3, 35);
+  base.devilFruit = "이글이글 열매(자연계)";
+  base.fruitMastery = 1;
+  base.powerProficiency.fruit = 18;
+  const advanced = structuredClone(base);
+  advanced.fruitMastery = 2;
+  awardPowerAcquisition(base, advanced, "life_fruit_practice");
+  assert.equal(advanced.fruitMastery, 2);
+  assert.equal(advanced.powerProficiency.fruit, 30);
+  const haki = structuredClone(base);
+  haki.haki.observation = 1;
+  haki.powerProficiency.haki.observation = 12;
+  const practiced = structuredClone(haki);
+  practiced.haki.observation = 2;
+  awardPowerAcquisition(haki, practiced, "life_haki_practice");
+  assert.equal(practiced.haki.observation, 2);
+  assert.equal(practiced.powerProficiency.haki.observation, 24);
+  const learned = structuredClone(base);
+  learned.haki.conqueror = 1;
+  awardPowerAcquisition(base, learned, "life_conqueror_sign");
+  assert.equal(learned.powerProficiency.haki.conqueror, 15);
+  for (const version of [32, 33, 34, 35]) {
+    const fresh = createGame("original", 89, { species: "인간" }, 3, version);
+    assert.deepEqual(replay(saveRecord(fresh)), fresh);
+  }
 });
 
 test("규칙 15: 열매·패기·비능력자마다 다른 선택지가 붙고, 주사위는 대성공을 따로 가른다", async () => {
